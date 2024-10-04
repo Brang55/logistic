@@ -1,0 +1,30 @@
+.nav {
+  float: left;
+  display: flex;
+  width: 10%;
+  height: 100%;
+  padding: 40px 0;
+}
+
+.nav ul {
+  float: left;
+  width: 100%;
+  height: 100%;
+}
+
+.nav ul li {
+  float: left;
+  width: 100%;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.nav ul li a {
+  color: #5932ea;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.nav ul li:hover .navIcons {
+  color: #5932ea;
+}

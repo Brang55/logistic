@@ -1,0 +1,28 @@
+.addDriverHolder {
+  float: left;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.addDriverHolder h3 {
+  float: left;
+  margin: 0;
+  font-size: 30px;
+}
+
+.addDriverHolder .addDriverButton {
+  float: right;
+  padding: 10px 20px;
+  border-radius: 20px;
+  color: #fff;
+  font-weight: bold;
+  background-color: #5932ea;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.addDriverHolder .addDriverButton:hover {
+  background-color: #fff;
+  color: #5932ea;
+  border-color: #5932ea;
+}

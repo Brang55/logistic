@@ -1,0 +1,30 @@
+.directionsBox {
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 9999999;
+  width: 300px;
+  padding: 20px;
+  background-color: #434040;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 15px;
+}
+
+.directionsBox h2 {
+  margin: 0;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.otherRoutes {
+  background: none;
+  border: none;
+  color: #d8a415;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.otherRoutes:hover {
+  color: #fff;
+}

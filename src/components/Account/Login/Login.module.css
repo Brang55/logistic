@@ -1,0 +1,97 @@
+.loginForm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  padding: 50px;
+  transform: translate(-50%, -50%);
+  z-index: 999;
+  background-color: #fff;
+  border-radius: 20px;
+}
+
+.loginContainer {
+  background-color: rgb(80, 77, 77);
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.loginContainer h2 {
+  margin: 0;
+  font-size: 25px;
+  margin-bottom: 20px;
+}
+
+.loginFormRow {
+  float: left;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* .loginFormRow * {
+  float: left;
+  width: 100%;
+} */
+
+.options {
+  padding: 10px;
+  border: 1px solid #5932ea;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.loginFormRow label {
+  margin-bottom: 5px;
+}
+
+.loginFormRow input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #5932ea;
+  border-radius: 5px;
+}
+
+.submitLogin {
+  width: 100%;
+  padding: 10px 20px;
+  border-radius: 20px;
+  background-color: #5932ea;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.submitLogin:hover {
+  background-color: #fff;
+  color: #5932ea;
+  border-color: #5932ea;
+}
+
+.input-err {
+  border: 1px solid #c20b0b;
+}
+
+.error {
+  color: #c20b0b;
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+}
+
+.closeForm {
+  float: right;
+  background-color: #f7f7f7;
+  padding: 5px 10px;
+  border: none;
+  font-size: 20px;
+  font-weight: 900;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.closeForm:hover {
+  color: #fff;
+  background-color: #c20b0b;
+}

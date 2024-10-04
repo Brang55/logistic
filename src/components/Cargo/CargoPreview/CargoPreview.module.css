@@ -1,0 +1,49 @@
+.previewContainer {
+  margin: 0;
+  padding: 0;
+}
+
+.previewContainer li {
+  float: left;
+  width: 33%;
+  margin-bottom: 10px;
+}
+
+.previewContainer li h3 {
+  margin: 0;
+  margin-bottom: 10px;
+}
+
+.previewContainer li * {
+  float: left;
+  width: 100%;
+  line-height: 30px;
+}
+
+.previewCargoDet {
+  min-height: 200px;
+}
+
+.previewDeliveryInfo {
+  min-height: 0 !important;
+}
+
+.previewOptions {
+  float: left;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* .previewDeliveryInfo > div {
+  float: left;
+  width: 49%;
+}
+
+.previewDeliveryInfo > div:first-of-type {
+  margin-right: 1%;
+} */
+
+.cargoConfig {
+  float: left;
+  width: 100%;
+}

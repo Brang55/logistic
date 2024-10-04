@@ -1,0 +1,25 @@
+.ongoingHandler {
+  float: left;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.ongoingSection {
+  float: left;
+  width: 30%;
+  padding: 40px;
+  height: 100%;
+  background-color: #f7f7f7;
+}
+
+.ongoingTitle {
+  float: left;
+  margin: 20px 0;
+  font-size: 20px;
+}
+
+.googleMapsHandler {
+  float: left;
+  width: 70%;
+  height: 100%;
+}

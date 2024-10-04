@@ -1,0 +1,34 @@
+.truckDriversList {
+  float: left;
+  width: 100%;
+  padding: 0;
+  border-collapse: collapse;
+  background-color: #f2f1f1;
+}
+
+.truckDriversList div li {
+  display: inline-block;
+  width: 20%;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: normal;
+  border-color: transparent;
+}
+
+.truckDriversList .truckDriversHeadings li {
+  padding: 20px 10px;
+}
+
+.truckDriversList .truckDriversHeadings {
+  background-color: #f2f1f1;
+}
+
+.truckDriversList .truckDriversHeadings li {
+  text-align: left;
+  font-size: 13px;
+  border: none;
+}
+
+/* .truckDriversList div:nth-of-type(2n) li {
+  background-color: #fff;
+} */
