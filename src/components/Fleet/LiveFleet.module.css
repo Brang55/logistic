@@ -1,0 +1,112 @@
+.fleet {
+  display: flex;
+  height: 100%;
+}
+
+.panel {
+  width: 30%;
+  min-width: 320px;
+  height: 100%;
+  padding: 20px 30px;
+  overflow-y: auto;
+  background-color: #f7f7f7;
+}
+
+.title {
+  margin: 0 0 15px;
+  font-size: 20px;
+}
+
+.map {
+  flex: 1;
+  height: 100%;
+}
+
+.truck {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.truck:hover {
+  border-color: #5932ea;
+}
+
+.selected {
+  border: 2px solid #d8a415;
+}
+
+.truckName {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.muted {
+  font-size: 12px;
+  font-weight: 400;
+  color: #666;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.state {
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #fff;
+  border-radius: 10px;
+}
+
+.moving {
+  background: #5932ea;
+}
+
+.stopped {
+  background: #757575;
+}
+
+.offline {
+  background: #c62828;
+}
+
+.details {
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.details h4 {
+  margin: 15px 0 8px;
+}
+
+.details dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.details dt {
+  font-weight: 600;
+}
+
+.details dd {
+  margin: 0;
+}
+
+.follow {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 13px;
+}

@@ -10,7 +10,9 @@ import { useFetchDriversQuery } from "../../app/features/driver/driverSlice";
 import { useFetchTrailersQuery } from "../../app/features/driver/trailerSlice";
 import { useFetchTrucksQuery, type Truck } from "../../app/features/driver/truckSlice";
 import { useCargoRouteQuery, type RoutePlan } from "../../app/features/driver/routingSlice";
+import { useLatestPositionsQuery } from "../../app/features/driver/telematicsSlice";
 import { formatDistance, formatDuration } from "../../utils/format";
+import { distanceKm } from "../../utils/geo";
 import { Loader } from "../Loader/Loader";
 import DispatchMap from "./DispatchMap";
 
@@ -105,6 +107,7 @@ const Dispatcher = () => {
   const { data: trucks } = useFetchTrucksQuery();
   const { data: drivers } = useFetchDriversQuery();
   const { data: trailers } = useFetchTrailersQuery();
+  const { data: positions } = useLatestPositionsQuery();
   const [assignCargo, { isLoading: isAssigning }] = useAssignCargoMutation();
 
   const [selectedId, setSelectedId] = useState<string>();
@@ -114,6 +117,19 @@ const Dispatcher = () => {
   const cargo = cargos?.find((item) => item.id === selectedId);
   const truck = trucks?.find((item) => item.id === draft.truckId);
   const trucksById = useMemo(() => new Map((trucks ?? []).map((t) => [t.id, t])), [trucks]);
+  const truckLabels = useMemo(() => new Map((trucks ?? []).map((t) => [t.id, t.truckNumber])), [trucks]);
+
+  // Selectable trucks, closest to the pickup first, with their straight-line distance.
+  const truckOptions = useMemo(() => {
+    const pickup = cargo?.pickupPoint;
+    const where = new Map((positions ?? []).map((p) => [p.truckId, p.point]));
+    return selectable(trucks, cargo?.truckId)
+      .map((item) => {
+        const at = where.get(item.id);
+        return { truck: item, km: pickup && at ? distanceKm(at, [pickup.x, pickup.y]) : undefined };
+      })
+      .sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
+  }, [trucks, positions, cargo]);
 
   const {
     data: route,
@@ -173,9 +189,10 @@ const Dispatcher = () => {
               Truck
               <select value={draft.truckId} onChange={(e) => updateDraft({ truckId: e.target.value })}>
                 <option value="">No truck</option>
-                {selectable(trucks, cargo.truckId).map((item) => (
+                {truckOptions.map(({ truck: item, km }) => (
                   <option key={item.id} value={item.id}>
                     {item.truckNumber} – {item.truckModel}
+                    {km !== undefined && ` · ${Math.round(km)} km from pickup`}
                   </option>
                 ))}
               </select>
@@ -257,6 +274,9 @@ const Dispatcher = () => {
           onSelect={selectCargo}
           route={isRouting ? undefined : route}
           routeIndex={routeIndex}
+          truckPositions={positions}
+          truckLabels={truckLabels}
+          selectedTruckId={draft.truckId || undefined}
         />
       </div>
     </div>

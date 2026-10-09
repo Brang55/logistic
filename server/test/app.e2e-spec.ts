@@ -1,11 +1,15 @@
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { AddressInfo } from "net";
+import { io, Socket } from "socket.io-client";
 import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "../src/app.module";
 import { AuthService } from "../src/auth/auth.service";
 import { GeocodingService } from "../src/mapbox/geocoding.service";
 import { LngLat, RouteRequest, RoutingService } from "../src/routing/routing.types";
+import { SimulatedTelematicsProvider } from "../src/telematics/simulated-telematics.provider";
+import { PositionFix } from "../src/telematics/telematics.types";
 import { setupApp } from "../src/setup-app";
 import { TEST_DATABASE_URL } from "./test-env";
 
@@ -29,6 +33,8 @@ describe("API (e2e)", () => {
   beforeAll(async () => {
     process.env.DATABASE_URL = TEST_DATABASE_URL;
     process.env.JWT_ACCESS_SECRET = "test-secret";
+    process.env.TELEMATICS_PROVIDER = "none";
+    process.env.TELEMATICS_WEBHOOK_SECRET = "test-webhook-secret";
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(GeocodingService)
       .useValue(geocoder)
@@ -37,7 +43,8 @@ describe("API (e2e)", () => {
       .compile();
     app = moduleRef.createNestApplication();
     setupApp(app);
-    await app.init();
+    // Listen on a real port so Socket.IO clients can connect.
+    await app.listen(0);
 
     const auth = app.get(AuthService);
     await auth.register("admin@test.local", "password123", "admin");
@@ -216,6 +223,111 @@ describe("API (e2e)", () => {
     it("stores empty truck dimensions as null", async () => {
       const truck = (await asDispatcher(api().post("/api/trucks")).send({ truckNumber: "R-2", heightM: "" }).expect(201)).body;
       expect(truck.heightM).toBeNull();
+    });
+  });
+
+  describe("telematics", () => {
+    const asDispatcher = <T extends request.Test>(req: T) => req.auth(dispatcherToken, { type: "bearer" });
+    const webhook = (body: object, secret = "test-webhook-secret") =>
+      api().post("/api/telematics/webhook").set("x-telematics-secret", secret).send(body);
+    const liveUrl = () => {
+      const server = app.getHttpServer() as unknown as { address(): AddressInfo };
+      return `http://localhost:${server.address().port}/live`;
+    };
+
+    let truckA: { id: string };
+    let truckB: { id: string };
+
+    beforeAll(async () => {
+      truckA = (await asDispatcher(api().post("/api/trucks")).send({ truckNumber: "GPS-A" })).body;
+      truckB = (await asDispatcher(api().post("/api/trucks")).send({ truckNumber: "GPS-B", telematicsId: "samsara-42" })).body;
+    });
+
+    it("rejects webhooks without the shared secret", async () => {
+      const body = { positions: [{ vehicleId: "GPS-A", lng: 1, lat: 1 }] };
+      await api().post("/api/telematics/webhook").send(body).expect(401);
+      await webhook(body, "wrong").expect(401);
+      await webhook({ positions: [{ vehicleId: "GPS-A", lng: 1, lat: 100 }] }).expect(400);
+    });
+
+    it("stores fixes matched by truck number or telematics id and reports unknown vehicles", async () => {
+      const res = await webhook({
+        positions: [
+          { vehicleId: "GPS-A", lng: 10, lat: 50, speedKmh: 80, heading: 90, recordedAt: "2026-01-01T10:00:00Z" },
+          { vehicleId: "GPS-A", lng: 10.1, lat: 50, speedKmh: 82, recordedAt: "2026-01-01T10:01:00Z" },
+          { vehicleId: "samsara-42", lng: 20, lat: 40 },
+          { vehicleId: "nobody", lng: 0, lat: 0 },
+        ],
+      }).expect(202);
+      expect(res.body).toEqual({ accepted: 3, unknownVehicles: ["nobody"] });
+
+      const latest = await asDispatcher(api().get("/api/positions/latest")).expect(200);
+      const byTruck = new Map(latest.body.map((p: { truckId: string }) => [p.truckId, p]));
+      expect(byTruck.get(truckA.id)).toMatchObject({ point: [10.1, 50], speedKmh: 82, recordedAt: "2026-01-01T10:01:00.000Z" });
+      expect(byTruck.get(truckB.id)).toMatchObject({ point: [20, 40] });
+    });
+
+    it("returns a truck's track in chronological order", async () => {
+      const res = await asDispatcher(
+        api().get(`/api/trucks/${truckA.id}/positions?since=2025-12-31T00:00:00Z&limit=10`),
+      ).expect(200);
+      expect(res.body.map((p: { point: LngLat }) => p.point)).toEqual([
+        [10, 50],
+        [10.1, 50],
+      ]);
+      const newest = await asDispatcher(api().get(`/api/trucks/${truckA.id}/positions?since=2025-12-31T00:00:00Z&limit=1`));
+      expect(newest.body.map((p: { point: LngLat }) => p.point)).toEqual([[10.1, 50]]);
+    });
+
+    it("refuses live connections without a valid token", async () => {
+      const socket = io(liveUrl(), { auth: { token: "nope" }, transports: ["websocket"] });
+      const error = await new Promise<Error>((resolve) => socket.on("connect_error", resolve));
+      socket.close();
+      expect(error.message).toBe("unauthorized");
+    });
+
+    it("streams new positions to dispatchers", async () => {
+      const socket: Socket = io(liveUrl(), { auth: { token: dispatcherToken }, transports: ["websocket"] });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          socket.on("connect", resolve);
+          socket.on("connect_error", reject);
+        });
+        const received = new Promise((resolve) => socket.on("position", resolve));
+        await webhook({ positions: [{ vehicleId: "GPS-B", lng: 21, lat: 41, speedKmh: 70 }] }).expect(202);
+        expect(await received).toMatchObject({ truckId: truckB.id, point: [21, 41], speedKmh: 70 });
+      } finally {
+        socket.close();
+      }
+    });
+
+    it("simulates assigned trucks driving to the pickup and on to the delivery", async () => {
+      const cargo = (
+        await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Sofia", deliveryLocation: "Munich", truckId: truckA.id })
+      ).body;
+      const simulator = app.get(SimulatedTelematicsProvider);
+      const fixes: PositionFix[] = [];
+      const sink = async (batch: PositionFix[]) => fixes.push(...batch);
+
+      await simulator.plan();
+      // The route starts from the truck's last reported position.
+      expect(router.route).toHaveBeenLastCalledWith(
+        expect.objectContaining({ coordinates: [[10.1, 50], PLACES.Sofia, PLACES.Munich] }),
+      );
+      await simulator.tick(sink);
+      await simulator.tick(sink);
+
+      const own = fixes.filter((f) => f.truckId === truckA.id);
+      expect(own).toHaveLength(2);
+      expect(own[1].point).not.toEqual(own[0].point);
+      expect(own[0].speedKmh).toBeGreaterThan(0);
+
+      // Unassigning stops the trip.
+      await asDispatcher(api().post(`/api/cargos/${cargo.id}/assign`)).send({ truckId: "" }).expect(200);
+      await simulator.plan();
+      fixes.length = 0;
+      await simulator.tick(sink);
+      expect(fixes.filter((f) => f.truckId === truckA.id)).toHaveLength(0);
     });
   });
 });

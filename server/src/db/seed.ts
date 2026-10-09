@@ -2,7 +2,7 @@ import "dotenv/config";
 import * as argon2 from "argon2";
 import { and, eq, isNull } from "drizzle-orm";
 import { createDb } from "./client";
-import { cargos, drivers, trailers, trucks, users } from "./schema";
+import { cargos, drivers, positions, trailers, trucks, users } from "./schema";
 
 // Idempotent demo data: re-running skips rows whose unique keys already exist.
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "demo12345";
@@ -38,6 +38,20 @@ const demoDrivers = [
   { firstName: "Maria", lastName: "Gonzalez", truckDriverEmail: "m.gonzalez@demo.logistic", phoneNumber: "+1 312 555 0144", truckNumber: "US-202" },
   { firstName: "Tyler", lastName: "Brooks", truckDriverEmail: "t.brooks@demo.logistic", phoneNumber: "+1 404 555 0188", truckNumber: "US-205" },
 ];
+
+// Where each demo truck is parked before the simulator moves it.
+const DEPOTS: Record<string, { x: number; y: number }> = {
+  "TR-101": { x: 23.3219, y: 42.6977 }, // Sofia
+  "TR-102": { x: 24.7453, y: 42.1354 }, // Plovdiv
+  "TR-103": { x: 11.582, y: 48.1351 }, // Munich
+  "TR-104": { x: 4.4777, y: 51.9244 }, // Rotterdam
+  "TR-105": { x: 9.19, y: 45.4642 }, // Milan
+  "US-201": { x: -96.797, y: 32.7767 }, // Dallas
+  "US-202": { x: -87.6298, y: 41.8781 }, // Chicago
+  "US-203": { x: -118.2437, y: 34.0522 }, // Los Angeles
+  "US-204": { x: -82.9988, y: 39.9612 }, // Columbus
+  "US-205": { x: -84.388, y: 33.749 }, // Atlanta
+};
 
 // Fixed coordinates so the demo needs no geocoding calls.
 const CITY_POINTS: Record<string, { x: number; y: number }> = {
@@ -101,6 +115,23 @@ async function main() {
         pickupDate: day(1 + (i % 3)),
         deliveryDate: day(2 + (i % 3)),
         status: i % 2 ? "confirmed" : "new",
+      })),
+    );
+  }
+
+  // A first position for trucks that have never reported one.
+  const located = new Set((await db.selectDistinct({ truckId: positions.truckId }).from(positions)).map((r) => r.truckId));
+  const parked = (await db.select({ id: trucks.id, truckNumber: trucks.truckNumber }).from(trucks)).filter(
+    (truck) => DEPOTS[truck.truckNumber] && !located.has(truck.id),
+  );
+  if (parked.length) {
+    await db.insert(positions).values(
+      parked.map((truck) => ({
+        truckId: truck.id,
+        point: DEPOTS[truck.truckNumber],
+        speedKmh: 0,
+        recordedAt: new Date(),
+        source: "seed",
       })),
     );
   }

@@ -39,6 +39,9 @@ const Navigation = () => {
               <NavLink to="/dispatcher">Dispatch</NavLink>
             </li>
             <li>
+              <NavLink to="/fleet">Live Fleet</NavLink>
+            </li>
+            <li>
               <NavLink to="/track">
                 {/* <FontAwesomeIcon
               icon={faTruckMoving}

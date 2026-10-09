@@ -35,6 +35,12 @@ export class CreateTruckDto {
   @IsString()
   vin?: string;
 
+  /** The vehicle's id in the telematics provider, used to match incoming positions. */
+  @IsOptional()
+  @Transform(({ value }) => (value === "" ? null : value))
+  @IsString()
+  telematicsId?: string | null;
+
   /** Vehicle height in meters (Mapbox max_height accepts 0–10). */
   @ToOptionalNumber()
   @IsOptional()

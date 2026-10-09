@@ -24,6 +24,23 @@ Routing and geocoding run on the server with `MAPBOX_SECRET_TOKEN` (an `sk.` tok
 the public `VITE_MAPBOX_ACCESS_TOKEN` in the root `.env` for map tiles. Cargo addresses are geocoded with Mapbox
 permanent geocoding, because the coordinates are stored, and that requires a payment method on the Mapbox account.
 
+## Truck positions (telematics)
+
+Positions are stored in `positions` and pushed live to dispatchers over Socket.IO (namespace `/live`,
+authenticated with the access token). Two ways to feed them:
+
+- **Simulator** (`TELEMATICS_PROVIDER=simulator`): every truck assigned to a cargo drives from its last position
+  to the pickup and on to the delivery along its real truck route, `SIMULATOR_SPEEDUP` times faster than real time.
+- **Webhook** for telematics providers, matched by `trucks.telematicsId` or truck number:
+
+  ```sh
+  curl -X POST localhost:3000/api/telematics/webhook \
+    -H "x-telematics-secret: $TELEMATICS_WEBHOOK_SECRET" -H "content-type: application/json" \
+    -d '{"positions":[{"vehicleId":"TR-101","lng":23.32,"lat":42.69,"speedKmh":72,"heading":310}]}'
+  ```
+
+With `REDIS_URL` set, live updates are shared across API instances.
+
 Tests: `cd server && npm test` (unit) and `npm run test:e2e` (uses a separate `logistic_test` database in the same container).
 
 Schema changes: edit `server/src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate`.

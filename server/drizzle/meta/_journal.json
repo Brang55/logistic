@@ -15,6 +15,20 @@
       "when": 1791535091973,
       "tag": "0001_init",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791536943562,
+      "tag": "0002_positions",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791536970510,
+      "tag": "0003_point_srid",
+      "breakpoints": true
     }
   ]
 }

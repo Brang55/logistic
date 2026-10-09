@@ -12,6 +12,7 @@ import { CargoList } from "./components/Cargo/CargoList/CargoList";
 import { CargoPreview } from "./components/Cargo/CargoPreview/CargoPreview";
 
 import Dispatcher from "./components/Dispatcher/Dispatcher";
+import LiveFleet from "./components/Fleet/LiveFleet";
 import Login from "./components/Account/Login/Login";
 
 import PrivateRoute from "./components/Account/PrivateRoute/PrivateRoute";
@@ -30,6 +31,9 @@ function App() {
           </Route>
           <Route element={<PrivateRoute />}>
             <Route path="/dispatcher" element={<Dispatcher />} />
+          </Route>
+          <Route element={<PrivateRoute />}>
+            <Route path="/fleet" element={<LiveFleet />} />
           </Route>
           <Route element={<PrivateRoute />}>
             <Route path="/track" element={<OngoingDelivery />} />

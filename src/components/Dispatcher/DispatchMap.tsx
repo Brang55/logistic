@@ -5,6 +5,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import type Cargo from "../../app/features/driver/cargoSlice";
 import type { CargoRoute } from "../../app/features/driver/routingSlice";
+import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
+import { useFleetLayer } from "../Fleet/useFleetLayer";
 
 import styles from "./Dispatcher.module.css";
 
@@ -16,6 +18,9 @@ interface DispatchMapProps {
   onSelect: (id: string) => void;
   route?: CargoRoute;
   routeIndex: number;
+  truckPositions?: TruckPosition[];
+  truckLabels: Map<string, string>;
+  selectedTruckId?: string;
 }
 
 const emptyCollection: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -82,7 +87,16 @@ function addLayers(map: mapboxgl.Map) {
   });
 }
 
-const DispatchMap = ({ cargos, selectedId, onSelect, route, routeIndex }: DispatchMapProps) => {
+const DispatchMap = ({
+  cargos,
+  selectedId,
+  onSelect,
+  route,
+  routeIndex,
+  truckPositions,
+  truckLabels,
+  selectedTruckId,
+}: DispatchMapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<mapboxgl.Map>();
   const onSelectRef = useRef(onSelect);
@@ -189,6 +203,8 @@ const DispatchMap = ({ cargos, selectedId, onSelect, route, routeIndex }: Dispat
 
     return () => markers.forEach((marker) => marker.remove());
   }, [map, route, routeIndex]);
+
+  useFleetLayer(map, truckPositions, truckLabels, { selectedTruckId });
 
   return <div ref={containerRef} className={styles.map} />;
 };
