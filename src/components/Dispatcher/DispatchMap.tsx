@@ -9,6 +9,7 @@ import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
 import { useFleetLayer } from "../Fleet/useFleetLayer";
 
 import styles from "./Dispatcher.module.css";
+import { theme } from "../../theme";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -29,10 +30,10 @@ const STATUS_COLORS: mapboxgl.ExpressionSpecification = [
   "match",
   ["get", "status"],
   "confirmed",
-  "#2e7d32",
+  theme.success,
   "edited",
-  "#ed6c02",
-  "#5932ea",
+  theme.warning,
+  theme.primary,
 ];
 
 function addLayers(map: mapboxgl.Map) {
@@ -45,7 +46,7 @@ function addLayers(map: mapboxgl.Map) {
     source: "routes",
     filter: ["!=", ["get", "selected"], true],
     layout: { "line-join": "round", "line-cap": "round" },
-    paint: { "line-color": "#9e9e9e", "line-width": 5 },
+    paint: { "line-color": theme.routeAlternative, "line-width": 5 },
   });
   map.addLayer({
     id: "routes-selected",
@@ -53,7 +54,7 @@ function addLayers(map: mapboxgl.Map) {
     source: "routes",
     filter: ["==", ["get", "selected"], true],
     layout: { "line-join": "round", "line-cap": "round" },
-    paint: { "line-color": "#5932ea", "line-width": 6 },
+    paint: { "line-color": theme.primary, "line-width": 6 },
   });
   // Road segments where the truck exceeds a height, width or weight limit.
   map.addLayer({
@@ -61,7 +62,7 @@ function addLayers(map: mapboxgl.Map) {
     type: "line",
     source: "restrictions",
     layout: { "line-join": "round", "line-cap": "round" },
-    paint: { "line-color": "#c62828", "line-width": 9 },
+    paint: { "line-color": theme.danger, "line-width": 9 },
   });
   map.addLayer({
     id: "incidents",
@@ -69,8 +70,8 @@ function addLayers(map: mapboxgl.Map) {
     source: "incidents",
     paint: {
       "circle-radius": 6,
-      "circle-color": "#ed6c02",
-      "circle-stroke-color": "#fff",
+      "circle-color": theme.warning,
+      "circle-stroke-color": theme.white,
       "circle-stroke-width": 2,
     },
   });
@@ -81,7 +82,7 @@ function addLayers(map: mapboxgl.Map) {
     paint: {
       "circle-radius": ["case", ["get", "selected"], 10, 7],
       "circle-color": STATUS_COLORS,
-      "circle-stroke-color": "#fff",
+      "circle-stroke-color": theme.white,
       "circle-stroke-width": 2,
     },
   });
@@ -194,8 +195,8 @@ const DispatchMap = ({
 
     if (!route) return;
     const markers = [
-      new mapboxgl.Marker({ color: "#2e7d32" }).setLngLat(route.pickup).addTo(map),
-      new mapboxgl.Marker({ color: "#c62828" }).setLngLat(route.delivery).addTo(map),
+      new mapboxgl.Marker({ color: theme.success }).setLngLat(route.pickup).addTo(map),
+      new mapboxgl.Marker({ color: theme.danger }).setLngLat(route.delivery).addTo(map),
     ];
     const bounds = new mapboxgl.LngLatBounds(route.pickup, route.pickup).extend(route.delivery);
     selected?.geometry.coordinates.forEach((point) => bounds.extend(point));

@@ -11,6 +11,9 @@ async function bootstrap() {
 
   setupApp(app);
 
+  // Behind a reverse proxy (Caddy in production) so client IPs reach the rate limiter.
+  if (config.get("TRUST_PROXY") === "true") app.getHttpAdapter().getInstance().set("trust proxy", 1);
+
   // Needed once more than one API instance runs; a single instance works without Redis.
   const redisUrl = config.get<string>("REDIS_URL");
   if (redisUrl) {
@@ -20,8 +23,10 @@ async function bootstrap() {
   }
   app.enableCors({ origin: config.get("CORS_ORIGIN")?.split(",") ?? true });
 
-  const doc = new DocumentBuilder().setTitle("Logistic API").addBearerAuth().build();
-  SwaggerModule.setup("docs", app, SwaggerModule.createDocument(app, doc));
+  if (config.get("SWAGGER") !== "false") {
+    const doc = new DocumentBuilder().setTitle("Logistic API").addBearerAuth().build();
+    SwaggerModule.setup("docs", app, SwaggerModule.createDocument(app, doc));
+  }
 
   await app.listen(config.get("PORT") ?? 3000);
 }

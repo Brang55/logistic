@@ -16,6 +16,7 @@ import { Loader } from "../Loader/Loader";
 import VoiceAssistant from "./VoiceAssistant";
 
 import styles from "./DriverTrip.module.css";
+import { theme } from "../../theme";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -71,7 +72,7 @@ const TripMap = ({ trip }: { trip: Trip }) => {
         type: "line",
         source: "route",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#5932ea", "line-width": 6 },
+        paint: { "line-color": theme.primary, "line-width": 6 },
       });
       setMap(mapInstance);
     });
@@ -92,7 +93,7 @@ const TripMap = ({ trip }: { trip: Trip }) => {
       features: route ? [{ type: "Feature", geometry: route.geometry, properties: {} }] : [],
     });
     const markers = trip.stops.map((stop) =>
-      new mapboxgl.Marker({ color: stop.kind === "pickup" ? "#2e7d32" : "#c62828" }).setLngLat(stop.point).addTo(map)
+      new mapboxgl.Marker({ color: stop.kind === "pickup" ? theme.success : theme.danger }).setLngLat(stop.point).addTo(map)
     );
     if (position) {
       const el = document.createElement("div");

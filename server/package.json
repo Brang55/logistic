@@ -10,7 +10,10 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "test": "jest",
-    "test:e2e": "jest --config test/jest-e2e.json --runInBand"
+    "test:e2e": "jest --config test/jest-e2e.json --runInBand",
+    "demo:reset": "tsx src/db/demo-reset.ts",
+    "db:migrate:prod": "node dist/db/migrate.js",
+    "db:seed:prod": "node dist/db/seed.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
@@ -22,6 +25,7 @@
     "@nestjs/platform-express": "^11.2.7",
     "@nestjs/platform-socket.io": "^11.2.7",
     "@nestjs/swagger": "^11.4.7",
+    "@nestjs/throttler": "^6.7.1",
     "@nestjs/websockets": "^11.2.7",
     "@socket.io/redis-adapter": "^8.3.0",
     "argon2": "^0.45.1",

@@ -5,7 +5,7 @@
   z-index: 9999999;
   width: 300px;
   padding: 20px;
-  background-color: #434040;
+  background-color: var(--color-text);
   color: #fff;
   border-radius: 20px;
   font-size: 15px;
@@ -20,7 +20,7 @@
 .otherRoutes {
   background: none;
   border: none;
-  color: #d8a415;
+  color: var(--color-accent);
   font-size: 15px;
   cursor: pointer;
 }

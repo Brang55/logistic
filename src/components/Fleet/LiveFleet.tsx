@@ -16,6 +16,7 @@ import NextPickups from "./NextPickups";
 import { useFleetLayer } from "./useFleetLayer";
 
 import styles from "./LiveFleet.module.css";
+import { theme } from "../../theme";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -85,7 +86,7 @@ const LiveFleet = () => {
         type: "line",
         source: HISTORY_SOURCE,
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#d8a415", "line-width": 4, "line-dasharray": [1, 1.5] },
+        paint: { "line-color": theme.accent, "line-width": 4, "line-dasharray": [1, 1.5] },
       });
       setMap(mapInstance);
     });

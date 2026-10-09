@@ -9,6 +9,7 @@ import {
 import { Loader } from "../../Loader/Loader";
 import { Confirm } from "../../Confirm/Confirm";
 import { useState } from "react";
+import styles from "./CargoList.module.css";
 import { useNavigate } from "react-router-dom";
 
 export const CargoList = () => {
@@ -93,7 +94,7 @@ export const CargoList = () => {
   return (
     <>
       <h1>Cargo List</h1>
-      <ul>
+      <ul className={styles.grid}>
         {cargos &&
           cargos.map((cargo) => (
             <CargoItem

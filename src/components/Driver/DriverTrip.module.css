@@ -1,14 +1,14 @@
 .page {
   max-width: 640px;
   margin: 0 auto;
-  padding: 0 16px 40px;
+  padding: 16px 16px 40px;
 }
 
 .card {
   margin: 12px 0;
   padding: 16px;
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
 }
 
@@ -32,11 +32,11 @@
 }
 
 .pickup {
-  background: #2e7d32;
+  background: var(--color-success);
 }
 
 .delivery {
-  background: #c62828;
+  background: var(--color-danger);
 }
 
 .stop {
@@ -52,18 +52,18 @@
 
 .muted {
   font-size: 13px;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .error {
   font-size: 13px;
-  color: #c62828;
+  color: var(--color-danger);
 }
 
 .warning {
-  color: #c62828;
-  background: #fdecea;
-  border-color: #f5c2c0;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
   font-size: 13px;
 }
 
@@ -81,16 +81,16 @@
 
 .primary {
   color: #fff;
-  background: #5932ea;
+  background: var(--color-primary);
 }
 
 .armed {
-  background: #d8a415;
+  background: var(--color-accent);
 }
 
 .secondary {
-  color: #5932ea;
-  background: #efebfd;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .primary:disabled,
@@ -108,7 +108,7 @@
 .delayRow input {
   padding: 10px;
   font-size: 15px;
-  border: 1px solid #5932ea;
+  border: 1px solid var(--color-primary);
   border-radius: 8px;
 }
 
@@ -128,10 +128,10 @@
 .truckMarker {
   width: 18px;
   height: 18px;
-  background: #5932ea;
+  background: var(--color-primary);
   border: 3px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px #5932ea;
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .steps {
@@ -151,14 +151,14 @@
   color: #fff;
   font-size: 17px;
   font-weight: 600;
-  background: #5932ea;
+  background: var(--color-primary);
   border: none;
   border-radius: 28px;
   cursor: pointer;
 }
 
 .listening {
-  background: #c62828;
+  background: var(--color-danger);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
@@ -172,7 +172,7 @@
   padding: 10px 16px;
   color: #fff;
   font-weight: 600;
-  background: #5932ea;
+  background: var(--color-primary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -191,7 +191,7 @@
 .proposal {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
 }
 
 .proposal label {
@@ -205,7 +205,7 @@
 .proposal input {
   padding: 10px;
   font-size: 15px;
-  border: 1px solid #5932ea;
+  border: 1px solid var(--color-primary);
   border-radius: 8px;
 }
 

@@ -3,6 +3,7 @@ import mapboxgl from "mapbox-gl";
 
 import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
 import type { LngLat } from "../../app/features/driver/routingSlice";
+import { theme } from "../../theme";
 
 const SOURCE = "fleet";
 const LAYER = "fleet-trucks";
@@ -15,7 +16,7 @@ function arrowImage(size = 48) {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = theme.white;
   ctx.beginPath();
   ctx.moveTo(size / 2, 4);
   ctx.lineTo(size - 8, size - 6);
@@ -49,15 +50,15 @@ function addFleetLayer(map: mapboxgl.Map) {
       "icon-color": [
         "case",
         ["get", "selected"],
-        "#d8a415",
+        theme.accent,
         ["get", "moving"],
-        "#5932ea",
-        "#757575",
+        theme.primary,
+        theme.neutral,
       ],
-      "icon-halo-color": "#fff",
+      "icon-halo-color": theme.white,
       "icon-halo-width": 2,
-      "text-color": "#333",
-      "text-halo-color": "#fff",
+      "text-color": theme.text,
+      "text-halo-color": theme.white,
       "text-halo-width": 1.5,
     },
   });

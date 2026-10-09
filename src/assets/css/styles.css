@@ -1,79 +1,86 @@
+/* Design tokens: every component colour comes from here (maps use src/theme.ts). */
+:root {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-soft: #eef2ff;
+  --color-primary-disabled: #c7d2fe;
+  --color-accent: #f59e0b;
+  --color-info: #0284c7;
+
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-neutral: #64748b;
+
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #94a3b8;
+
+  --color-sidebar: #0f172a;
+  --color-sidebar-hover: #1e293b;
+  --color-sidebar-text: #cbd5e1;
+  --color-sidebar-muted: #64748b;
+  --color-sidebar-active: rgba(129, 140, 248, 0.16);
+  --color-sidebar-indicator: #818cf8;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.18);
+  --sidebar-width: 248px;
+}
+
 * {
   list-style: none;
-  font-family: "Roboto", sans-serif;
+  font-family: var(--font-sans);
   box-sizing: border-box;
 }
 
-.roboto-thin {
-  font-family: "Roboto", sans-serif;
-  font-weight: 100;
-  font-style: normal;
+body {
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
 }
 
-.roboto-thin-italic {
-  font-family: "Roboto", sans-serif;
-  font-weight: 100;
-  font-style: italic;
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-.roboto-light {
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
-  font-style: normal;
+a {
+  color: var(--color-primary);
 }
 
-.roboto-light-italic {
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
-  font-style: italic;
+h1,
+h2,
+h3,
+h4 {
+  margin-top: 0;
+  letter-spacing: -0.01em;
 }
 
-.roboto-regular {
-  font-family: "Roboto", sans-serif;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.roboto-regular-italic {
-  font-family: "Roboto", sans-serif;
-  font-weight: 400;
-  font-style: italic;
-}
-
-.roboto-medium {
-  font-family: "Roboto", sans-serif;
-  font-weight: 500;
-  font-style: normal;
-}
-
-.roboto-medium-italic {
-  font-family: "Roboto", sans-serif;
-  font-weight: 500;
-  font-style: italic;
-}
-
-.roboto-bold {
-  font-family: "Roboto", sans-serif;
+h1 {
+  margin-bottom: 16px;
+  font-size: 24px;
   font-weight: 700;
-  font-style: normal;
 }
 
-.roboto-bold-italic {
-  font-family: "Roboto", sans-serif;
-  font-weight: 700;
-  font-style: italic;
-}
-
-.roboto-black {
-  font-family: "Roboto", sans-serif;
-  font-weight: 900;
-  font-style: normal;
-}
-
-.roboto-black-italic {
-  font-family: "Roboto", sans-serif;
-  font-weight: 900;
-  font-style: italic;
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 html,
@@ -82,6 +89,11 @@ body,
   height: 100%;
   padding: 0;
   margin: 0;
+}
+
+/* App shell: fixed-width sidebar, scrolling content area. */
+#root {
+  display: flex;
 }
 
 ul,
@@ -102,8 +114,30 @@ table * {
 
 .main {
   position: relative;
-  float: left;
-  width: 90%;
-  height: 100%;
-  padding: 40px 0;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  padding: 0;
+  overflow-y: auto;
+}
+
+/* Content pages get side padding; map pages (Dispatch, Live fleet, Track) run edge to edge. */
+.page {
+  padding: 24px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding: 16px 12px;
+  }
+
+  #root {
+    flex-direction: column;
+  }
+
+  .main {
+    height: auto;
+    min-height: calc(100vh - 56px);
+    overflow: visible;
+  }
 }

@@ -1,7 +1,8 @@
 import "dotenv/config";
 import * as argon2 from "argon2";
 import { and, eq, isNull } from "drizzle-orm";
-import { createDb } from "./client";
+import { createDb, Database } from "./client";
+import { ensureOwner } from "./create-admin";
 import { cargos, drivers, positions, trailers, trucks, users } from "./schema";
 
 // Idempotent demo data: re-running skips rows whose unique keys already exist.
@@ -14,6 +15,8 @@ const demoTrucks = [
   { truckNumber: "TR-103", truckModel: "Mercedes Actros", engineVariation: "Diesel", plate: "B-LG 2031", heightM: 3.9, widthM: 2.55, lengthM: 16.5, weightT: 38, axles: 5 },
   { truckNumber: "TR-104", truckModel: "DAF XG+", engineVariation: "Diesel", plate: "NL-12-XG", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
   { truckNumber: "TR-105", truckModel: "MAN TGX", engineVariation: "Diesel", plate: "M-LG 774", heightM: 3.8, widthM: 2.5, lengthM: 12, weightT: 26, axles: 3 },
+  // Light van: routes through city centres without the weight warnings the 40 t trucks get.
+  { truckNumber: "TR-106", truckModel: "Mercedes Sprinter", engineVariation: "Diesel", plate: "CB 7706 KX", heightM: 2.8, widthM: 2.0, lengthM: 7, weightT: 3.5, axles: 2 },
   { truckNumber: "US-201", truckModel: "Freightliner Cascadia", engineVariation: "Diesel", plate: "TX 8KD-221", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
   { truckNumber: "US-202", truckModel: "Peterbilt 579", engineVariation: "Diesel", plate: "IL P79-332", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
   { truckNumber: "US-203", truckModel: "Kenworth T680", engineVariation: "Diesel", plate: "CA 7TK-680", heightM: 4.0, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
@@ -47,12 +50,18 @@ const DEPOTS: Record<string, { x: number; y: number }> = {
   "TR-103": { x: 11.582, y: 48.1351 }, // Munich
   "TR-104": { x: 4.4777, y: 51.9244 }, // Rotterdam
   "TR-105": { x: 9.19, y: 45.4642 }, // Milan
+  "TR-106": { x: 23.37, y: 42.665 }, // Sofia
   "US-201": { x: -96.797, y: 32.7767 }, // Dallas
   "US-202": { x: -87.6298, y: 41.8781 }, // Chicago
   "US-203": { x: -118.2437, y: 34.0522 }, // Los Angeles
   "US-204": { x: -82.9988, y: 39.9612 }, // Columbus
   "US-205": { x: -84.388, y: 33.749 }, // Atlanta
 };
+
+const DEMO_TRIPS = [
+  { shipperName: "Milano Moda", truckNumber: "TR-103", driverEmail: "a.mueller@demo.logistic" },
+  { shipperName: "Lone Star Plastics", truckNumber: "US-201", driverEmail: "j.carter@demo.logistic" },
+];
 
 // Fixed coordinates so the demo needs no geocoding calls.
 const CITY_POINTS: Record<string, { x: number; y: number }> = {
@@ -86,8 +95,8 @@ const demoCargo = [
   { shipperName: "Ohio Auto Parts", pickupLocation: "Columbus, OH, USA", contactPerson: "Brian Foster", phoneNumber: "+1 614 555 0166", emailAddress: "logistics@ohioautoparts.demo", receiverName: "Detroit Assembly", deliveryLocation: "Detroit, MI, USA", receiverContact: "Angela Price", receiverPhone: "+1 313 555 0177", receiverEmail: "jit-receiving@detroitassembly.demo", descriptionOfGoods: "Brake assemblies", quantity: "30", weight: "14200", dimensions: "120x80x100", truckType: "Box", freightCost: "980", hazardousMaterial: "No" },
 ];
 
-async function main() {
-  const { db, pool } = createDb(process.env.DATABASE_URL!);
+/** Idempotent demo data; also used by the demo reset. */
+export async function seed(db: Database) {
   const passwordHash = await argon2.hash(DEMO_PASSWORD);
 
   await db
@@ -97,32 +106,19 @@ async function main() {
       { email: "dispatcher@demo.logistic", passwordHash, role: "dispatcher" },
     ])
     .onConflictDoNothing();
-  // The owner's admin login, from OWNER_EMAIL / OWNER_PASSWORD; an existing account is left untouched.
-  const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
-  if (ownerEmail && process.env.OWNER_PASSWORD) {
-    const [owner] = await db
-      .insert(users)
-      .values({ email: ownerEmail, passwordHash: await argon2.hash(process.env.OWNER_PASSWORD), role: "admin" })
-      .onConflictDoNothing()
-      .returning({ email: users.email });
-    console.log(owner ? `Created admin account ${owner.email}` : `Admin account ${ownerEmail} already exists`);
-  }
+  await ensureOwner(db);
 
   await db.insert(trucks).values(demoTrucks).onConflictDoNothing();
   await db.insert(trailers).values(demoTrailers).onConflictDoNothing();
   await db.insert(drivers).values(demoDrivers).onConflictDoNothing();
 
-  // Driver-app login for one demo driver.
-  const [driverUser] = await db
-    .insert(users)
-    .values({ email: DEMO_DRIVER_EMAIL, passwordHash, role: "driver" })
-    .onConflictDoNothing()
-    .returning();
-  if (driverUser) {
-    await db.update(drivers).set({ userId: driverUser.id }).where(eq(drivers.truckDriverEmail, DEMO_DRIVER_EMAIL));
-  }
+  // Driver-app login for one demo driver, linked every run so a demo reset keeps it working.
+  await db.insert(users).values({ email: DEMO_DRIVER_EMAIL, passwordHash, role: "driver" }).onConflictDoNothing();
+  const driverUser = await db.query.users.findFirst({ where: eq(users.email, DEMO_DRIVER_EMAIL) });
+  await db.update(drivers).set({ userId: driverUser!.id }).where(eq(drivers.truckDriverEmail, DEMO_DRIVER_EMAIL));
 
-  const existingCargo = await db.$count(cargos);
+  // Only manual cargo counts: load-board imports may already exist on a fresh install.
+  const existingCargo = await db.$count(cargos, eq(cargos.source, "manual"));
   if (existingCargo === 0) {
     const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
     await db.insert(cargos).values(
@@ -139,6 +135,18 @@ async function main() {
         status: i % 2 ? "confirmed" : "new",
       })),
     );
+
+    // Two trips already under way, so the live map moves as soon as the demo starts.
+    for (const trip of DEMO_TRIPS) {
+      const truck = await db.query.trucks.findFirst({ where: eq(trucks.truckNumber, trip.truckNumber) });
+      const driver = await db.query.drivers.findFirst({ where: eq(drivers.truckDriverEmail, trip.driverEmail) });
+      await db
+        .update(cargos)
+        .set({ truckId: truck!.id, driverId: driver!.id, status: "confirmed" })
+        .where(eq(cargos.shipperName, trip.shipperName));
+      await db.update(trucks).set({ status: "taken" }).where(eq(trucks.id, truck!.id));
+      await db.update(drivers).set({ status: "taken" }).where(eq(drivers.id, driver!.id));
+    }
   }
 
   // A first position for trucks that have never reported one.
@@ -164,13 +172,18 @@ async function main() {
     await db.update(cargos).set({ deliveryPoint: point }).where(and(eq(cargos.deliveryLocation, location), isNull(cargos.deliveryPoint)));
   }
 
-  await pool.end();
   console.log(
     `Seeded demo data. Log in as admin@demo.logistic, dispatcher@demo.logistic or (driver app) ${DEMO_DRIVER_EMAIL} / ${DEMO_PASSWORD}`,
   );
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Run directly (npm run db:seed), not when imported by the demo reset.
+if (require.main === module) {
+  const { db, pool } = createDb(process.env.DATABASE_URL!);
+  seed(db)
+    .then(() => pool.end())
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}

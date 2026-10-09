@@ -1,21 +1,19 @@
 .cargoContainer {
-  float: left;
-  width: 32%;
-  margin-right: 1%;
+  /* Contains the floated columns inside the card. */
+  display: flow-root;
   padding: 20px;
-  border: 1px solid #5932ea;
-  border-radius: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   box-sizing: border-box;
-}
-
-.cargoContainer:nth-of-type(3) {
-  margin-right: 0;
 }
 
 .cargoContainer * {
   display: block;
   width: 100%;
   line-height: 30px;
+  overflow-wrap: anywhere;
 }
 
 .cargoContainer h3 {
@@ -56,44 +54,50 @@
   font-size: 20px;
 }
 
-.cargoOptions > button {
-  float: left;
-  width: 23%;
-  margin-right: 2%;
-  padding: 10px 20px;
-  border-radius: 20px;
+.cargoContainer .cargoOptions {
+  display: flex;
+  clear: both;
+  gap: 8px;
+}
+
+.cargoContainer .cargoOptions > button {
+  flex: 1;
+  width: auto;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
   color: #fff;
-  font-weight: bold;
-  cursor: pointer;
   border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 
 .cargoOption {
-  background-color: #5932ea;
-  margin-right: 2%;
+  background-color: var(--color-primary);
 }
 
 .cargoOption:hover {
   background-color: #fff;
-  color: #5932ea;
-  border-color: #5932ea;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .cargoDelete {
-  background-color: #c20b0b;
+  background-color: var(--color-danger);
 }
 
 .cargoDelete:hover {
   background-color: #fff;
-  color: #c20b0b;
-  border-color: #c20b0b;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .slashBackground {
   background: repeating-linear-gradient(
     -45deg,
-    rgba(89, 50, 234, 0.1),
-    /* Semi-transparent purple color */ rgba(89, 50, 234, 0.1) 10px,
+    rgba(79, 70, 229, 0.08),
+    rgba(79, 70, 229, 0.08) 10px,
     transparent 10px,
     transparent 10px,
     transparent 20px

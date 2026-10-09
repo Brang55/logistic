@@ -10,24 +10,24 @@
 }
 
 .driverPreview {
-  background-color: #5932ea;
+  background-color: var(--color-primary);
   margin-right: 2%;
 }
 
 .driverPreview:hover {
   background-color: #fff;
-  color: #5932ea;
-  border-color: #5932ea;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .driverDelete {
-  background-color: #c20b0b;
+  background-color: var(--color-danger);
 }
 
 .driverDelete:hover {
   background-color: #fff;
-  color: #c20b0b;
-  border-color: #c20b0b;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .tableRow:nth-child(2n) {

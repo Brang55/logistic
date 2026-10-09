@@ -60,7 +60,7 @@ h2 {
   width: 100%;
   padding: 15px 20px;
   box-sizing: border-box;
-  border: 1px solid #5932ea;
+  border: 1px solid var(--color-primary);
   border-radius: 5px;
   background-color: #fff;
 }
@@ -70,7 +70,7 @@ h2 {
 .cargoSubmit {
   width: 100%;
   font-weight: bold;
-  background-color: #5932ea;
+  background-color: var(--color-primary);
   color: white;
   border-radius: 20px;
   border: 1px solid transparent;
@@ -79,12 +79,12 @@ h2 {
   font-size: 16px;
 }
 .cargoSubmit:hover {
-  border: 1px solid #5932ea;
+  border: 1px solid var(--color-primary);
   background-color: #fff;
-  color: #5932ea;
+  color: var(--color-primary);
 }
 
 .errorMsg {
   display: inline-block;
-  color: #b11919;
+  color: var(--color-danger);
 }

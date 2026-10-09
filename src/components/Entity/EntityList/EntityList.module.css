@@ -3,7 +3,7 @@
   width: 100%;
   padding: 0;
   border-collapse: collapse;
-  background-color: #f2f1f1;
+  background-color: var(--color-surface-muted);
 }
 
 .truckDriversList div li {
@@ -20,7 +20,7 @@
 }
 
 .truckDriversList .truckDriversHeadings {
-  background-color: #f2f1f1;
+  background-color: var(--color-surface-muted);
 }
 
 .truckDriversList .truckDriversHeadings li {

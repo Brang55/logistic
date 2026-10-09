@@ -4,6 +4,7 @@ import mapboxgl from "mapbox-gl";
 
 import styles from "./Directions.module.css";
 import { formatDistance, formatDuration } from "../../../utils/format";
+import { theme } from "../../../theme";
 
 interface DirectionsProps {
   map: mapboxgl.Map;
@@ -101,7 +102,7 @@ const Directions = ({
       source: ROUTES_SOURCE,
       filter: ["!=", ["get", "selected"], true],
       layout: { "line-join": "round", "line-cap": "round" },
-      paint: { "line-color": "#9e9e9e", "line-width": 5 },
+      paint: { "line-color": theme.routeAlternative, "line-width": 5 },
     });
     map.addLayer({
       id: "routes-selected",
@@ -109,7 +110,7 @@ const Directions = ({
       source: ROUTES_SOURCE,
       filter: ["==", ["get", "selected"], true],
       layout: { "line-join": "round", "line-cap": "round" },
-      paint: { "line-color": "#d8a415", "line-width": 6 },
+      paint: { "line-color": theme.accent, "line-width": 6 },
     });
   }, [map]);
 
@@ -139,7 +140,7 @@ const Directions = ({
 
   useEffect(() => {
     const markers = places.map((place, index) =>
-      new mapboxgl.Marker({ color: index === 0 ? "#2e7d32" : "#c62828" })
+      new mapboxgl.Marker({ color: index === 0 ? theme.success : theme.danger })
         .setLngLat(place.coordinates)
         .setPopup(new mapboxgl.Popup().setText(place.name))
         .addTo(map)

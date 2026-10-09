@@ -3,7 +3,7 @@
   width: 100%;
   padding: 10px;
   background-color: #fff;
-  border: 1px solid #ececec;
+  border: 1px solid var(--color-border);
   border-radius: 15px;
   cursor: pointer;
 }
@@ -29,11 +29,11 @@
 
 .deliveryInfo span {
   font-size: 15px;
-  color: #b0b0b0;
+  color: var(--color-text-subtle);
 }
 
 .deliveryInfo h3 {
-  color: #232323;
+  color: var(--color-text);
   margin: 5px 0 10px 0;
   font-size: 18px;
 }
@@ -45,8 +45,8 @@
 .deliveryLocationHandler {
   margin: 30px 0;
   padding: 10px;
-  border-top: 1px solid #ececec;
-  border-bottom: 1px solid #ececec;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .deliveryLocation {
@@ -62,24 +62,24 @@
 }
 
 .deliveryLocation .deliveryDot {
-  color: #0ebc93;
+  color: var(--color-success);
 }
 
 .deliveryLocation .deliveryPoint {
-  color: #5251fa;
+  color: var(--color-primary);
 }
 
 .deliveryLocation span {
   padding-left: 50px;
   font-size: 15px;
-  color: #b0b0b0;
+  color: var(--color-text-subtle);
 }
 
 .deliveryLocation h3 {
   margin: 0 0 5px 0;
   padding-left: 50px;
   font-size: 16px;
-  color: #232323;
+  color: var(--color-text);
 }
 
 .deliveryLocationHandler {
@@ -90,7 +90,7 @@
   position: absolute;
   left: 25px;
   top: 50px;
-  border: 1px dashed #e3e3e3;
+  border: 1px dashed var(--color-border);
   color: #fff;
   background-color: #fff;
   height: 30px;
@@ -114,7 +114,7 @@
 
 .deliveryClient span {
   font-size: 15px;
-  color: #b0b0b0;
+  color: var(--color-text-subtle);
 }
 
 .deliveryClient .deliveryClientContact {
@@ -126,8 +126,8 @@
   display: inline-block;
   margin-left: 20px;
   padding: 10px;
-  color: #5932ea;
-  background-color: #f7f5ff;
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
   border-radius: 10px;
 }
 
@@ -142,6 +142,6 @@
 
 .deliveryClient .deliveryClientHandler h5 {
   margin: 5px 0 10px 0;
-  color: #232323;
+  color: var(--color-text);
   font-size: 16px;
 }

@@ -9,7 +9,7 @@
   height: 100%;
   padding: 20px 30px;
   overflow-y: auto;
-  background-color: #f7f7f7;
+  background-color: var(--color-surface-muted);
 }
 
 .title {
@@ -31,17 +31,17 @@
   padding: 10px 12px;
   text-align: left;
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   cursor: pointer;
 }
 
 .truck:hover {
-  border-color: #5932ea;
+  border-color: var(--color-primary);
 }
 
 .selected {
-  border: 2px solid #d8a415;
+  border: 2px solid var(--color-accent);
 }
 
 .truckName {
@@ -52,7 +52,7 @@
 .muted {
   font-size: 12px;
   font-weight: 400;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .row {
@@ -69,20 +69,20 @@
 }
 
 .moving {
-  background: #5932ea;
+  background: var(--color-primary);
 }
 
 .stopped {
-  background: #757575;
+  background: var(--color-neutral);
 }
 
 .offline {
-  background: #c62828;
+  background: var(--color-danger);
 }
 
 .details {
   padding-top: 10px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
 }
 
 .details h4 {
@@ -114,7 +114,7 @@
 .nextPickups {
   margin-top: 16px;
   padding-top: 10px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
 }
 
 .suggestion {
@@ -124,12 +124,12 @@
   margin-bottom: 8px;
   padding: 10px 12px;
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
 .late {
-  color: #c62828;
+  color: var(--color-danger);
 }
 
 .assignNext {
@@ -139,7 +139,7 @@
   color: #fff;
   font-size: 12px;
   font-weight: 600;
-  background: #5932ea;
+  background: var(--color-primary);
   border: none;
   border-radius: 14px;
   cursor: pointer;

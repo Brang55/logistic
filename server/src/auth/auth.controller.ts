@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from "@nestjs/common";
+import { SkipThrottle, ThrottlerGuard } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AuthUser, CurrentUser } from "./auth-user";
 import { LoginDto, RefreshDto, RegisterDto } from "./auth.dto";
@@ -6,6 +7,7 @@ import { AuthService } from "./auth.service";
 import { Public, Roles } from "./roles.decorator";
 
 @ApiTags("auth")
+@UseGuards(ThrottlerGuard)
 @Controller("auth")
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
@@ -24,6 +26,7 @@ export class AuthController {
     return this.auth.refresh(dto.refreshToken);
   }
 
+  @SkipThrottle()
   @Public()
   @Post("logout")
   @HttpCode(204)
@@ -32,6 +35,7 @@ export class AuthController {
   }
 
   // Accounts are created by an admin; there is no public sign-up.
+  @SkipThrottle()
   @ApiBearerAuth()
   @Roles("admin")
   @Post("register")
@@ -39,6 +43,7 @@ export class AuthController {
     return this.auth.register(dto.email, dto.password, dto.role);
   }
 
+  @SkipThrottle()
   @ApiBearerAuth()
   @Get("me")
   me(@CurrentUser() user: AuthUser) {

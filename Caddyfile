@@ -1,0 +1,28 @@
+# SITE_ADDRESS: your domain (e.g. app.example.com) for automatic HTTPS, or ":80" for plain HTTP.
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		# The driver app needs the microphone for voice commands (HTTPS only in browsers).
+		Permissions-Policy "microphone=(self), camera=(), geolocation=()"
+		-Server
+	}
+
+	@api path /api/* /socket.io/*
+	handle @api {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		root * /srv
+		# Single-page app: unknown paths serve index.html; built assets are cached long-term.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}

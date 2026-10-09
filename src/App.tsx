@@ -43,25 +43,25 @@ function App() {
             <Route path="/track" element={<OngoingDelivery />} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
-            <Route path="/drivers" element={<TruckDriversList />} />
+            <Route path="/drivers" element={<div className="page"><TruckDriversList /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
-            <Route path="/trucks" element={<TrucksList />} />
+            <Route path="/trucks" element={<div className="page"><TrucksList /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
-            <Route path="/trailers" element={<TrailersList />} />
+            <Route path="/trailers" element={<div className="page"><TrailersList /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
-            <Route path="/cargo" element={<AddCargoForm />} />
+            <Route path="/cargo" element={<div className="page"><AddCargoForm /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
-            <Route path="/cargoList" element={<CargoList />} />
+            <Route path="/cargoList" element={<div className="page"><CargoList /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
-            <Route path="/cargoList/:id/preview" element={<CargoPreview />} />
+            <Route path="/cargoList/:id/preview" element={<div className="page"><CargoPreview /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
-            <Route path="/cargoList/:id/edit" element={<AddCargoForm />} />
+            <Route path="/cargoList/:id/edit" element={<div className="page"><AddCargoForm /></div>} />
           </Route>
 
           <Route element={<PrivateRoute roles={STAFF} />}>

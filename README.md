@@ -2,6 +2,9 @@
 
 Web app (React + Vite, repo root) with a NestJS + PostgreSQL/PostGIS API in `server/`.
 
+- Deploying to a server: [docs/DEPLOY.md](docs/DEPLOY.md)
+- Client demo script: [docs/DEMO.md](docs/DEMO.md) (reset with `cd server && npm run demo:reset -- --yes`)
+
 ## Local development
 
 ```sh

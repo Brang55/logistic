@@ -2,18 +2,16 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useLoginUserMutation } from "../../../app/features/driver/authSlice";
 
-import { useAuth } from "../../../hooks/useAuth";
 
 import styles from "./Login.module.css";
 import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCubes } from "@fortawesome/free-solid-svg-icons";
 
 const Login: React.FC = () => {
   const [loginUser, { isLoading, isError }] = useLoginUserMutation();
   const navigate = useNavigate();
 
-  const { user } = useAuth();
-
-  console.log(user);
 
   return (
     <div className={styles.loginContainer}>
@@ -43,7 +41,14 @@ const Login: React.FC = () => {
         }}
       >
         <Form className={styles.loginForm}>
-          <h2>Login</h2>
+          <div className={styles.brand}>
+            <span className={styles.brandMark}>
+              <FontAwesomeIcon icon={faCubes} />
+            </span>
+            <span>Logistic</span>
+          </div>
+          <h2>Sign in</h2>
+          <p className={styles.subtitle}>Fleet, dispatch and driver workspace</p>
           <div className={styles.loginFormRow}>
             <label htmlFor="email">Email</label>
             <Field name="email" type="email" />
@@ -68,9 +73,9 @@ const Login: React.FC = () => {
             disabled={isLoading}
             className={styles.submitLogin}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? "Signing in..." : "Sign in"}
           </button>
-          {isError && <div>There is an error</div>}
+          {isError && <div className={styles.formError}>Wrong email or password. Please try again.</div>}
         </Form>
       </Formik>
     </div>

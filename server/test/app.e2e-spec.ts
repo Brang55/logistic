@@ -20,9 +20,10 @@ const PLACES: Record<string, LngLat> = {
   Sofia: [23.32, 42.69],
   Munich: [11.58, 48.13],
   Vienna: [16.37, 48.2],
-  // Short hops near [40, 0] for simulator and next-pickup tests.
+  // Short hops near [40, 0] for simulator and next-pickup tests. One simulator tick at 30x covers
+  // at least ~1.3 km (speed varies 79-85 km/h), so [40, 0] -> P1 -> D1 (~1.1 km) always finishes in one tick.
   P1: [40, 0.005],
-  D1: [40, 0.012],
+  D1: [40, 0.01],
   P2: [40, 0.02],
   D2: [40, 0.027],
   Far: [45, 5],
@@ -71,6 +72,7 @@ describe("API (e2e)", () => {
     process.env.TELEMATICS_PROVIDER = "none";
     process.env.TRAFFIC_MONITOR_INTERVAL_MS = "0";
     process.env.LOADBOARD_SYNC_INTERVAL_MS = "0";
+    process.env.LOGIN_RATE_LIMIT = "1000";
     // Voice commands use the keyword parser in tests.
     process.env.ANTHROPIC_API_KEY = "";
     process.env.TELEMATICS_WEBHOOK_SECRET = "test-webhook-secret";
@@ -443,7 +445,7 @@ describe("API (e2e)", () => {
       const sink = async () => undefined;
       const cargoStatus = async (id: string) => (await asDispatcher(api().get(`/api/cargos/${id}`))).body.status;
 
-      // At 30x a tick covers about 1.4 km, enough for the whole first load.
+      // One tick covers the whole first load (see PLACES).
       await simulator.plan();
       await simulator.tick(sink);
       expect(await cargoStatus(first.id)).toBe("delivered");
@@ -605,6 +607,31 @@ describe("API (e2e)", () => {
       expect(second.imported).toEqual([]);
       const alerts = (await asDispatcher(api().get("/api/traffic/alerts"))).body;
       expect(alerts.find((a: { kind: string }) => a.kind === "loads-imported")).toBeDefined();
+    });
+  });
+
+  describe("rate limiting", () => {
+    it("blocks repeated failed logins from one client", async () => {
+      // Separate app instance with the production default, so other tests aren't throttled.
+      process.env.LOGIN_RATE_LIMIT = "3";
+      const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(GeocodingService)
+        .useValue(geocoder)
+        .overrideProvider(RoutingService)
+        .useValue(router)
+        .compile();
+      const strict = moduleRef.createNestApplication();
+      setupApp(strict);
+      await strict.init();
+      try {
+        const attempt = () =>
+          request(strict.getHttpServer()).post("/api/auth/login").send({ email: "admin@test.local", password: "wrong" });
+        for (let i = 0; i < 3; i++) await attempt().expect(401);
+        await attempt().expect(429);
+      } finally {
+        await strict.close();
+        process.env.LOGIN_RATE_LIMIT = "1000";
+      }
     });
   });
 });
