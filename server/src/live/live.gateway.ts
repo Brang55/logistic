@@ -4,14 +4,25 @@ import { OnGatewayInit, WebSocketGateway, WebSocketServer } from "@nestjs/websoc
 import { Namespace, Socket } from "socket.io";
 import { AuthUser } from "../auth/auth-user";
 import { UserRole } from "../db/schema";
-import { TruckPosition } from "./telematics.types";
+import { TruckPosition } from "../telematics/telematics.types";
 
 const FLEET_ROOM = "fleet";
 const FLEET_ROLES: UserRole[] = ["admin", "dispatcher"];
 
+/** Something dispatchers should look at: a reported delay, heavy traffic or a closure. */
+export interface LiveAlert {
+  id: string;
+  kind: "delay-reported" | "traffic-delay" | "incident";
+  severity: "info" | "warning" | "critical";
+  message: string;
+  cargoId?: string;
+  truckId?: string;
+  createdAt: string;
+}
+
 /**
  * Live fleet feed. Clients connect to the "/live" namespace with
- * `auth: { token: <access token> }` and receive "position" events.
+ * `auth: { token: <access token> }` and receive "position", "cargo" and "alert" events.
  */
 @WebSocketGateway({ namespace: "live", cors: { origin: true } })
 export class LiveGateway implements OnGatewayInit {
@@ -41,7 +52,16 @@ export class LiveGateway implements OnGatewayInit {
 
   broadcastPositions(positions: TruckPosition[]) {
     for (const position of positions) {
-      this.server.to(FLEET_ROOM).emit("position", position);
+      this.server?.to(FLEET_ROOM).emit("position", position);
     }
+  }
+
+  /** Tells dispatcher screens that a cargo changed so they can refetch. */
+  cargoChanged(cargoId: string) {
+    this.server?.to(FLEET_ROOM).emit("cargo", { id: cargoId });
+  }
+
+  alert(alert: LiveAlert) {
+    this.server?.to(FLEET_ROOM).emit("alert", alert);
   }
 }

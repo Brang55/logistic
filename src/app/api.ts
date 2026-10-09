@@ -69,6 +69,9 @@ export const api = createApi({
     "AvailableTrailers",
     "Cargo",
     "Positions",
+    "NextPickups",
+    "Traffic",
+    "MyTrip",
   ],
   endpoints: () => ({}),
 });

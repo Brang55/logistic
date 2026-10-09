@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown, Optional } from "@nestjs/common";
-import { LiveGateway } from "./live.gateway";
-import { PositionsService } from "./positions.service";
+import { LiveGateway } from "../live/live.gateway";
+import { PositionsService } from "../positions/positions.service";
 import { PositionFix, TelematicsProvider } from "./telematics.types";
 
 /** Single entry point for positions: stores them and pushes them to live clients. */

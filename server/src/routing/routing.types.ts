@@ -45,12 +45,25 @@ export interface RoutePlan {
   typicalDurationS?: number;
   summary: string;
   geometry: { type: "LineString"; coordinates: LngLat[] };
+  /** One entry per pair of consecutive stops. */
+  legs: { distanceM: number; durationS: number }[];
   steps: RouteStep[];
   notices: RouteNotice[];
   incidents: RouteIncident[];
 }
 
+/** Drive time and distance from one origin to each destination; null when unreachable. */
+export interface TravelEstimate {
+  durationS: number | null;
+  distanceM: number | null;
+}
+
 /** Routing engine abstraction so Mapbox can be swapped for a truck-specialised provider later. */
 export abstract class RoutingService {
   abstract route(request: RouteRequest): Promise<RoutePlan[]>;
+
+  /** At most `maxMatrixDestinations` destinations per call. */
+  abstract travelTimes(origin: LngLat, destinations: LngLat[]): Promise<TravelEstimate[]>;
+
+  readonly maxMatrixDestinations: number = 9;
 }

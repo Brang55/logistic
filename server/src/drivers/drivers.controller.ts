@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, P
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { ManageFleet } from "../auth/roles.decorator";
 import { StatusQueryDto } from "../common/status-query.dto";
-import { CreateDriverDto, EmailQueryDto, UpdateDriverDto } from "./drivers.dto";
+import { CreateDriverDto, DriverAccountDto, EmailQueryDto, UpdateDriverDto } from "./drivers.dto";
 import { DriversService } from "./drivers.service";
 
 @ApiTags("drivers")
@@ -37,6 +37,12 @@ export class DriversController {
   @Patch(":id")
   update(@Param("id", ParseUUIDPipe) id: string, @Body() dto: UpdateDriverDto) {
     return this.drivers.update(id, dto);
+  }
+
+  @ManageFleet()
+  @Post(":id/account")
+  createAccount(@Param("id", ParseUUIDPipe) id: string, @Body() dto: DriverAccountDto) {
+    return this.drivers.createAccount(id, dto.password);
   }
 
   @ManageFleet()

@@ -12,6 +12,7 @@ import {
 } from "../../app/features/driver/telematicsSlice";
 import { formatAge } from "../../utils/format";
 import { Loader } from "../Loader/Loader";
+import NextPickups from "./NextPickups";
 import { useFleetLayer } from "./useFleetLayer";
 
 import styles from "./LiveFleet.module.css";
@@ -19,6 +20,7 @@ import styles from "./LiveFleet.module.css";
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
 const HISTORY_SOURCE = "truck-history";
+const FINISHED = ["delivered", "cancelled"];
 const DAY_MS = 24 * 60 * 60 * 1000;
 // A truck that hasn't reported for this long is shown as offline.
 const OFFLINE_AFTER_MS = 30 * 60 * 1000;
@@ -43,7 +45,14 @@ const LiveFleet = () => {
   const positionsById = useMemo(() => new Map((positions ?? []).map((p) => [p.truckId, p])), [positions]);
   const labels = useMemo(() => new Map((trucks ?? []).map((t) => [t.id, t.truckNumber])), [trucks]);
   const cargoByTruck = useMemo(
-    () => new Map((cargos ?? []).filter((c) => c.truckId).map((c) => [c.truckId!, c])),
+    () =>
+      new Map(
+        (cargos ?? [])
+          .filter((c) => c.truckId && !FINISHED.includes(c.status))
+          // Later entries win in the Map, so a picked-up load beats queued ones for the same truck.
+          .sort((a, b) => Number(!!a.pickedUpAt) - Number(!!b.pickedUpAt))
+          .map((c) => [c.truckId!, c])
+      ),
     [cargos]
   );
 
@@ -203,6 +212,7 @@ const LiveFleet = () => {
               <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} /> Follow on map
             </label>
             <p className={styles.muted}>Dashed line: track over the last 24 hours ({history?.length ?? 0} fixes).</p>
+            <NextPickups truckId={selectedTruck.id} driverId={selectedCargo?.driverId} />
           </div>
         )}
       </section>

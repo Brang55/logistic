@@ -6,6 +6,7 @@ import { cargos, drivers, positions, trailers, trucks, users } from "./schema";
 
 // Idempotent demo data: re-running skips rows whose unique keys already exist.
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "demo12345";
+const DEMO_DRIVER_EMAIL = "g.petrov@demo.logistic";
 
 const demoTrucks = [
   { truckNumber: "TR-101", truckModel: "Volvo FH16", engineVariation: "Diesel", plate: "CA 1234 AB", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
@@ -100,6 +101,16 @@ async function main() {
   await db.insert(trailers).values(demoTrailers).onConflictDoNothing();
   await db.insert(drivers).values(demoDrivers).onConflictDoNothing();
 
+  // Driver-app login for one demo driver.
+  const [driverUser] = await db
+    .insert(users)
+    .values({ email: DEMO_DRIVER_EMAIL, passwordHash, role: "driver" })
+    .onConflictDoNothing()
+    .returning();
+  if (driverUser) {
+    await db.update(drivers).set({ userId: driverUser.id }).where(eq(drivers.truckDriverEmail, DEMO_DRIVER_EMAIL));
+  }
+
   const existingCargo = await db.$count(cargos);
   if (existingCargo === 0) {
     const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
@@ -143,7 +154,9 @@ async function main() {
   }
 
   await pool.end();
-  console.log(`Seeded demo data. Log in as admin@demo.logistic or dispatcher@demo.logistic / ${DEMO_PASSWORD}`);
+  console.log(
+    `Seeded demo data. Log in as admin@demo.logistic, dispatcher@demo.logistic or (driver app) ${DEMO_DRIVER_EMAIL} / ${DEMO_PASSWORD}`,
+  );
 }
 
 main().catch((err) => {

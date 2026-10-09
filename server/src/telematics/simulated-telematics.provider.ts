@@ -1,44 +1,50 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { and, isNotNull, notInArray } from "drizzle-orm";
-import { Database } from "../db/client";
-import { DB } from "../db/db.module";
-import { cargos } from "../db/schema";
+import { CargosService } from "../cargos/cargos.service";
+import { PositionsService } from "../positions/positions.service";
 import { LngLat, RoutingService } from "../routing/routing.types";
+import { stopsOf, Trip, TripsService } from "../trips/trips.service";
 import { Path } from "./geo";
-import { PositionsService } from "./positions.service";
 import { PositionFix, PositionSink, TelematicsProvider } from "./telematics.types";
 
-interface Trip {
+interface Leg {
   cargoId: string;
   path: Path;
   progressM: number;
   speedKmh: number;
-  arrived: boolean;
+  /** Distance along the path where the pickup is, when the load still has to be collected. */
+  pickupAtM?: number;
+  pickedUp: boolean;
+  /** Arrived; kept until the load changes so the same load isn't driven again. */
+  done: boolean;
 }
 
-// Cargo in these states is not driven by the simulator.
-const INACTIVE_STATUSES = ["delivered", "cancelled"];
 const CRUISE_KMH = 82;
+// Parked trucks still report, like real devices, so they don't show as offline.
+const HEARTBEAT_MS = 60_000;
 
 /**
- * Demo telematics: every truck assigned to a cargo drives from its last known position
- * to the pickup and on to the delivery along a real truck route, at a configurable
- * time-lapse speed. Unassigned trucks stay where they are.
+ * Demo telematics: each truck with an active load drives from its last position through
+ * the load's remaining stops along a real truck route, at a configurable time-lapse speed.
+ * On arrival it marks the load picked up / delivered (like a geofence would), then moves on
+ * to the next queued load. Trucks without loads stay where they are.
  */
 @Injectable()
 export class SimulatedTelematicsProvider extends TelematicsProvider {
   readonly name = "simulator";
   private readonly logger = new Logger(SimulatedTelematicsProvider.name);
-  private readonly trips = new Map<string, Trip>();
+  private readonly legs = new Map<string, Leg>();
   private timers: NodeJS.Timeout[] = [];
   private planning = false;
+  private lastHeartbeat = 0;
 
   private readonly tickMs: number;
   private readonly speedup: number;
+  private readonly autoStatus: boolean;
 
   constructor(
-    @Inject(DB) private readonly db: Database,
+    private readonly trips: TripsService,
+    private readonly cargos: CargosService,
     private readonly routing: RoutingService,
     private readonly positions: PositionsService,
     config: ConfigService,
@@ -46,10 +52,11 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
     super();
     this.tickMs = Number(config.get("SIMULATOR_TICK_MS") ?? 2000);
     this.speedup = Number(config.get("SIMULATOR_SPEEDUP") ?? 30);
+    this.autoStatus = config.get("SIMULATOR_AUTO_STATUS") !== "false";
   }
 
   start(sink: PositionSink) {
-    this.logger.log(`Simulating assigned trucks every ${this.tickMs} ms at ${this.speedup}x speed`);
+    this.logger.log(`Simulating active trucks every ${this.tickMs} ms at ${this.speedup}x speed`);
     void this.plan();
     this.timers = [
       setInterval(() => void this.tick(sink), this.tickMs),
@@ -63,68 +70,64 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
     this.timers = [];
   }
 
-  /** Advances every trip by one tick and reports the new positions. */
+  /** Advances every truck by one tick, reports positions and records arrivals. */
   async tick(sink: PositionSink) {
     const fixes: PositionFix[] = [];
+    // Per truck, in order: picked up must be recorded before delivered.
+    const arrivals: (() => Promise<unknown>)[][] = [];
     const now = new Date();
-    for (const [truckId, trip] of this.trips) {
-      if (trip.arrived) continue;
+
+    for (const [truckId, leg] of this.legs) {
+      if (leg.done) continue;
+      const updates: (() => Promise<unknown>)[] = [];
       // Vary speed a little so the demo doesn't look robotic.
-      trip.speedKmh = Math.min(90, Math.max(60, trip.speedKmh + (Math.random() - 0.5) * 6));
-      trip.progressM += (trip.speedKmh / 3.6) * (this.tickMs / 1000) * this.speedup;
-      trip.arrived = trip.progressM >= trip.path.lengthM;
-      const { point, heading } = trip.path.at(trip.progressM);
-      fixes.push({
-        truckId,
-        point,
-        heading: Math.round(heading),
-        speedKmh: trip.arrived ? 0 : Math.round(trip.speedKmh),
-        recordedAt: now,
-      });
+      leg.speedKmh = Math.min(90, Math.max(60, leg.speedKmh + (Math.random() - 0.5) * 6));
+      leg.progressM += (leg.speedKmh / 3.6) * (this.tickMs / 1000) * this.speedup;
+
+      if (!leg.pickedUp && leg.pickupAtM !== undefined && leg.progressM >= leg.pickupAtM) {
+        leg.pickedUp = true;
+        updates.push(() => this.cargos.markPickedUp(leg.cargoId));
+      }
+      leg.done = leg.progressM >= leg.path.lengthM;
+      if (leg.done) updates.push(() => this.cargos.markDelivered(leg.cargoId));
+
+      const { point, heading } = leg.path.at(leg.progressM);
+      fixes.push({ truckId, point, heading: Math.round(heading), speedKmh: leg.done ? 0 : Math.round(leg.speedKmh), recordedAt: now });
+      if (this.autoStatus && updates.length) arrivals.push(updates);
     }
+
+    if (now.getTime() - this.lastHeartbeat >= HEARTBEAT_MS) {
+      this.lastHeartbeat = now.getTime();
+      for (const position of await this.positions.latest()) {
+        const leg = this.legs.get(position.truckId);
+        if (leg && !leg.done) continue;
+        fixes.push({ truckId: position.truckId, point: position.point, heading: position.heading, speedKmh: 0, recordedAt: now });
+      }
+    }
+
     if (fixes.length) await sink(fixes).catch((err) => this.logger.warn(`Could not store positions: ${err.message}`));
+    await Promise.all(
+      arrivals.map(async (updates) => {
+        try {
+          for (const update of updates) await update();
+        } catch (err) {
+          this.logger.warn(`Status update failed: ${(err as Error).message}`);
+        }
+      }),
+    );
   }
 
-  /** Starts trips for newly assigned trucks and drops trips whose assignment ended. */
+  /** Starts legs for trucks with a new current load and drops legs whose load changed. */
   async plan() {
     if (this.planning) return;
     this.planning = true;
     try {
-      const active = await this.db
-        .select({
-          cargoId: cargos.id,
-          truckId: cargos.truckId,
-          pickupPoint: cargos.pickupPoint,
-          deliveryPoint: cargos.deliveryPoint,
-        })
-        .from(cargos)
-        .where(
-          and(
-            isNotNull(cargos.truckId),
-            isNotNull(cargos.pickupPoint),
-            isNotNull(cargos.deliveryPoint),
-            notInArray(cargos.status, INACTIVE_STATUSES),
-          ),
-        );
-
-      const assigned = new Map(active.map((row) => [row.truckId!, row]));
-      for (const [truckId, trip] of this.trips) {
-        if (assigned.get(truckId)?.cargoId !== trip.cargoId) this.trips.delete(truckId);
+      const trips = new Map((await this.trips.activeTrips()).map((trip) => [trip.truck.id, trip]));
+      for (const [truckId, leg] of this.legs) {
+        if (trips.get(truckId)?.cargo.id !== leg.cargoId) this.legs.delete(truckId);
       }
-
-      for (const [truckId, cargo] of assigned) {
-        if (this.trips.has(truckId)) continue;
-        const pickup: LngLat = [cargo.pickupPoint!.x, cargo.pickupPoint!.y];
-        const delivery: LngLat = [cargo.deliveryPoint!.x, cargo.deliveryPoint!.y];
-        const current = (await this.positions.latestFor(truckId))?.point;
-        const stops = current ? [current, pickup, delivery] : [pickup, delivery];
-        this.trips.set(truckId, {
-          cargoId: cargo.cargoId,
-          path: await this.pathThrough(truckId, stops),
-          progressM: 0,
-          speedKmh: CRUISE_KMH,
-          arrived: false,
-        });
+      for (const [truckId, trip] of trips) {
+        if (!this.legs.has(truckId)) this.legs.set(truckId, await this.legFor(trip));
       }
     } catch (err) {
       this.logger.warn(`Simulator planning failed: ${(err as Error).message}`);
@@ -133,17 +136,36 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
     }
   }
 
+  private async legFor(trip: Trip): Promise<Leg> {
+    const stops = stopsOf(trip.cargo);
+    const points: LngLat[] = [...(trip.position ? [trip.position.point] : []), ...stops.map((s) => s.point)];
+    const needsPickup = stops[0].kind === "pickup";
+    const { path, pickupAtM } = await this.pathThrough(trip, points, needsPickup && !!trip.position);
+    return {
+      cargoId: trip.cargo.id,
+      path,
+      progressM: 0,
+      speedKmh: CRUISE_KMH,
+      // Without a known position the truck starts at the pickup.
+      pickupAtM: needsPickup ? (pickupAtM ?? 0) : undefined,
+      pickedUp: !needsPickup,
+      done: false,
+    };
+  }
+
   // Real truck route when routing is available; straight lines otherwise, so the
   // simulator also works without a Mapbox token.
-  private async pathThrough(truckId: string, stops: LngLat[]): Promise<Path> {
+  private async pathThrough(trip: Trip, points: LngLat[], pickupIsSecondStop: boolean) {
+    if (points.length < 2) return { path: new Path([points[0], points[0]]), pickupAtM: 0 };
     try {
-      const truck = await this.db.query.trucks.findFirst({ where: (t, { eq }) => eq(t.id, truckId) });
-      const [route] = await this.routing.route({ coordinates: stops, vehicle: truck ?? undefined, alternatives: false });
-      if (route) return new Path(route.geometry.coordinates);
+      const [route] = await this.routing.route({ coordinates: points, vehicle: trip.truck, alternatives: false });
+      if (route) {
+        return { path: new Path(route.geometry.coordinates), pickupAtM: pickupIsSecondStop ? route.legs[0]?.distanceM : 0 };
+      }
     } catch (err) {
-      this.logger.warn(`Routing unavailable for simulated truck ${truckId}, using straight lines: ${(err as Error).message}`);
+      this.logger.warn(`Routing unavailable for ${trip.truck.truckNumber}, using straight lines: ${(err as Error).message}`);
     }
-    return new Path(stops);
+    const path = new Path(points);
+    return { path, pickupAtM: pickupIsSecondStop ? path.cumulative[1] : 0 };
   }
 }
-

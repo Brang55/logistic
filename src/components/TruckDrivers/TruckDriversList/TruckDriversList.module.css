@@ -32,3 +32,22 @@
 /* .truckDriversList div:nth-of-type(2n) li {
   background-color: #fff;
 } */
+
+.loginLink {
+  display: block;
+  margin-top: 6px;
+  padding: 0;
+  color: #5932ea;
+  font-size: 12px;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.hasLogin {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #2e7d32;
+}

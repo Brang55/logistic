@@ -25,82 +25,93 @@ const Navigation = () => {
                 <img src={logo} alt="logo" />
               </NavLink>
             </li>
-            <li>
-              <NavLink to="/dashboard">
-                {/* <FontAwesomeIcon
-              icon={faGauge}
-              size="2x"
-              className={styles.navIcons}
-            /> */}
-                Dashboard
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/dispatcher">Dispatch</NavLink>
-            </li>
-            <li>
-              <NavLink to="/fleet">Live Fleet</NavLink>
-            </li>
-            <li>
-              <NavLink to="/track">
-                {/* <FontAwesomeIcon
-              icon={faTruckMoving}
-              size="2x"
-              className={styles.navIcons}
-            /> */}
-                Track Cargo
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/drivers">
-                {/* <FontAwesomeIcon
-              icon={faPerson}
-              size="2x"
-              className={styles.navIcons}
-            /> */}
-                Drivers
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/trucks">
-                {/* <FontAwesomeIcon
-              icon={faTruckFront}
-              size="2x"
-              className={styles.navIcons}
-            /> */}
-                Trucks
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/trailers">
-                {/* <FontAwesomeIcon
-              icon={faTrailer}
-              size="2x"
-              className={styles.navIcons}
-            /> */}
-                Trailers
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/cargo">
-                {/* <FontAwesomeIcon
-              icon={faTruckRampBox}
-              size="2x"
-              className={styles.navIcons}
-            /> */}
-                Add Cargo
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/cargoList">
-                {/* <FontAwesomeIcon
-              icon={faTruckRampBox}
-              size="2x"
-              className={styles.navIcons}
-            /> */}
-                Cargo Preview
-              </NavLink>
-            </li>
+            {user.role === "driver" ? (
+              <li>
+                <NavLink to="/driver">My Trip</NavLink>
+              </li>
+            ) : (
+              <>
+                <li>
+                  <NavLink to="/dashboard">
+                    {/* <FontAwesomeIcon
+                  icon={faGauge}
+                  size="2x"
+                  className={styles.navIcons}
+                /> */}
+                    Dashboard
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/dispatcher">Dispatch</NavLink>
+                </li>
+                <li>
+                  <NavLink to="/fleet">Live Fleet</NavLink>
+                </li>
+                <li>
+                  <NavLink to="/traffic">Traffic</NavLink>
+                </li>
+                <li>
+                  <NavLink to="/track">
+                    {/* <FontAwesomeIcon
+                  icon={faTruckMoving}
+                  size="2x"
+                  className={styles.navIcons}
+                /> */}
+                    Track Cargo
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/drivers">
+                    {/* <FontAwesomeIcon
+                  icon={faPerson}
+                  size="2x"
+                  className={styles.navIcons}
+                /> */}
+                    Drivers
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/trucks">
+                    {/* <FontAwesomeIcon
+                  icon={faTruckFront}
+                  size="2x"
+                  className={styles.navIcons}
+                /> */}
+                    Trucks
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/trailers">
+                    {/* <FontAwesomeIcon
+                  icon={faTrailer}
+                  size="2x"
+                  className={styles.navIcons}
+                /> */}
+                    Trailers
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/cargo">
+                    {/* <FontAwesomeIcon
+                  icon={faTruckRampBox}
+                  size="2x"
+                  className={styles.navIcons}
+                /> */}
+                    Add Cargo
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/cargoList">
+                    {/* <FontAwesomeIcon
+                  icon={faTruckRampBox}
+                  size="2x"
+                  className={styles.navIcons}
+                /> */}
+                    Cargo Preview
+                  </NavLink>
+                </li>
+              </>
+            )}
             <li>
               <NavLink to="/login">
                 {/* <FontAwesomeIcon

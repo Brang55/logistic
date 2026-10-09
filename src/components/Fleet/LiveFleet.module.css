@@ -110,3 +110,41 @@
   margin: 12px 0 6px;
   font-size: 13px;
 }
+
+.nextPickups {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+}
+
+.late {
+  color: #c62828;
+}
+
+.assignNext {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 14px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  background: #5932ea;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.assignNext:disabled {
+  opacity: 0.6;
+}

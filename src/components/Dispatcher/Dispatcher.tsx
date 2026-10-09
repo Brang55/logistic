@@ -13,6 +13,7 @@ import { useCargoRouteQuery, type RoutePlan } from "../../app/features/driver/ro
 import { useLatestPositionsQuery } from "../../app/features/driver/telematicsSlice";
 import { formatDistance, formatDuration } from "../../utils/format";
 import { distanceKm } from "../../utils/geo";
+import { groupMessages } from "../../utils/notices";
 import { Loader } from "../Loader/Loader";
 import DispatchMap from "./DispatchMap";
 
@@ -29,6 +30,8 @@ const draftFrom = (cargo?: Cargo): Draft => ({
   truckId: cargo?.truckId ?? "",
   trailerId: cargo?.trailerId ?? "",
 });
+
+const FINISHED = ["delivered", "cancelled"];
 
 const ALERT_LABELS: Record<string, string> = {
   tunnel: "tunnels",
@@ -71,8 +74,11 @@ const RouteSummary = ({ plan }: { plan: RoutePlan }) => {
         <div className={styles.violations}>
           <h4>Truck restrictions on this route ({violations.length})</h4>
           <ul>
-            {violations.map((notice, index) => (
-              <li key={index}>{notice.message}</li>
+            {groupMessages(violations.map((notice) => notice.message)).map(({ message, count }) => (
+              <li key={message}>
+                {message}
+                {count > 1 && ` (${count} places)`}
+              </li>
             ))}
           </ul>
         </div>
@@ -149,6 +155,8 @@ const Dispatcher = () => {
   };
 
   const changed = !!cargo && JSON.stringify(draftFrom(cargo)) !== JSON.stringify(draft);
+  // Delivered loads drop out of the dispatch queue.
+  const activeCargos = (cargos ?? []).filter((item) => !FINISHED.includes(item.status));
   const plans = route?.routes ?? [];
 
   if (isLoading) return <Loader />;
@@ -159,7 +167,7 @@ const Dispatcher = () => {
       <section className={styles.panel}>
         <h3 className={styles.title}>Dispatch</h3>
         <ul className={styles.queue}>
-          {cargos?.map((item) => (
+          {activeCargos.map((item) => (
             <li key={item.id}>
               <button
                 className={`${styles.cargo} ${item.id === selectedId ? styles.selected : ""}`}
@@ -172,7 +180,14 @@ const Dispatcher = () => {
                   {item.shipperName} · pickup {item.pickupDate}
                   {item.truckId && ` · ${trucksById.get(item.truckId)?.truckNumber ?? "truck assigned"}`}
                 </span>
-                <span className={`${styles.status} ${styles[item.status] ?? ""}`}>{item.status}</span>
+                <span className={styles.row}>
+                  <span className={`${styles.status} ${styles[item.status] ?? ""}`}>{item.status.replace("_", " ")}</span>
+                  {item.delayMinutes && (
+                    <span className={styles.delay}>
+                      delayed {item.delayMinutes} min{item.delayReason && ` · ${item.delayReason}`}
+                    </span>
+                  )}
+                </span>
               </button>
             </li>
           ))}
@@ -269,7 +284,7 @@ const Dispatcher = () => {
       </section>
       <div className={styles.mapHandler}>
         <DispatchMap
-          cargos={cargos ?? []}
+          cargos={activeCargos}
           selectedId={selectedId}
           onSelect={selectCargo}
           route={isRouting ? undefined : route}

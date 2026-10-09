@@ -3,7 +3,7 @@ import { and, asc, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
 import { positions, trucks } from "../db/schema";
-import { PositionFix, TruckPosition } from "./telematics.types";
+import { PositionFix, TruckPosition } from "../telematics/telematics.types";
 
 type PositionRow = typeof positions.$inferSelect;
 

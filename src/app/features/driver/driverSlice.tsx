@@ -9,6 +9,7 @@ interface Driver {
   truckNumber: string;
   content: string;
   status: string;
+  userId?: string | null;
 }
 
 export const driversApi = api.injectEndpoints({

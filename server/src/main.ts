@@ -3,7 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { setupApp } from "./setup-app";
-import { RedisIoAdapter } from "./telematics/redis-io.adapter";
+import { RedisIoAdapter } from "./live/redis-io.adapter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

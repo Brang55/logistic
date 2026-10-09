@@ -25,6 +25,7 @@ export interface RoutePlan {
   typicalDurationS?: number;
   summary: string;
   geometry: { type: "LineString"; coordinates: LngLat[] };
+  legs: { distanceM: number; durationS: number }[];
   steps: { instruction: string; distanceM: number; durationS: number; location: LngLat }[];
   notices: RouteNotice[];
   incidents: RouteIncident[];

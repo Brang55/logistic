@@ -1,0 +1,63 @@
+import { useAssignCargoMutation } from "../../app/features/driver/cargoSlice";
+import { useNextPickupsQuery } from "../../app/features/driver/tripsSlice";
+import { formatDistance, formatDuration } from "../../utils/format";
+
+import styles from "./LiveFleet.module.css";
+
+const SHOWN = 5;
+
+const errorMessage = (error: unknown) =>
+  (error as { data?: { message?: string } } | undefined)?.data?.message ?? "Could not load suggestions.";
+
+/**
+ * Unassigned loads ranked by drive time from where the truck will be free.
+ * Assigning queues the load behind the truck's current ones, with the same driver.
+ */
+const NextPickups = ({ truckId, driverId }: { truckId: string; driverId?: string | null }) => {
+  const { data, isFetching, error } = useNextPickupsQuery(truckId);
+  const [assignCargo, { isLoading: isAssigning }] = useAssignCargoMutation();
+
+  return (
+    <div className={styles.nextPickups}>
+      <h4>Suggested next pickups</h4>
+      {isFetching && <p className={styles.muted}>Checking drive times...</p>}
+      {!isFetching && error && <p className={styles.muted}>{errorMessage(error)}</p>}
+      {!isFetching && data && (
+        <>
+          <p className={styles.muted}>
+            {data.origin.after === "current-loads"
+              ? `After its current loads (free around ${new Date(data.origin.availableAt).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}).`
+              : "From where the truck is now."}{" "}
+            Drive times use live traffic for cars; check the truck route before assigning.
+          </p>
+          {data.candidates.length === 0 && <p className={styles.muted}>No unassigned loads within {data.maxDistanceKm.toLocaleString()} km.</p>}
+          <ul>
+            {data.candidates.slice(0, SHOWN).map(({ cargo, durationS, distanceM, onTime }) => (
+              <li key={cargo.id} className={styles.suggestion}>
+                <span className={styles.truckName}>
+                  {cargo.pickupLocation} → {cargo.deliveryLocation}
+                </span>
+                <span className={styles.muted}>
+                  {durationS === null || distanceM === null
+                    ? "No road route found"
+                    : `${formatDuration(durationS)} · ${formatDistance(distanceM)} to pickup`}
+                  {onTime === false && <span className={styles.late}> · late for pickup {cargo.pickupDate}</span>}
+                  {onTime === true && ` · pickup ${cargo.pickupDate}`}
+                </span>
+                <button
+                  className={styles.assignNext}
+                  disabled={isAssigning}
+                  onClick={() => assignCargo({ id: cargo.id, truckId, driverId: driverId ?? undefined })}
+                >
+                  Assign as next
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default NextPickups;

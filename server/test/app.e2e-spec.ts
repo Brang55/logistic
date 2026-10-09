@@ -7,19 +7,53 @@ import { App } from "supertest/types";
 import { AppModule } from "../src/app.module";
 import { AuthService } from "../src/auth/auth.service";
 import { GeocodingService } from "../src/mapbox/geocoding.service";
-import { LngLat, RouteRequest, RoutingService } from "../src/routing/routing.types";
+import { LngLat, RoutePlan, RouteRequest, RoutingService } from "../src/routing/routing.types";
+import { distanceM as distanceM_ } from "../src/telematics/geo";
+import { TrafficService } from "../src/trips/traffic.service";
 import { SimulatedTelematicsProvider } from "../src/telematics/simulated-telematics.provider";
 import { PositionFix } from "../src/telematics/telematics.types";
 import { setupApp } from "../src/setup-app";
 import { TEST_DATABASE_URL } from "./test-env";
 
 // Fake providers so tests never call Mapbox.
-const PLACES: Record<string, LngLat> = { Sofia: [23.32, 42.69], Munich: [11.58, 48.13], Vienna: [16.37, 48.2] };
+const PLACES: Record<string, LngLat> = {
+  Sofia: [23.32, 42.69],
+  Munich: [11.58, 48.13],
+  Vienna: [16.37, 48.2],
+  // Short hops near [40, 0] for simulator and next-pickup tests.
+  P1: [40, 0.005],
+  D1: [40, 0.012],
+  P2: [40, 0.02],
+  D2: [40, 0.027],
+  Far: [45, 5],
+};
 const geocoder = { geocode: jest.fn(async (q: string) => PLACES[q] ?? null) };
+// Straight lines at 60 km/h, so durations scale with distance.
+const fakeRoute = async ({ coordinates }: RouteRequest): Promise<RoutePlan[]> => {
+  const legs = coordinates.slice(1).map((to, i) => {
+    const distanceM = distanceM_(coordinates[i], to);
+    return { distanceM, durationS: distanceM / 16.67 };
+  });
+  const distanceM = legs.reduce((sum, leg) => sum + leg.distanceM, 0);
+  return [
+    {
+      distanceM,
+      durationS: distanceM / 16.67,
+      summary: "",
+      geometry: { type: "LineString", coordinates },
+      legs,
+      steps: [],
+      notices: [],
+      incidents: [],
+    },
+  ];
+};
 const router = {
-  route: jest.fn(async ({ coordinates }: RouteRequest) => [
-    { distanceM: 1, durationS: 1, summary: "", geometry: { type: "LineString", coordinates }, steps: [], notices: [], incidents: [] },
-  ]),
+  route: jest.fn(fakeRoute),
+  travelTimes: jest.fn(async (origin: LngLat, destinations: LngLat[]) =>
+    destinations.map((d) => ({ durationS: distanceM_(origin, d) / 16.67, distanceM: distanceM_(origin, d) })),
+  ),
+  maxMatrixDestinations: 9,
 };
 
 describe("API (e2e)", () => {
@@ -34,6 +68,7 @@ describe("API (e2e)", () => {
     process.env.DATABASE_URL = TEST_DATABASE_URL;
     process.env.JWT_ACCESS_SECRET = "test-secret";
     process.env.TELEMATICS_PROVIDER = "none";
+    process.env.TRAFFIC_MONITOR_INTERVAL_MS = "0";
     process.env.TELEMATICS_WEBHOOK_SECRET = "test-webhook-secret";
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(GeocodingService)
@@ -301,33 +336,155 @@ describe("API (e2e)", () => {
       }
     });
 
-    it("simulates assigned trucks driving to the pickup and on to the delivery", async () => {
-      const cargo = (
-        await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Sofia", deliveryLocation: "Munich", truckId: truckA.id })
-      ).body;
+    it("simulates assigned trucks from their last position", async () => {
+      await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Sofia", deliveryLocation: "Munich", truckId: truckA.id });
       const simulator = app.get(SimulatedTelematicsProvider);
       const fixes: PositionFix[] = [];
-      const sink = async (batch: PositionFix[]) => fixes.push(...batch);
-
       await simulator.plan();
-      // The route starts from the truck's last reported position.
       expect(router.route).toHaveBeenLastCalledWith(
         expect.objectContaining({ coordinates: [[10.1, 50], PLACES.Sofia, PLACES.Munich] }),
       );
-      await simulator.tick(sink);
-      await simulator.tick(sink);
-
+      await simulator.tick(async (batch) => fixes.push(...batch));
       const own = fixes.filter((f) => f.truckId === truckA.id);
-      expect(own).toHaveLength(2);
-      expect(own[1].point).not.toEqual(own[0].point);
+      expect(own).toHaveLength(1);
       expect(own[0].speedKmh).toBeGreaterThan(0);
+    });
+  });
 
-      // Unassigning stops the trip.
-      await asDispatcher(api().post(`/api/cargos/${cargo.id}/assign`)).send({ truckId: "" }).expect(200);
+  describe("trips", () => {
+    const asDispatcher = <T extends request.Test>(req: T) => req.auth(dispatcherToken, { type: "bearer" });
+    const webhook = (positions: object[]) =>
+      api().post("/api/telematics/webhook").set("x-telematics-secret", "test-webhook-secret").send({ positions });
+    const status = async (kind: "trucks" | "drivers", id: string) =>
+      (await asDispatcher(api().get(`/api/${kind}/${id}`))).body.status;
+    const newCargo = async (pickupLocation: string, deliveryLocation: string, extra: object = {}) =>
+      (await asDispatcher(api().post("/api/cargos")).send({ pickupLocation, deliveryLocation, ...extra }).expect(201)).body;
+
+    let truck: { id: string };
+    let driver: { id: string };
+    let driverToken: string;
+
+    beforeAll(async () => {
+      truck = (await asDispatcher(api().post("/api/trucks")).send({ truckNumber: "TRIP-1" })).body;
+      driver = (
+        await asDispatcher(api().post("/api/drivers")).send({
+          firstName: "Dana",
+          lastName: "Driver",
+          truckDriverEmail: "dana@test.local",
+        })
+      ).body;
+      await webhook([{ vehicleId: "TRIP-1", lng: 40, lat: 0 }]).expect(202);
+
+      await asDispatcher(api().post(`/api/drivers/${driver.id}/account`)).send({ password: "driverpass1" }).expect(201);
+      await asDispatcher(api().post(`/api/drivers/${driver.id}/account`)).send({ password: "driverpass1" }).expect(409);
+      driverToken = (
+        await api().post("/api/auth/login").send({ email: "dana@test.local", password: "driverpass1" }).expect(200)
+      ).body.accessToken;
+    });
+
+    const asDriver = <T extends request.Test>(req: T) => req.auth(driverToken, { type: "bearer" });
+
+    it("ranks unassigned loads by drive time to their pickup", async () => {
+      const near = await newCargo("P2", "D2", { pickupDate: "2999-01-01" });
+      const far = await newCargo("Far", "D1");
+      const res = await asDispatcher(api().get(`/api/trucks/${truck.id}/next-pickups`)).expect(200);
+
+      expect(res.body.origin).toMatchObject({ point: [40, 0], after: "current-position" });
+      const ids = res.body.candidates.map((c: { cargo: { id: string } }) => c.cargo.id);
+      expect(ids[0]).toBe(near.id);
+      expect(ids.indexOf(far.id)).toBeGreaterThan(0);
+      expect(res.body.candidates[0]).toMatchObject({ onTime: true });
+      const durations = res.body.candidates.map((c: { durationS: number }) => c.durationS);
+      expect(durations).toEqual([...durations].sort((a, b) => a - b));
+
+      await asDispatcher(api().delete(`/api/cargos/${near.id}`)).expect(204);
+      await asDispatcher(api().delete(`/api/cargos/${far.id}`)).expect(204);
+    });
+
+    it("gives the driver their trip and lets them work it", async () => {
+      expect((await asDriver(api().get("/api/me/trip")).expect(200)).body.trip).toBeNull();
+      await asDispatcher(api().get("/api/me/trip")).expect(403);
+
+      const cargo = await newCargo("P1", "D1", { truckId: truck.id, driverId: driver.id });
+      const mine = await asDriver(api().get("/api/me/trip")).expect(200);
+      expect(mine.body.trip).toMatchObject({
+        cargo: { id: cargo.id },
+        nextStop: { kind: "pickup", point: PLACES.P1 },
+        route: { geometry: { coordinates: [[40, 0], PLACES.P1, PLACES.D1] } },
+      });
+
+      await asDriver(api().post(`/api/me/trip/${cargo.id}/delivered`)).expect(409);
+      await asDriver(api().post(`/api/me/trip/${cargo.id}/picked-up`)).expect(200);
+      expect((await asDriver(api().get("/api/me/trip"))).body.trip.nextStop).toMatchObject({ kind: "delivery" });
+
+      await asDriver(api().post(`/api/me/trip/${cargo.id}/delay`)).send({ minutes: 45, reason: "Queue at border" }).expect(200);
+      const alerts = await asDispatcher(api().get("/api/traffic/alerts")).expect(200);
+      expect(alerts.body[0]).toMatchObject({ kind: "delay-reported", cargoId: cargo.id, severity: "warning" });
+
+      await asDriver(api().post(`/api/me/trip/${cargo.id}/delivered`)).expect(200);
+      expect(await status("trucks", truck.id)).toBe("available");
+      expect(await status("drivers", driver.id)).toBe("available");
+    });
+
+    it("stops drivers from touching other drivers' loads", async () => {
+      const other = await newCargo("P1", "D1");
+      await asDriver(api().post(`/api/me/trip/${other.id}/picked-up`)).expect(403);
+      await asDispatcher(api().delete(`/api/cargos/${other.id}`)).expect(204);
+    });
+
+    it("keeps a truck taken until its last queued load is delivered, driving them in order", async () => {
+      const first = await newCargo("P1", "D1", { truckId: truck.id, pickupDate: "2026-01-01" });
+      const second = await newCargo("P2", "D2", { truckId: truck.id, pickupDate: "2026-01-02" });
+      const simulator = app.get(SimulatedTelematicsProvider);
+      const sink = async () => undefined;
+      const cargoStatus = async (id: string) => (await asDispatcher(api().get(`/api/cargos/${id}`))).body.status;
+
+      // At 30x a tick covers about 1.4 km, enough for the whole first load.
       await simulator.plan();
-      fixes.length = 0;
       await simulator.tick(sink);
-      expect(fixes.filter((f) => f.truckId === truckA.id)).toHaveLength(0);
+      expect(await cargoStatus(first.id)).toBe("delivered");
+      expect(await cargoStatus(second.id)).toBe("new");
+      expect(await status("trucks", truck.id)).toBe("taken");
+
+      // The truck's last position is the first delivery, so it drives on to the second load.
+      await webhook([{ vehicleId: "TRIP-1", lng: PLACES.D1[0], lat: PLACES.D1[1] }]);
+      await simulator.plan();
+      await simulator.tick(sink);
+      await simulator.tick(sink);
+      expect(await cargoStatus(second.id)).toBe("delivered");
+      expect(await status("trucks", truck.id)).toBe("available");
+    });
+
+    it("reports traffic delays and closures once per new problem", async () => {
+      const cargo = await newCargo("P1", "D1", { truckId: truck.id });
+      router.route.mockImplementation(async (request: RouteRequest) => {
+        const [plan] = await fakeRoute(request);
+        return [
+          {
+            ...plan,
+            durationS: plan.durationS + 1800,
+            typicalDurationS: plan.durationS,
+            incidents: [{ id: "x1", type: "accident", description: "Crash", impact: "major", closed: true }],
+          },
+        ];
+      });
+      try {
+        const traffic = app.get(TrafficService);
+        await traffic.run();
+        await traffic.run();
+        const report = await asDispatcher(api().get("/api/traffic/report")).expect(200);
+        const trip = report.body.trips.find((t: { cargoId: string }) => t.cargoId === cargo.id);
+        expect(trip).toMatchObject({ truckNumber: "TRIP-1", trafficDelayS: 1800, nextStop: { kind: "pickup" } });
+
+        const alerts = (await asDispatcher(api().get("/api/traffic/alerts"))).body.filter(
+          (a: { cargoId: string }) => a.cargoId === cargo.id,
+        );
+        expect(alerts.map((a: { kind: string }) => a.kind).sort()).toEqual(["incident", "traffic-delay"]);
+        expect(alerts.find((a: { kind: string }) => a.kind === "incident").severity).toBe("critical");
+      } finally {
+        router.route.mockImplementation(fakeRoute);
+        await asDispatcher(api().delete(`/api/cargos/${cargo.id}`)).expect(204);
+      }
     });
   });
 });

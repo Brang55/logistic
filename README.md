@@ -17,8 +17,10 @@ npm install
 npm run dev                         # web on :5173, /api is proxied to :3000
 ```
 
-Demo logins (from the seed): `admin@demo.logistic` and `dispatcher@demo.logistic`, password `demo12345`
-(override with `SEED_PASSWORD`). Accounts are created by an admin via `POST /api/auth/register`.
+Demo logins (from the seed), password `demo12345` (override with `SEED_PASSWORD`):
+`admin@demo.logistic`, `dispatcher@demo.logistic`, and the driver app login `g.petrov@demo.logistic`.
+Staff accounts are created by an admin via `POST /api/auth/register`; driver app logins from the
+Drivers page ("Create app login").
 
 Routing and geocoding run on the server with `MAPBOX_SECRET_TOKEN` (an `sk.` token); the web app only uses
 the public `VITE_MAPBOX_ACCESS_TOKEN` in the root `.env` for map tiles. Cargo addresses are geocoded with Mapbox
@@ -40,6 +42,19 @@ authenticated with the access token). Two ways to feed them:
   ```
 
 With `REDIS_URL` set, live updates are shared across API instances.
+
+## Trips, traffic and the driver app
+
+- A truck can have several loads queued; it works them in order (the picked-up one first, then by pickup
+  date) and stays "taken" until the last one is delivered.
+- **Live Fleet → truck → Suggested next pickups** ranks unassigned loads within `NEXT_PICKUP_MAX_KM`
+  by drive time (Mapbox Matrix, live traffic, car times) from where the truck will be free.
+- **Traffic** checks every active trip against live traffic every `TRAFFIC_MONITOR_INTERVAL_MS`
+  (default 5 min, `0` disables) and raises alerts for growing delays, closures and major incidents.
+  Alerts are kept in memory (last 100).
+- **Driver app** (`/driver`, driver role): next stop with ETA and contact, confirm pickup/delivery,
+  report delays, route map and directions. The simulator marks loads picked up/delivered on arrival
+  unless `SIMULATOR_AUTO_STATUS=false`.
 
 Tests: `cd server && npm test` (unit) and `npm run test:e2e` (uses a separate `logistic_test` database in the same container).
 

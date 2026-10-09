@@ -9,6 +9,8 @@ import { Loader } from "../../Loader/Loader";
 import { useState } from "react";
 import { Confirm } from "../../Confirm/Confirm";
 import AddDriverForm from "../AddDriver/AddDriverForm/AddDriverForm";
+import DriverLoginForm from "../DriverLogin/DriverLoginForm";
+import styles from "./TruckDriversList.module.css";
 
 import { EntityItem } from "../../Entity/EntityItem/EntityItem";
 import { EntityList } from "../../Entity/EntityList/EntityList";
@@ -21,6 +23,7 @@ interface Driver {
   truckDriverEmail: string;
   truckNumber: string;
   status: string;
+  userId?: string | null;
 }
 
 const TruckDriversList = () => {
@@ -32,6 +35,7 @@ const TruckDriversList = () => {
   const [clickedDriverName, setClickedDriverName] = useState<string>("");
   const [clickedDriverLastName, setClickedDriverLastName] =
     useState<string>("");
+  const [loginFor, setLoginFor] = useState<Driver>();
 
   console.log(clickedDriver);
 
@@ -100,9 +104,25 @@ const TruckDriversList = () => {
               item={item}
               onDeleteClick={onDeleteClick}
               onEditClick={onEditClick}
+              extraActions={
+                item.userId ? (
+                  <span className={styles.hasLogin}>Has app login</span>
+                ) : (
+                  <button className={styles.loginLink} onClick={() => setLoginFor(item)}>
+                    Create app login
+                  </button>
+                )
+              }
             />
           )}
           headings={headings}
+        />
+      )}
+      {loginFor && (
+        <DriverLoginForm
+          driverId={loginFor.id}
+          email={loginFor.truckDriverEmail}
+          onClose={() => setLoginFor(undefined)}
         />
       )}
       {editDriverForm && driver && !isDriverLoading && (

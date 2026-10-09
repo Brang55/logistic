@@ -23,12 +23,16 @@ const directionsResponse = {
       legs: [
         {
           summary: "A1",
+          distance: 2000,
+          duration: 300,
           annotation: { distance: [1000, 1000] },
           steps: [{ distance: 2000, duration: 300, maneuver: { instruction: "Head east", location: [0, 0] } }],
           notifications: [{ type: "alert", subtype: "countryBorderCrossing", details: { message: "Crossing BG/RS" } }],
         },
         {
           summary: "E80",
+          distance: 2000,
+          duration: 300,
           annotation: { distance: [1000, 1000] },
           steps: [{ distance: 2000, duration: 300, maneuver: { instruction: "Arrive", location: [4, 0] } }],
           notifications: [
@@ -90,6 +94,10 @@ describe("MapboxRoutingService", () => {
 
     expect(plan).toMatchObject({ distanceM: 4000, durationS: 600, typicalDurationS: 540, summary: "A1 → E80" });
     expect(plan.steps.map((s) => s.instruction)).toEqual(["Head east", "Arrive"]);
+    expect(plan.legs).toEqual([
+      { distanceM: 2000, durationS: 300 },
+      { distanceM: 2000, durationS: 300 },
+    ]);
     expect(plan.notices).toEqual([
       { type: "alert", subtype: "countryBorderCrossing", message: "Crossing BG/RS", coordinates: undefined },
       // Second leg starts at point 2, so leg indices 0-1 are route points 2-3.
@@ -115,5 +123,29 @@ describe("MapboxRoutingService", () => {
     await service.route(request);
     await service.route(request);
     expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks the traffic matrix for travel times from one origin", async () => {
+    get.mockResolvedValue({ code: "Ok", durations: [[0, 600, null]], distances: [[0, 9000, null]] });
+    const estimates = await service.travelTimes([0, 0], [[1, 1], [2, 2]]);
+
+    const [path, params] = get.mock.calls[0];
+    expect(path).toBe("/directions-matrix/v1/mapbox/driving-traffic/0,0;1,1;2,2");
+    expect(params).toEqual({ sources: "0", annotations: "duration,distance" });
+    expect(estimates).toEqual([
+      { durationS: 600, distanceM: 9000 },
+      { durationS: null, distanceM: null },
+    ]);
+  });
+
+  it("splits a matrix that Mapbox rejects as a whole because some destinations are unreachable", async () => {
+    // Only the destination at x=1 is reachable.
+    get.mockImplementation(async (path: string) => {
+      const destinations = path.split("/").pop()!.split(";").slice(1);
+      if (destinations.length > 1 && !destinations.every((d) => d.startsWith("1,"))) return { code: "NoRoute" };
+      return { code: "Ok", durations: [[0, ...destinations.map((d) => (d.startsWith("1,") ? 60 : null))]] };
+    });
+    const estimates = await service.travelTimes([0, 0], [[1, 1], [50, 50], [60, 60]]);
+    expect(estimates.map((e) => e.durationS)).toEqual([60, null, null]);
   });
 });

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import styles from "./EntityItem.module.css";
 
 interface EntityItemProps<T> {
@@ -5,6 +6,7 @@ interface EntityItemProps<T> {
   item: T;
   onDeleteClick: (id: string, firstName: string, lastName: string) => void;
   onEditClick: (id: string) => void;
+  extraActions?: ReactNode;
 }
 
 export const EntityItem = <
@@ -18,6 +20,7 @@ export const EntityItem = <
   item,
   onDeleteClick,
   onEditClick,
+  extraActions,
 }: EntityItemProps<T>): JSX.Element => {
   return (
     <div className={styles.tableRow} key={item.id}>
@@ -37,6 +40,7 @@ export const EntityItem = <
         >
           Delete
         </button>
+        {extraActions}
       </li>
     </div>
   );

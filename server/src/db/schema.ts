@@ -148,6 +148,12 @@ export const cargos = pgTable("cargos", {
   driverId: uuid("driver_id").references(() => drivers.id, { onDelete: "set null" }),
   truckId: uuid("truck_id").references(() => trucks.id, { onDelete: "set null" }),
   trailerId: uuid("trailer_id").references(() => trailers.id, { onDelete: "set null" }),
+  pickedUpAt: timestamp("picked_up_at", { withTimezone: true }),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  // Latest delay reported by the driver (or dispatcher).
+  delayMinutes: integer("delay_minutes"),
+  delayReason: text("delay_reason"),
+  delayReportedAt: timestamp("delay_reported_at", { withTimezone: true }),
   ...timestamps,
 });
 

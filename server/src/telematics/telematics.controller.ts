@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Use
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { Public } from "../auth/roles.decorator";
 import { TrucksService } from "../trucks/trucks.service";
-import { PositionsService } from "./positions.service";
+import { PositionsService } from "../positions/positions.service";
 import { HistoryQueryDto, WebhookDto } from "./telematics.dto";
 import { TelematicsService } from "./telematics.service";
 import { WebhookSecretGuard } from "./webhook-secret.guard";

@@ -8,6 +8,7 @@ import {
   RoutePlan,
   RouteRequest,
   RoutingService,
+  TravelEstimate,
   VehicleDimensions,
 } from "./routing.types";
 
@@ -23,6 +24,8 @@ interface MapboxNotification {
 
 interface MapboxLeg {
   summary: string;
+  distance: number;
+  duration: number;
   duration_typical?: number;
   annotation?: { distance?: number[] };
   steps: {
@@ -49,6 +52,12 @@ interface MapboxRoute {
   legs: MapboxLeg[];
 }
 
+interface MatrixResponse {
+  code: string;
+  durations?: (number | null)[][];
+  distances?: (number | null)[][];
+}
+
 interface DirectionsResponse {
   code: string;
   message?: string;
@@ -57,6 +66,8 @@ interface DirectionsResponse {
 
 const NO_ROUTE_CODES = new Set(["NoRoute", "NoSegment"]);
 const MAX_COORDINATES = 25;
+// The traffic-aware matrix accepts 10 coordinates: the origin plus nine destinations.
+const MAX_MATRIX_DESTINATIONS = 9;
 
 // Mapbox accepts 0-10 m for height/width and 0-100 t for weight.
 const limit = (value: number | null | undefined, max: number) =>
@@ -110,6 +121,38 @@ export class MapboxRoutingService extends RoutingService {
     this.cache.set(key, plans);
     return plans;
   }
+
+  // Note: the Matrix API has no vehicle-size parameters, so these are car travel times.
+  async travelTimes(origin: LngLat, destinations: LngLat[]): Promise<TravelEstimate[]> {
+    if (!destinations.length) return [];
+    if (destinations.length > MAX_MATRIX_DESTINATIONS) {
+      throw new BadRequestException(`At most ${MAX_MATRIX_DESTINATIONS} destinations per request`);
+    }
+    const path = `/directions-matrix/v1/mapbox/driving-traffic/${[origin, ...destinations].map((c) => c.join(",")).join(";")}`;
+    let response: MatrixResponse;
+    try {
+      // Destinations include the origin itself, because a request needs at least two elements.
+      response = await this.mapbox.get<MatrixResponse>(path, { sources: "0", annotations: "duration,distance" });
+    } catch (err) {
+      if (err instanceof MapboxApiError && err.status < 500 && err.status !== 401 && err.status !== 403) {
+        throw new BadRequestException(err.message);
+      }
+      throw new BadGatewayException("Routing provider is unavailable");
+    }
+    // With two or more unreachable destinations Mapbox answers NoRoute for the whole matrix,
+    // so split the batch until the reachable ones get their times.
+    if (NO_ROUTE_CODES.has(response.code)) {
+      if (destinations.length === 1) return [{ durationS: null, distanceM: null }];
+      const half = Math.ceil(destinations.length / 2);
+      return [
+        ...(await this.travelTimes(origin, destinations.slice(0, half))),
+        ...(await this.travelTimes(origin, destinations.slice(half))),
+      ];
+    }
+    const durations = response.durations?.[0] ?? [];
+    const distances = response.distances?.[0] ?? [];
+    return destinations.map((_, i) => ({ durationS: durations[i + 1] ?? null, distanceM: distances[i + 1] ?? null }));
+  }
 }
 
 function toPlan(route: MapboxRoute): RoutePlan {
@@ -148,6 +191,7 @@ function toPlan(route: MapboxRoute): RoutePlan {
     typicalDurationS: route.duration_typical,
     summary: route.legs.map((leg) => leg.summary).filter(Boolean).join(" → "),
     geometry: route.geometry,
+    legs: route.legs.map((leg) => ({ distanceM: leg.distance, durationS: leg.duration })),
     steps: route.legs.flatMap((leg) =>
       leg.steps.map((step) => ({
         instruction: step.maneuver.instruction,

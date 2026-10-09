@@ -34,6 +34,10 @@ export default interface Cargo {
   truckId?: string | null;
   trailerId?: string | null;
   status: string;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
+  delayMinutes?: number | null;
+  delayReason?: string | null;
   pickupPoint?: { x: number; y: number } | null;
   deliveryPoint?: { x: number; y: number } | null;
 }
