@@ -97,6 +97,17 @@ async function main() {
       { email: "dispatcher@demo.logistic", passwordHash, role: "dispatcher" },
     ])
     .onConflictDoNothing();
+  // The owner's admin login, from OWNER_EMAIL / OWNER_PASSWORD; an existing account is left untouched.
+  const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
+  if (ownerEmail && process.env.OWNER_PASSWORD) {
+    const [owner] = await db
+      .insert(users)
+      .values({ email: ownerEmail, passwordHash: await argon2.hash(process.env.OWNER_PASSWORD), role: "admin" })
+      .onConflictDoNothing()
+      .returning({ email: users.email });
+    console.log(owner ? `Created admin account ${owner.email}` : `Admin account ${ownerEmail} already exists`);
+  }
+
   await db.insert(trucks).values(demoTrucks).onConflictDoNothing();
   await db.insert(trailers).values(demoTrailers).onConflictDoNothing();
   await db.insert(drivers).values(demoDrivers).onConflictDoNothing();

@@ -49,6 +49,37 @@ export interface LiveAlert {
   createdAt: string;
 }
 
+export type VoiceAction =
+  | "report_delay"
+  | "confirm_pickup"
+  | "confirm_delivery"
+  | "set_pickup_location"
+  | "set_delivery_location"
+  | "next_stop"
+  | "unknown";
+
+export interface VoiceProposal {
+  intent: {
+    action: VoiceAction;
+    delayMinutes: number | null;
+    reason: string | null;
+    location: string | null;
+    clarification: string | null;
+  };
+  parser: string;
+  needsConfirmation: boolean;
+  cargoId?: string;
+  reply: string;
+}
+
+export interface VoiceExecution {
+  action: Exclude<VoiceAction, "next_stop" | "unknown">;
+  cargoId: string;
+  delayMinutes?: number;
+  reason?: string;
+  location?: string;
+}
+
 export interface MyTrip {
   driver: { id: string; firstName: string; lastName: string };
   trip: {
@@ -110,6 +141,13 @@ export const tripsApi = api.injectEndpoints({
       query: ({ cargoId, ...body }) => ({ url: `/me/trip/${cargoId}/delay`, method: "POST", body }),
       invalidatesTags: ["MyTrip"],
     }),
+    interpretVoice: builder.mutation<VoiceProposal, string>({
+      query: (transcript) => ({ url: "/me/voice/interpret", method: "POST", body: { transcript } }),
+    }),
+    executeVoice: builder.mutation<{ reply: string }, VoiceExecution>({
+      query: (body) => ({ url: "/me/voice/execute", method: "POST", body }),
+      invalidatesTags: ["MyTrip"],
+    }),
     createDriverAccount: builder.mutation<unknown, { driverId: string; password: string }>({
       query: ({ driverId, password }) => ({ url: `/drivers/${driverId}/account`, method: "POST", body: { password } }),
       invalidatesTags: ["Driver"],
@@ -126,4 +164,6 @@ export const {
   useMarkDeliveredMutation,
   useReportDelayMutation,
   useCreateDriverAccountMutation,
+  useInterpretVoiceMutation,
+  useExecuteVoiceMutation,
 } = tripsApi;

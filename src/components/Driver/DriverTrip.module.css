@@ -144,3 +144,72 @@
   margin-bottom: 6px;
   list-style: decimal;
 }
+
+.mic {
+  width: 100%;
+  padding: 16px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  background: #5932ea;
+  border: none;
+  border-radius: 28px;
+  cursor: pointer;
+}
+
+.listening {
+  background: #c62828;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.send {
+  padding: 10px 16px;
+  color: #fff;
+  font-weight: 600;
+  background: #5932ea;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.send:disabled {
+  opacity: 0.5;
+}
+
+.reply {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.proposal {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.proposal label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.proposal input {
+  padding: 10px;
+  font-size: 15px;
+  border: 1px solid #5932ea;
+  border-radius: 8px;
+}
+
+.proposalButtons {
+  display: flex;
+  gap: 8px;
+}

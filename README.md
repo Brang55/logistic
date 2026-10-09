@@ -17,6 +17,9 @@ npm install
 npm run dev                         # web on :5173, /api is proxied to :3000
 ```
 
+Owner login: set `OWNER_EMAIL` / `OWNER_PASSWORD` in `server/.env` and run `npm run db:seed`; it creates that
+admin account once (an existing account's password is never changed).
+
 Demo logins (from the seed), password `demo12345` (override with `SEED_PASSWORD`):
 `admin@demo.logistic`, `dispatcher@demo.logistic`, and the driver app login `g.petrov@demo.logistic`.
 Staff accounts are created by an admin via `POST /api/auth/register`; driver app logins from the
@@ -92,3 +95,16 @@ export default {
 - Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
 - Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
 - Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+
+## Voice commands and load boards
+
+- **Voice** (driver app): tap the mic (Chrome, Edge, Safari) or type. Commands are interpreted first
+  (report a delay, confirm pickup/delivery, change the pickup/delivery address, "what's my next stop?"),
+  then executed only after the driver confirms. With `ANTHROPIC_API_KEY` set, Claude (`VOICE_MODEL`, default
+  `claude-opus-5-5`) parses commands in any language; without it a built-in English keyword parser is used,
+  and it is also the fallback if the Claude call fails.
+- **Load Board** (staff): search the boards, see the nearest free truck per load, and import a load as cargo
+  (importing twice returns the same cargo). Loads your company booked on a board are imported automatically
+  every `LOADBOARD_SYNC_INTERVAL_MS`. The boards are mock US/EU exchanges behind a `LoadBoardProvider`
+  interface; real adapters (DAT, Truckstop, Timocom, Trans.eu) need API access from those providers.
+

@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from "@nestjs/common";
-import { and, asc, count, desc, eq, notInArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { AVAILABLE, nullIfEmpty, TAKEN } from "../common/assignable";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
@@ -19,6 +19,13 @@ import { AssignCargoDto, CreateCargoDto, UpdateCargoDto } from "./cargos.dto";
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 export type Cargo = typeof cargos.$inferSelect;
+
+export interface CargoOrigin {
+  source: string;
+  externalId: string;
+  pickupPoint: LngLat;
+  deliveryPoint: LngLat;
+}
 type Assignment = Pick<Cargo, "driverId" | "truckId" | "trailerId">;
 type Point = { x: number; y: number };
 
@@ -71,18 +78,33 @@ export class CargosService {
       .orderBy(desc(cargos.createdAt), asc(cargos.id));
   }
 
+  findBySource(source: string, externalIds: string[]) {
+    if (!externalIds.length) return Promise.resolve([]);
+    return this.db
+      .select({ id: cargos.id, externalId: cargos.externalId, status: cargos.status })
+      .from(cargos)
+      .where(and(eq(cargos.source, source), inArray(cargos.externalId, externalIds)));
+  }
+
   async findOne(id: string) {
     const cargo = await this.db.query.cargos.findFirst({ where: eq(cargos.id, id) });
     if (!cargo) throw new NotFoundException("Cargo not found");
     return cargo;
   }
 
-  async create(dto: CreateCargoDto) {
-    const points = await this.locate(dto);
+  /**
+   * `origin` marks cargo imported from a load board; its coordinates are already known,
+   * so those addresses aren't geocoded again.
+   */
+  async create(dto: CreateCargoDto, origin?: CargoOrigin) {
+    const points = origin
+      ? { pickupPoint: toPoint(origin.pickupPoint), deliveryPoint: toPoint(origin.deliveryPoint) }
+      : await this.locate(dto);
+    const source = origin ? { source: origin.source, externalId: origin.externalId } : {};
     return this.db.transaction(async (tx) => {
       const [cargo] = await tx
         .insert(cargos)
-        .values({ ...dto, ...normalizeRefs(dto), ...points, status: "new" })
+        .values({ ...dto, ...normalizeRefs(dto), ...points, ...source, status: "new" })
         .returning();
       await syncAssignment(tx, emptyAssignment, cargo);
       return cargo;

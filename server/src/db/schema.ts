@@ -5,6 +5,7 @@ import {
   doublePrecision,
   index,
   integer,
+  uniqueIndex,
   pgEnum,
   pgTable,
   text,
@@ -154,8 +155,11 @@ export const cargos = pgTable("cargos", {
   delayMinutes: integer("delay_minutes"),
   delayReason: text("delay_reason"),
   delayReportedAt: timestamp("delay_reported_at", { withTimezone: true }),
+  // Where the load came from: "manual", or a load board's id; externalId is the board's load id.
+  source: text("source").notNull().default("manual"),
+  externalId: text("external_id"),
   ...timestamps,
-});
+}, (table) => [uniqueIndex("cargos_source_external_idx").on(table.source, table.externalId)]);
 
 export type User = typeof users.$inferSelect;
 export type UserRole = (typeof userRole.enumValues)[number];

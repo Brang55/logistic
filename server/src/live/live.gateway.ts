@@ -12,7 +12,7 @@ const FLEET_ROLES: UserRole[] = ["admin", "dispatcher"];
 /** Something dispatchers should look at: a reported delay, heavy traffic or a closure. */
 export interface LiveAlert {
   id: string;
-  kind: "delay-reported" | "traffic-delay" | "incident";
+  kind: "delay-reported" | "traffic-delay" | "incident" | "address-changed" | "loads-imported";
   severity: "info" | "warning" | "critical";
   message: string;
   cargoId?: string;

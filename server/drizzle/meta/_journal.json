@@ -36,6 +36,13 @@
       "when": 1791538365208,
       "tag": "0004_cargo_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791539569442,
+      "tag": "0005_load_board_source",
+      "breakpoints": true
     }
   ]
 }

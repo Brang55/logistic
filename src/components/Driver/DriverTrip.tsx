@@ -13,6 +13,7 @@ import {
 import { formatAge, formatDistance, formatDuration } from "../../utils/format";
 import { groupMessages } from "../../utils/notices";
 import { Loader } from "../Loader/Loader";
+import VoiceAssistant from "./VoiceAssistant";
 
 import styles from "./DriverTrip.module.css";
 
@@ -181,6 +182,8 @@ const DriverTrip = () => {
         />
         {actionError && <p className={styles.error}>{errorMessage(actionError)}</p>}
       </section>
+
+      <VoiceAssistant />
 
       {violations.length > 0 && (
         <section className={`${styles.card} ${styles.warning}`}>

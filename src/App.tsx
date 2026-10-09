@@ -15,6 +15,7 @@ import Dispatcher from "./components/Dispatcher/Dispatcher";
 import LiveFleet from "./components/Fleet/LiveFleet";
 import DriverTrip from "./components/Driver/DriverTrip";
 import Traffic from "./components/Traffic/Traffic";
+import LoadBoard from "./components/LoadBoard/LoadBoard";
 import Login from "./components/Account/Login/Login";
 
 import PrivateRoute from "./components/Account/PrivateRoute/PrivateRoute";
@@ -65,6 +66,9 @@ function App() {
 
           <Route element={<PrivateRoute roles={STAFF} />}>
             <Route path="/traffic" element={<Traffic />} />
+          </Route>
+          <Route element={<PrivateRoute roles={STAFF} />}>
+            <Route path="/loadboard" element={<LoadBoard />} />
           </Route>
           <Route element={<PrivateRoute roles={["driver"]} />}>
             <Route path="/driver" element={<DriverTrip />} />

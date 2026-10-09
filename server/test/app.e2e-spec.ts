@@ -26,6 +26,7 @@ const PLACES: Record<string, LngLat> = {
   P2: [40, 0.02],
   D2: [40, 0.027],
   Far: [45, 5],
+  "Lidl warehouse Plovdiv": [24.7, 42.1],
 };
 const geocoder = { geocode: jest.fn(async (q: string) => PLACES[q] ?? null) };
 // Straight lines at 60 km/h, so durations scale with distance.
@@ -69,6 +70,9 @@ describe("API (e2e)", () => {
     process.env.JWT_ACCESS_SECRET = "test-secret";
     process.env.TELEMATICS_PROVIDER = "none";
     process.env.TRAFFIC_MONITOR_INTERVAL_MS = "0";
+    process.env.LOADBOARD_SYNC_INTERVAL_MS = "0";
+    // Voice commands use the keyword parser in tests.
+    process.env.ANTHROPIC_API_KEY = "";
     process.env.TELEMATICS_WEBHOOK_SECRET = "test-webhook-secret";
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(GeocodingService)
@@ -485,6 +489,122 @@ describe("API (e2e)", () => {
         router.route.mockImplementation(fakeRoute);
         await asDispatcher(api().delete(`/api/cargos/${cargo.id}`)).expect(204);
       }
+    });
+  });
+
+  describe("voice commands", () => {
+    const asDispatcher = <T extends request.Test>(req: T) => req.auth(dispatcherToken, { type: "bearer" });
+    let driverToken: string;
+    let cargo: { id: string };
+
+    beforeAll(async () => {
+      const truck = (await asDispatcher(api().post("/api/trucks")).send({ truckNumber: "VOICE-1" })).body;
+      const driver = (
+        await asDispatcher(api().post("/api/drivers")).send({ firstName: "Vic", lastName: "Voice", truckDriverEmail: "vic@test.local" })
+      ).body;
+      await asDispatcher(api().post(`/api/drivers/${driver.id}/account`)).send({ password: "driverpass1" }).expect(201);
+      driverToken = (await api().post("/api/auth/login").send({ email: "vic@test.local", password: "driverpass1" })).body.accessToken;
+      cargo = (
+        await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Sofia", deliveryLocation: "Munich", truckId: truck.id, driverId: driver.id })
+      ).body;
+    });
+
+    const asDriver = <T extends request.Test>(req: T) => req.auth(driverToken, { type: "bearer" });
+    const interpret = (transcript: string) => asDriver(api().post("/api/me/voice/interpret")).send({ transcript }).expect(200);
+
+    it("proposes a delay report and only reports it once confirmed", async () => {
+      const proposal = await interpret("I'm 30 minutes late because of heavy rain");
+      expect(proposal.body).toMatchObject({
+        parser: "rules",
+        needsConfirmation: true,
+        cargoId: cargo.id,
+        intent: { action: "report_delay", delayMinutes: 30, reason: "heavy rain" },
+      });
+      expect(proposal.body.reply).toContain("30 minute delay");
+      expect((await asDispatcher(api().get(`/api/cargos/${cargo.id}`))).body.delayMinutes).toBeNull();
+
+      await asDriver(api().post("/api/me/voice/execute"))
+        .send({ action: "report_delay", cargoId: cargo.id, delayMinutes: 30, reason: "heavy rain" })
+        .expect(200);
+      expect((await asDispatcher(api().get(`/api/cargos/${cargo.id}`))).body).toMatchObject({ delayMinutes: 30, delayReason: "heavy rain" });
+    });
+
+    it("asks for the minutes when a delay has no amount", async () => {
+      const proposal = await interpret("I will have a delayed pickup");
+      expect(proposal.body.intent).toMatchObject({ action: "report_delay", delayMinutes: null });
+      expect(proposal.body.reply).toMatch(/How many minutes/);
+      await asDriver(api().post("/api/me/voice/execute")).send({ action: "report_delay", cargoId: cargo.id }).expect(400);
+    });
+
+    it("changes the delivery address, re-geocodes it and tells dispatch", async () => {
+      const proposal = await interpret("set the delivery destination to Lidl warehouse Plovdiv");
+      expect(proposal.body.intent).toMatchObject({ action: "set_delivery_location", location: "Lidl warehouse Plovdiv" });
+
+      await asDriver(api().post("/api/me/voice/execute"))
+        .send({ action: "set_delivery_location", cargoId: cargo.id, location: "Lidl warehouse Plovdiv" })
+        .expect(200);
+      const updated = (await asDispatcher(api().get(`/api/cargos/${cargo.id}`))).body;
+      expect(updated).toMatchObject({ deliveryLocation: "Lidl warehouse Plovdiv", deliveryPoint: { x: 24.7, y: 42.1 } });
+      const alerts = (await asDispatcher(api().get("/api/traffic/alerts"))).body;
+      expect(alerts[0]).toMatchObject({ kind: "address-changed", cargoId: cargo.id });
+    });
+
+    it("answers next-stop questions without changing anything", async () => {
+      const answer = await interpret("what's my next stop");
+      expect(answer.body).toMatchObject({ needsConfirmation: false, intent: { action: "next_stop" } });
+      expect(answer.body.reply).toContain("Pickup in Sofia");
+    });
+
+    it("refuses to act on a load that isn't the driver's current one", async () => {
+      const other = (await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Sofia", deliveryLocation: "Munich" })).body;
+      await asDriver(api().post("/api/me/voice/execute")).send({ action: "confirm_pickup", cargoId: other.id }).expect(400);
+      await asDispatcher(api().post("/api/me/voice/interpret")).send({ transcript: "delivered" }).expect(403);
+    });
+  });
+
+  describe("load boards", () => {
+    const asDispatcher = <T extends request.Test>(req: T) => req.auth(dispatcherToken, { type: "bearer" });
+
+    it("lists loads per region and equipment", async () => {
+      const eu = (await asDispatcher(api().get("/api/loadboards/loads?region=EU")).expect(200)).body;
+      expect(eu.length).toBeGreaterThan(5);
+      expect(eu.every((load: { region: string; rate: { currency: string } }) => load.region === "EU" && load.rate.currency === "EUR")).toBe(true);
+
+      const reefers = (await asDispatcher(api().get("/api/loadboards/loads?equipment=Reefer")).expect(200)).body;
+      expect(reefers.length).toBeGreaterThan(0);
+      expect(reefers.every((load: { equipment: string }) => load.equipment === "Reefer")).toBe(true);
+      await api().get("/api/loadboards/loads").expect(401);
+    });
+
+    it("imports a load once, with coordinates, and flags it as imported", async () => {
+      const [load] = (await asDispatcher(api().get("/api/loadboards/loads?region=US")).expect(200)).body;
+      const first = await asDispatcher(api().post(`/api/loadboards/${load.board}/loads/${load.id}/import`)).expect(200);
+      expect(first.body).toMatchObject({
+        created: true,
+        cargo: {
+          source: load.board,
+          externalId: load.id,
+          pickupLocation: load.origin.city,
+          deliveryLocation: load.destination.city,
+          pickupPoint: { x: load.origin.point[0], y: load.origin.point[1] },
+          status: "new",
+        },
+      });
+      const again = await asDispatcher(api().post(`/api/loadboards/${load.board}/loads/${load.id}/import`)).expect(200);
+      expect(again.body).toMatchObject({ created: false, cargo: { id: first.body.cargo.id } });
+
+      const listed = (await asDispatcher(api().get("/api/loadboards/loads?region=US"))).body.find((l: { id: string }) => l.id === load.id);
+      expect(listed.cargoId).toBe(first.body.cargo.id);
+      await asDispatcher(api().post(`/api/loadboards/${load.board}/loads/nope/import`)).expect(404);
+    });
+
+    it("auto-imports the loads our company booked, once", async () => {
+      const first = (await asDispatcher(api().post("/api/loadboards/sync")).expect(200)).body;
+      expect(first.imported.length).toBeGreaterThan(0);
+      const second = (await asDispatcher(api().post("/api/loadboards/sync")).expect(200)).body;
+      expect(second.imported).toEqual([]);
+      const alerts = (await asDispatcher(api().get("/api/traffic/alerts"))).body;
+      expect(alerts.find((a: { kind: string }) => a.kind === "loads-imported")).toBeDefined();
     });
   });
 });
