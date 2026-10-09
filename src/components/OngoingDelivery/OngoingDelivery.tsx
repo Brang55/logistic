@@ -1,6 +1,6 @@
 import { useState } from "react";
 import DeliveryList from "../Delivery/DeliveryList/DeliveryList";
-import GoogleMap from "../GoogleMap/GoogleMap";
+import MapboxMap from "../MapboxMap/MapboxMap";
 import Search from "../Search/Search";
 import styles from "./OngoingDelivery.module.css";
 
@@ -33,8 +33,8 @@ const OngoingDelivery = () => {
         <h3 className={styles.ongoingTitle}>Ongoing Delivery</h3>
         <DeliveryList onDeliveryClick={handleDeliveryClick} />
       </section>
-      <div className={styles.googleMapsHandler}>
-        <GoogleMap
+      <div className={styles.mapHandler}>
+        <MapboxMap
           pickupDate={pickupDate}
           pickupLocation={pickupLocation}
           deliveryDate={deliveryDate}
