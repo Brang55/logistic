@@ -1,10 +1,9 @@
 import {
   useAddNewDriverMutation,
   useEditDriverMutation,
+  useLazyCheckDriverEmailQuery,
 } from "../../../../app/features/driver/driverSlice";
 
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../../../config/firebase";
 import * as Yup from "yup";
 
 import AddEntityForm from "../../../Entity/AddEntityForm/AddEntityForm";
@@ -55,6 +54,8 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({
 
   const [editDriver] = useEditDriverMutation();
 
+  const [checkDriverEmail] = useLazyCheckDriverEmailQuery();
+
   const initialValues: DriverFormValues = {
     id: id || "",
     firstName: firstName || "",
@@ -65,12 +66,8 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({
   };
 
   const checkEmailExistsInDB = async (email: string) => {
-    const q = query(
-      collection(db, "drivers"),
-      where("truckDriverEmail", "==", email)
-    );
-    const querySnapshot = await getDocs(q);
-    return !querySnapshot.empty;
+    const { exists } = await checkDriverEmail(email).unwrap();
+    return exists;
   };
 
   return (

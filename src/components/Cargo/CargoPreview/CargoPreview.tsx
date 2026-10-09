@@ -1,3 +1,4 @@
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import styles from "./CargoPreview.module.css";
 
 import { useLoadCargoQuery } from "../../../app/features/driver/cargoSlice";
@@ -17,12 +18,9 @@ export const CargoPreview = () => {
     isError,
     isLoading,
   } = useLoadCargoQuery(id!, { skip: !id });
-  // @ts-expect-error not a final version
-  const { data: driver } = useLoadDriverQuery(cargo?.driverId);
-  // @ts-expect-error not a final version
-  const { data: truck } = useLoadTruckQuery(cargo?.truckId);
-  // @ts-expect-error not a final version
-  const { data: trailer } = useLoadTrailerQuery(cargo?.trailerId);
+  const { data: driver } = useLoadDriverQuery(cargo?.driverId ?? skipToken);
+  const { data: truck } = useLoadTruckQuery(cargo?.truckId ?? skipToken);
+  const { data: trailer } = useLoadTrailerQuery(cargo?.trailerId ?? skipToken);
 
   console.log(driver);
 

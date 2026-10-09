@@ -1,12 +1,16 @@
-import { createContext, useEffect, useState, ReactNode } from "react";
-import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { doc, getDoc, DocumentData } from "firebase/firestore";
-import { db, auth } from "../config/firebase";
+import { createContext, ReactNode, useSyncExternalStore } from "react";
+import { useDispatch } from "react-redux";
+import { api } from "../app/api";
+import { tokenStore } from "../app/tokenStore";
+import {
+  AuthUser,
+  useLogoutUserMutation,
+  useMeQuery,
+} from "../app/features/driver/authSlice";
 
 // Define the shape of the auth context
 interface AuthContextType {
-  user: User | null;
-  userData: DocumentData | null; // Firestore user data
+  user: AuthUser | null;
   loading: boolean;
   logoutUser: () => Promise<void>;
 }
@@ -16,42 +20,26 @@ export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
 );
 
-// Create a provider component
+// The signed-in user is whoever /auth/me returns for the stored access token.
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<DocumentData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const dispatch = useDispatch();
+  const hasTokens = useSyncExternalStore(tokenStore.subscribe, tokenStore.hasTokens);
+  const { data, isFetching } = useMeQuery(undefined, { skip: !hasTokens });
+  const [logout] = useLogoutUserMutation();
 
-  useEffect(() => {
-    // Set up the onAuthStateChanged listener
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-
-      if (currentUser) {
-        // Fetch additional user data from Firestore
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          setUserData(userDoc.data());
-        } else {
-          setUserData(null);
-        }
-      } else {
-        setUserData(null);
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
+  const user = hasTokens ? data ?? null : null;
+  const loading = hasTokens && !user && isFetching;
 
   const logoutUser = async () => {
-    await signOut(auth);
-    // After sign out, Firebase automatically updates the auth state (user will be set to null)
+    const refreshToken = tokenStore.get()?.refreshToken;
+    tokenStore.clear();
+    // Drop cached data so the next user never sees the previous user's records.
+    dispatch(api.util.resetApiState());
+    if (refreshToken) await logout(refreshToken);
   };
 
   return (
-    <AuthContext.Provider value={{ user, userData, loading, logoutUser }}>
+    <AuthContext.Provider value={{ user, loading, logoutUser }}>
       {children}
     </AuthContext.Provider>
   );

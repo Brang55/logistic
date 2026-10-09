@@ -1,3 +1,4 @@
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import styles from "./AddCargoForm.module.css";
 import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import * as Yup from "yup";
@@ -96,12 +97,9 @@ const AddCargoForm = () => {
 
   const { data: availableTrailers, refetch: refetchAvailableTrailers } =
     useFetchAvailableTrailersQuery();
-  // @ts-expect-error not a final version
-  const { data: driver } = useLoadDriverQuery(cargoDriverId);
-  // @ts-expect-error not a final version
-  const { data: truck } = useLoadTruckQuery(cargoTruckId);
-  // @ts-expect-error not a final version
-  const { data: trailer } = useLoadTrailerQuery(cargoTrailerId);
+  const { data: driver } = useLoadDriverQuery(cargoDriverId ?? skipToken);
+  const { data: truck } = useLoadTruckQuery(cargoTruckId ?? skipToken);
+  const { data: trailer } = useLoadTrailerQuery(cargoTrailerId ?? skipToken);
 
   const { data: trucks } = useFetchTrucksQuery();
 
@@ -140,9 +138,9 @@ const AddCargoForm = () => {
     freightCost: cargo ? cargo.freightCost : "",
     paymentTerms: cargo ? cargo.paymentTerms : "",
     notes: cargo ? cargo.notes : "",
-    driverId: cargo ? cargo.driverId : "",
-    truckId: cargo ? cargo.truckId : "",
-    trailerId: cargo ? cargo.trailerId : "",
+    driverId: cargo?.driverId ?? "",
+    truckId: cargo?.truckId ?? "",
+    trailerId: cargo?.trailerId ?? "",
     // Add default initial values for other fields here
   };
 

@@ -1,69 +1,47 @@
-import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { auth, db } from "../../../config/firebase";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { api } from "../../api";
+import { Tokens, tokenStore } from "../../tokenStore";
 
-// Define the API slice with RTK Query
-export const authApi = createApi({
-  reducerPath: "authApi",
-  baseQuery: fakeBaseQuery(),
+export type UserRole = "admin" | "dispatcher" | "driver";
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: UserRole;
+}
+
+interface Credentials {
+  email: string;
+  password: string;
+}
+
+export const authApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    registerUser: builder.mutation({
-      async queryFn({ email, password }: { email: string; password: string }) {
-        try {
-          // Register user with Firebase Authentication
-          const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-          const user = userCredential.user;
-
-          // Save user in Firestore
-          await addDoc(collection(db, "users"), {
-            uid: user.uid,
-            email: user.email,
-          });
-
-          return { data: user };
-        } catch (error) {
-          // @ts-expect-error not a final version
-          return { error: error.message };
-        }
-      },
+    // Creating accounts is admin-only on the server.
+    registerUser: builder.mutation<AuthUser, Credentials & { role?: UserRole }>({
+      query: (body) => ({ url: "/auth/register", method: "POST", body }),
     }),
-    loginUser: builder.mutation({
-      async queryFn({ email, password }: { email: string; password: string }) {
-        try {
-          // Authenticate user with Firebase Authentication
-          const userCredential = await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-          const user = userCredential.user;
-
-          // Check if user exists in Firestore
-          const q = query(
-            collection(db, "users"),
-            where("uid", "==", user.uid)
-          );
-          const querySnapshot = await getDocs(q);
-          if (querySnapshot.empty) {
-            throw new Error("User does not exist in Firestore");
-          }
-
-          return { data: user };
-        } catch (error) {
-          // @ts-expect-error not a final version
-          return { error: error.message };
-        }
+    loginUser: builder.mutation<AuthUser, Credentials>({
+      query: (body) => ({ url: "/auth/login", method: "POST", body }),
+      // Store tokens before the mutation resolves so the next request is authenticated.
+      transformResponse: (res: Tokens & { user: AuthUser }) => {
+        tokenStore.set(res);
+        return res.user;
       },
+      invalidatesTags: ["Me"],
+    }),
+    me: builder.query<AuthUser, void>({
+      query: () => "/auth/me",
+      providesTags: ["Me"],
+    }),
+    logoutUser: builder.mutation<void, string>({
+      query: (refreshToken) => ({ url: "/auth/logout", method: "POST", body: { refreshToken } }),
     }),
   }),
 });
 
-export const { useRegisterUserMutation, useLoginUserMutation } = authApi;
+export const {
+  useRegisterUserMutation,
+  useLoginUserMutation,
+  useMeQuery,
+  useLogoutUserMutation,
+} = authApi;

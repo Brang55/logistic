@@ -1,3 +1,31 @@
+# Logistic
+
+Web app (React + Vite, repo root) with a NestJS + PostgreSQL/PostGIS API in `server/`.
+
+## Local development
+
+```sh
+docker compose up -d db redis       # Postgres/PostGIS on :5432, Redis on :6379
+cd server
+cp .env.example .env                # then set JWT_ACCESS_SECRET (openssl rand -hex 32)
+npm install
+npm run db:migrate
+npm run db:seed                     # demo trucks, drivers, trailers and US/EU cargo
+npm run start:dev                   # API on :3000, Swagger UI at http://localhost:3000/docs
+cd ..
+npm install
+npm run dev                         # web on :5173, /api is proxied to :3000
+```
+
+Demo logins (from the seed): `admin@demo.logistic` and `dispatcher@demo.logistic`, password `demo12345`
+(override with `SEED_PASSWORD`). Accounts are created by an admin via `POST /api/auth/register`.
+
+Tests: `cd server && npm run test:e2e` (uses a separate `logistic_test` database in the same container).
+
+Schema changes: edit `server/src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate`.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
