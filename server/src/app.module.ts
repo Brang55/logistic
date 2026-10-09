@@ -7,6 +7,8 @@ import { PgErrorFilter } from "./common/pg-error.filter";
 import { DbModule } from "./db/db.module";
 import { DriversModule } from "./drivers/drivers.module";
 import { HealthController } from "./health.controller";
+import { MapboxModule } from "./mapbox/mapbox.module";
+import { RoutingModule } from "./routing/routing.module";
 import { TrailersModule } from "./trailers/trailers.module";
 import { TrucksModule } from "./trucks/trucks.module";
 
@@ -14,11 +16,13 @@ import { TrucksModule } from "./trucks/trucks.module";
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
+    MapboxModule,
     AuthModule,
     TrucksModule,
     TrailersModule,
     DriversModule,
     CargosModule,
+    RoutingModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: PgErrorFilter }],

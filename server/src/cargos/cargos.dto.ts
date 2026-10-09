@@ -1,4 +1,4 @@
-import { PartialType } from "@nestjs/swagger";
+import { PartialType, PickType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsOptional, IsString, IsUUID, ValidateIf } from "class-validator";
 
@@ -131,3 +131,17 @@ export class CreateCargoDto {
 }
 
 export class UpdateCargoDto extends PartialType(CreateCargoDto) {}
+
+export class AssignCargoDto extends PickType(UpdateCargoDto, ["driverId", "truckId", "trailerId"] as const) {}
+
+export class CargoRouteQueryDto {
+  /** Route with this truck instead of the assigned one. */
+  @IsOptional()
+  @IsUUID()
+  truckId?: string;
+
+  /** Optional start point "lng,lat", e.g. the truck's current position. */
+  @IsOptional()
+  @IsString()
+  from?: string;
+}

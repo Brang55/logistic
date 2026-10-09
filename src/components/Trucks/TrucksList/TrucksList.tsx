@@ -98,6 +98,10 @@ const TrucksList = () => {
           editTruckForm={editTruckForm}
           truckModel={truck?.truckModel || ""}
           engineVariation={truck?.engineVariation || ""}
+          heightM={truck?.heightM}
+          widthM={truck?.widthM}
+          weightT={truck?.weightT}
+          axles={truck?.axles}
         />
       )}
       {confirm && (

@@ -1,5 +1,6 @@
 import "dotenv/config";
 import * as argon2 from "argon2";
+import { and, eq, isNull } from "drizzle-orm";
 import { createDb } from "./client";
 import { cargos, drivers, trailers, trucks, users } from "./schema";
 
@@ -7,16 +8,16 @@ import { cargos, drivers, trailers, trucks, users } from "./schema";
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "demo12345";
 
 const demoTrucks = [
-  { truckNumber: "TR-101", truckModel: "Volvo FH16", engineVariation: "D16K 750", plate: "CA 1234 AB", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
-  { truckNumber: "TR-102", truckModel: "Scania R500", engineVariation: "DC13 500", plate: "CA 5678 AB", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
-  { truckNumber: "TR-103", truckModel: "Mercedes Actros", engineVariation: "OM471 480", plate: "B-LG 2031", heightM: 3.9, widthM: 2.55, lengthM: 16.5, weightT: 38, axles: 5 },
-  { truckNumber: "TR-104", truckModel: "DAF XG+", engineVariation: "MX-13 530", plate: "NL-12-XG", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
-  { truckNumber: "TR-105", truckModel: "MAN TGX", engineVariation: "D26 510", plate: "M-LG 774", heightM: 3.8, widthM: 2.5, lengthM: 12, weightT: 26, axles: 3 },
-  { truckNumber: "US-201", truckModel: "Freightliner Cascadia", engineVariation: "DD15 505", plate: "TX 8KD-221", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
-  { truckNumber: "US-202", truckModel: "Peterbilt 579", engineVariation: "PACCAR MX-13", plate: "IL P79-332", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
-  { truckNumber: "US-203", truckModel: "Kenworth T680", engineVariation: "PACCAR MX-13", plate: "CA 7TK-680", heightM: 4.0, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
-  { truckNumber: "US-204", truckModel: "International LT", engineVariation: "S13 475", plate: "OH LT-4410", heightM: 3.5, widthM: 2.6, lengthM: 10.5, weightT: 15, axles: 2 },
-  { truckNumber: "US-205", truckModel: "Volvo VNL 860", engineVariation: "D13TC 500", plate: "GA VNL-860", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
+  { truckNumber: "TR-101", truckModel: "Volvo FH16", engineVariation: "Diesel", plate: "CA 1234 AB", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
+  { truckNumber: "TR-102", truckModel: "Scania R500", engineVariation: "Diesel", plate: "CA 5678 AB", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
+  { truckNumber: "TR-103", truckModel: "Mercedes Actros", engineVariation: "Diesel", plate: "B-LG 2031", heightM: 3.9, widthM: 2.55, lengthM: 16.5, weightT: 38, axles: 5 },
+  { truckNumber: "TR-104", truckModel: "DAF XG+", engineVariation: "Diesel", plate: "NL-12-XG", heightM: 4.0, widthM: 2.55, lengthM: 16.5, weightT: 40, axles: 5 },
+  { truckNumber: "TR-105", truckModel: "MAN TGX", engineVariation: "Diesel", plate: "M-LG 774", heightM: 3.8, widthM: 2.5, lengthM: 12, weightT: 26, axles: 3 },
+  { truckNumber: "US-201", truckModel: "Freightliner Cascadia", engineVariation: "Diesel", plate: "TX 8KD-221", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
+  { truckNumber: "US-202", truckModel: "Peterbilt 579", engineVariation: "Diesel", plate: "IL P79-332", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
+  { truckNumber: "US-203", truckModel: "Kenworth T680", engineVariation: "Diesel", plate: "CA 7TK-680", heightM: 4.0, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
+  { truckNumber: "US-204", truckModel: "International LT", engineVariation: "Diesel", plate: "OH LT-4410", heightM: 3.5, widthM: 2.6, lengthM: 10.5, weightT: 15, axles: 2 },
+  { truckNumber: "US-205", truckModel: "Volvo VNL 860", engineVariation: "Diesel", plate: "GA VNL-860", heightM: 4.11, widthM: 2.6, lengthM: 21.9, weightT: 36.3, axles: 5 },
 ];
 
 const demoTrailers = [
@@ -37,6 +38,26 @@ const demoDrivers = [
   { firstName: "Maria", lastName: "Gonzalez", truckDriverEmail: "m.gonzalez@demo.logistic", phoneNumber: "+1 312 555 0144", truckNumber: "US-202" },
   { firstName: "Tyler", lastName: "Brooks", truckDriverEmail: "t.brooks@demo.logistic", phoneNumber: "+1 404 555 0188", truckNumber: "US-205" },
 ];
+
+// Fixed coordinates so the demo needs no geocoding calls.
+const CITY_POINTS: Record<string, { x: number; y: number }> = {
+  "Sofia, Bulgaria": { x: 23.3219, y: 42.6977 },
+  "Munich, Germany": { x: 11.582, y: 48.1351 },
+  "Rotterdam, Netherlands": { x: 4.4777, y: 51.9244 },
+  "Lyon, France": { x: 4.8357, y: 45.764 },
+  "Milan, Italy": { x: 9.19, y: 45.4642 },
+  "Erfurt, Germany": { x: 11.0299, y: 50.9848 },
+  "Gdańsk, Poland": { x: 18.6466, y: 54.352 },
+  "Vienna, Austria": { x: 16.3738, y: 48.2082 },
+  "Dallas, TX, USA": { x: -96.797, y: 32.7767 },
+  "Chicago, IL, USA": { x: -87.6298, y: 41.8781 },
+  "Atlanta, GA, USA": { x: -84.388, y: 33.749 },
+  "Orlando, FL, USA": { x: -81.3792, y: 28.5383 },
+  "Los Angeles, CA, USA": { x: -118.2437, y: 34.0522 },
+  "Phoenix, AZ, USA": { x: -112.074, y: 33.4484 },
+  "Columbus, OH, USA": { x: -82.9988, y: 39.9612 },
+  "Detroit, MI, USA": { x: -83.0458, y: 42.3314 },
+};
 
 // Every field the cargo form marks as required is filled, so seeded loads can be edited in the demo.
 const demoCargo = [
@@ -72,6 +93,8 @@ async function main() {
       demoCargo.map((cargo, i) => ({
         ...cargo,
         shipperAddress: cargo.pickupLocation,
+        pickupPoint: CITY_POINTS[cargo.pickupLocation],
+        deliveryPoint: CITY_POINTS[cargo.deliveryLocation],
         receiverAddress: cargo.deliveryLocation,
         serviceType: "Door-to-Door",
         paymentTerms: i % 3 ? "Prepaid" : "Collect",
@@ -80,6 +103,12 @@ async function main() {
         status: i % 2 ? "confirmed" : "new",
       })),
     );
+  }
+
+  // Backfill points for demo cargo seeded before coordinates were added.
+  for (const [location, point] of Object.entries(CITY_POINTS)) {
+    await db.update(cargos).set({ pickupPoint: point }).where(and(eq(cargos.pickupLocation, location), isNull(cargos.pickupPoint)));
+    await db.update(cargos).set({ deliveryPoint: point }).where(and(eq(cargos.deliveryLocation, location), isNull(cargos.deliveryPoint)));
   }
 
   await pool.end();

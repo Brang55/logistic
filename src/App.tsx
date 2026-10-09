@@ -11,6 +11,7 @@ import AddCargoForm from "./components/Cargo/AddCargoForm/AddCargoForm";
 import { CargoList } from "./components/Cargo/CargoList/CargoList";
 import { CargoPreview } from "./components/Cargo/CargoPreview/CargoPreview";
 
+import Dispatcher from "./components/Dispatcher/Dispatcher";
 import Login from "./components/Account/Login/Login";
 
 import PrivateRoute from "./components/Account/PrivateRoute/PrivateRoute";
@@ -26,6 +27,9 @@ function App() {
           </Route>
           <Route element={<PrivateRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+          </Route>
+          <Route element={<PrivateRoute />}>
+            <Route path="/dispatcher" element={<Dispatcher />} />
           </Route>
           <Route element={<PrivateRoute />}>
             <Route path="/track" element={<OngoingDelivery />} />

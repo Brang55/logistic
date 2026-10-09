@@ -34,7 +34,11 @@ export default interface Cargo {
   truckId?: string | null;
   trailerId?: string | null;
   status: string;
+  pickupPoint?: { x: number; y: number } | null;
+  deliveryPoint?: { x: number; y: number } | null;
 }
+
+export type CargoAssignment = Pick<Cargo, "driverId" | "truckId" | "trailerId">;
 
 // Assigning or releasing a driver, truck or trailer changes its availability.
 const ASSIGNMENT_TAGS = [
@@ -69,6 +73,11 @@ export const cargosApi = api.injectEndpoints({
       query: ({ id, ...body }) => ({ url: `/cargos/${id}`, method: "PATCH", body }),
       invalidatesTags: [...ASSIGNMENT_TAGS],
     }),
+    // Assigns driver/truck/trailer without changing the cargo's status.
+    assignCargo: builder.mutation<Cargo, { id: string } & CargoAssignment>({
+      query: ({ id, ...body }) => ({ url: `/cargos/${id}/assign`, method: "POST", body }),
+      invalidatesTags: [...ASSIGNMENT_TAGS],
+    }),
     confirmCargo: builder.mutation<void, string>({
       query: (id) => ({ url: `/cargos/${id}/confirm`, method: "POST" }),
       invalidatesTags: ["Cargo"],
@@ -86,6 +95,7 @@ export const {
   useDeleteCargoMutation,
   useLoadCargoQuery,
   useEditCargoMutation,
+  useAssignCargoMutation,
   useConfirmCargoMutation,
   useFetchConfirmedCargosQuery,
 } = cargosApi;

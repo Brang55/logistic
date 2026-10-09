@@ -4,8 +4,19 @@ import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "../src/app.module";
 import { AuthService } from "../src/auth/auth.service";
+import { GeocodingService } from "../src/mapbox/geocoding.service";
+import { LngLat, RouteRequest, RoutingService } from "../src/routing/routing.types";
 import { setupApp } from "../src/setup-app";
 import { TEST_DATABASE_URL } from "./test-env";
+
+// Fake providers so tests never call Mapbox.
+const PLACES: Record<string, LngLat> = { Sofia: [23.32, 42.69], Munich: [11.58, 48.13], Vienna: [16.37, 48.2] };
+const geocoder = { geocode: jest.fn(async (q: string) => PLACES[q] ?? null) };
+const router = {
+  route: jest.fn(async ({ coordinates }: RouteRequest) => [
+    { distanceM: 1, durationS: 1, summary: "", geometry: { type: "LineString", coordinates }, steps: [], notices: [], incidents: [] },
+  ]),
+};
 
 describe("API (e2e)", () => {
   let app: INestApplication<App>;
@@ -18,7 +29,12 @@ describe("API (e2e)", () => {
   beforeAll(async () => {
     process.env.DATABASE_URL = TEST_DATABASE_URL;
     process.env.JWT_ACCESS_SECRET = "test-secret";
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(GeocodingService)
+      .useValue(geocoder)
+      .overrideProvider(RoutingService)
+      .useValue(router)
+      .compile();
     app = moduleRef.createNestApplication();
     setupApp(app);
     await app.init();
@@ -142,6 +158,64 @@ describe("API (e2e)", () => {
     it("filters by status", async () => {
       const available = await asDispatcher(api().get("/api/trucks?status=available")).expect(200);
       expect(available.body.every((t: { status: string }) => t.status === "available")).toBe(true);
+    });
+  });
+
+  describe("routing", () => {
+    const asDispatcher = <T extends request.Test>(req: T) => req.auth(dispatcherToken, { type: "bearer" });
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it("geocodes cargo locations on create and only re-geocodes changed text", async () => {
+      const cargo = (
+        await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Sofia", deliveryLocation: "Munich" }).expect(201)
+      ).body;
+      expect(cargo.pickupPoint).toEqual({ x: 23.32, y: 42.69 });
+      expect(cargo.deliveryPoint).toEqual({ x: 11.58, y: 48.13 });
+
+      geocoder.geocode.mockClear();
+      const edited = await asDispatcher(api().patch(`/api/cargos/${cargo.id}`))
+        .send({ pickupLocation: "Sofia", deliveryLocation: "Vienna" })
+        .expect(200);
+      expect(geocoder.geocode.mock.calls).toEqual([["Vienna"]]);
+      expect(edited.body.deliveryPoint).toEqual({ x: 16.37, y: 48.2 });
+    });
+
+    it("routes a cargo with the assigned truck's dimensions", async () => {
+      const truck = (await asDispatcher(api().post("/api/trucks")).send({ truckNumber: "R-1", heightM: "4.2", weightT: "40" })).body;
+      const cargo = (
+        await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Sofia", deliveryLocation: "Munich" })
+      ).body;
+      await asDispatcher(api().post(`/api/cargos/${cargo.id}/confirm`)).expect(200);
+
+      const assigned = await asDispatcher(api().post(`/api/cargos/${cargo.id}/assign`)).send({ truckId: truck.id }).expect(200);
+      expect(assigned.body).toMatchObject({ truckId: truck.id, status: "confirmed" });
+
+      const res = await asDispatcher(api().get(`/api/cargos/${cargo.id}/route?from=16.37,48.2`)).expect(200);
+      expect(res.body).toMatchObject({ pickup: PLACES.Sofia, delivery: PLACES.Munich, truck: { id: truck.id } });
+      expect(router.route).toHaveBeenCalledWith({
+        coordinates: [PLACES.Vienna, PLACES.Sofia, PLACES.Munich],
+        vehicle: expect.objectContaining({ heightM: 4.2, weightT: 40 }),
+      });
+    });
+
+    it("explains when a cargo location cannot be found", async () => {
+      const cargo = (
+        await asDispatcher(api().post("/api/cargos")).send({ pickupLocation: "Atlantis", deliveryLocation: "Munich" })
+      ).body;
+      const res = await asDispatcher(api().get(`/api/cargos/${cargo.id}/route`)).expect(422);
+      expect(res.body.message).toContain("Atlantis");
+    });
+
+    it("validates ad-hoc route requests", async () => {
+      await asDispatcher(api().post("/api/routing/route")).send({ coordinates: [[0, 0]] }).expect(400);
+      await asDispatcher(api().post("/api/routing/route")).send({ coordinates: [[0, 0], [200, 0]] }).expect(400);
+      await asDispatcher(api().post("/api/routing/route")).send({ coordinates: [[0, 0], [1, 1]] }).expect(200);
+    });
+
+    it("stores empty truck dimensions as null", async () => {
+      const truck = (await asDispatcher(api().post("/api/trucks")).send({ truckNumber: "R-2", heightM: "" }).expect(201)).body;
+      expect(truck.heightM).toBeNull();
     });
   });
 });

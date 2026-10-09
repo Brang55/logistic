@@ -1,5 +1,14 @@
 import { PartialType } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
+
+// Form inputs arrive as strings; an empty input clears the value instead of becoming 0.
+// Reads the raw input because implicit conversion has already turned "" into 0.
+const ToOptionalNumber = () =>
+  Transform(({ obj, key }) => {
+    const raw = obj[key];
+    return raw === "" || raw === null ? null : Number(raw);
+  });
 
 export class CreateTruckDto {
   @IsString()
@@ -27,35 +36,40 @@ export class CreateTruckDto {
   vin?: string;
 
   /** Vehicle height in meters (Mapbox max_height accepts 0–10). */
+  @ToOptionalNumber()
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(10)
-  heightM?: number;
+  heightM?: number | null;
 
   /** Vehicle width in meters (Mapbox max_width accepts 0–10). */
+  @ToOptionalNumber()
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(10)
-  widthM?: number;
+  widthM?: number | null;
 
+  @ToOptionalNumber()
   @IsOptional()
   @IsNumber()
   @Min(0)
-  lengthM?: number;
+  lengthM?: number | null;
 
   /** Gross weight in metric tons (Mapbox max_weight accepts 0–100). */
+  @ToOptionalNumber()
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
-  weightT?: number;
+  weightT?: number | null;
 
+  @ToOptionalNumber()
   @IsOptional()
   @IsInt()
   @Min(1)
-  axles?: number;
+  axles?: number | null;
 }
 
 export class UpdateTruckDto extends PartialType(CreateTruckDto) {}

@@ -18,6 +18,10 @@ interface AddTruckFormProps {
   engineVariation?: string;
   truckModels?: string[];
   engineVariations?: string[];
+  heightM?: number | null;
+  widthM?: number | null;
+  weightT?: number | null;
+  axles?: number | null;
 }
 
 interface TruckFormValues {
@@ -28,14 +32,39 @@ interface TruckFormValues {
   engineVariations?: string[];
   truckModel?: string;
   engineVariation?: string;
+  heightM?: string;
+  widthM?: string;
+  weightT?: string;
+  axles?: string;
   values?: object;
 }
+
+// Empty inputs are allowed; filled ones must be numbers in the routing engine's range.
+const optionalNumber = (max: number, label: string) =>
+  Yup.number()
+    .transform((value, original) => (original === "" ? undefined : value))
+    .typeError(`${label} must be a number`)
+    .min(0, `${label} cannot be negative`)
+    .max(max, `${label} must be at most ${max}`);
+
+const fieldLabels = {
+  heightM: "Height (m)",
+  widthM: "Width (m)",
+  weightT: "Gross weight (t)",
+  axles: "Axles",
+};
 
 const truckValidationSchema = Yup.object().shape({
   truckNumber: Yup.string().required("Truck Number is required"),
   truckModel: Yup.string().required("Select Truck"),
   engineVariation: Yup.string().required("Choose Engine"),
+  heightM: optionalNumber(10, "Height"),
+  widthM: optionalNumber(10, "Width"),
+  weightT: optionalNumber(100, "Weight"),
+  axles: optionalNumber(20, "Axles").integer("Axles must be a whole number"),
 });
+
+const toInput = (value?: number | null) => (value == null ? "" : String(value));
 
 const AddTruckForm: React.FC<AddTruckFormProps> = ({
   id,
@@ -45,12 +74,18 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
   editTruckForm,
   truckModel,
   engineVariation,
+  heightM,
+  widthM,
+  weightT,
+  axles,
 }) => {
   const [addNewTruck] = useAddNewTruckMutation();
 
   const [editTruck] = useEditTruckMutation();
 
+  // Keep a model that isn't in the list (e.g. from imported data) selectable.
   const truckModels = ["Scania", "DAF"];
+  if (truckModel && !truckModels.includes(truckModel)) truckModels.push(truckModel);
   const engineVariations = ["Petrol", "Diesel"];
 
   const initialValues: TruckFormValues = {
@@ -58,6 +93,10 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
     truckModel: truckModel || "",
     truckNumber: truckNumber || "",
     engineVariation: engineVariation || "",
+    heightM: toInput(heightM),
+    widthM: toInput(widthM),
+    weightT: toInput(weightT),
+    axles: toInput(axles),
   };
 
   return (
@@ -76,6 +115,7 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
         editEntity={editTruck}
         entityLabel="truck"
         engineVariations={engineVariations}
+        fieldLabels={fieldLabels}
       />
     </>
   );

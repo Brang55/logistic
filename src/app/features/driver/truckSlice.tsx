@@ -1,6 +1,6 @@
 import { api } from "../../api";
 
-interface Truck {
+export interface Truck {
   id: string;
   status: string;
   truckNumber: string;

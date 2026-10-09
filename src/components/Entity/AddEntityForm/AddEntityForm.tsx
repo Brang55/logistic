@@ -22,6 +22,7 @@ interface AddEntityFormProps<T> {
   checkEmailExists?: (email: string) => Promise<boolean>;
   engineVariations?: string[];
   truckModels?: string[];
+  fieldLabels?: Record<string, string>;
 }
 
 const AddEntityForm = <T extends { values?: object }>({
@@ -38,6 +39,7 @@ const AddEntityForm = <T extends { values?: object }>({
   checkEmailExists,
   engineVariations,
   truckModels,
+  fieldLabels,
 }: AddEntityFormProps<T>) => {
   const [isLoading, setIsLoading] = useState(false);
   const [emailExistsMessage, setEmailExistsMessage] = useState<string>("");
@@ -94,7 +96,9 @@ const AddEntityForm = <T extends { values?: object }>({
               .map((key) => (
                 <div key={key} className={styles.addEntityFormRow}>
                   <label htmlFor={key}>
-                    {key.charAt(0).toUpperCase() + key.slice(1)}:
+                    {fieldLabels?.[key] ??
+                      key.charAt(0).toUpperCase() + key.slice(1)}
+                    :
                   </label>
                   {key === "truckModel" && truckModels ? (
                     <Field

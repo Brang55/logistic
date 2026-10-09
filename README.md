@@ -7,7 +7,7 @@ Web app (React + Vite, repo root) with a NestJS + PostgreSQL/PostGIS API in `ser
 ```sh
 docker compose up -d db redis       # Postgres/PostGIS on :5432, Redis on :6379
 cd server
-cp .env.example .env                # then set JWT_ACCESS_SECRET (openssl rand -hex 32)
+cp .env.example .env                # set JWT_ACCESS_SECRET (openssl rand -hex 32) and MAPBOX_SECRET_TOKEN
 npm install
 npm run db:migrate
 npm run db:seed                     # demo trucks, drivers, trailers and US/EU cargo
@@ -20,7 +20,11 @@ npm run dev                         # web on :5173, /api is proxied to :3000
 Demo logins (from the seed): `admin@demo.logistic` and `dispatcher@demo.logistic`, password `demo12345`
 (override with `SEED_PASSWORD`). Accounts are created by an admin via `POST /api/auth/register`.
 
-Tests: `cd server && npm run test:e2e` (uses a separate `logistic_test` database in the same container).
+Routing and geocoding run on the server with `MAPBOX_SECRET_TOKEN` (an `sk.` token); the web app only uses
+the public `VITE_MAPBOX_ACCESS_TOKEN` in the root `.env` for map tiles. Cargo addresses are geocoded with Mapbox
+permanent geocoding, because the coordinates are stored, and that requires a payment method on the Mapbox account.
+
+Tests: `cd server && npm test` (unit) and `npm run test:e2e` (uses a separate `logistic_test` database in the same container).
 
 Schema changes: edit `server/src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate`.
 
