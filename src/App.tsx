@@ -1,11 +1,12 @@
 import { lazy, ReactNode, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 
 import "./assets/css/styles.css";
 import Navigation from "./components/Navigation/Navigation";
 import Login from "./components/Account/Login/Login";
 import PrivateRoute from "./components/Account/PrivateRoute/PrivateRoute";
 import { Loader } from "./components/Loader/Loader";
+import { PageErrorBoundary } from "./components/PageErrorBoundary/PageErrorBoundary";
 import { STAFF } from "./app/roles";
 
 // Pages load on demand, so map-heavy screens (and mapbox-gl) don't weigh down every other page.
@@ -33,41 +34,44 @@ const NotFound = lazy(() => import("./components/NotFound/NotFound"));
 const Page = ({ children }: { children: ReactNode }) => <div className="page">{children}</div>;
 
 function App() {
+  const { pathname } = useLocation();
   return (
     <>
       <Navigation />
       <main className="main">
-        <Suspense fallback={<Loader />}>
-          <Routes>
-            <Route element={<PrivateRoute roles={STAFF} />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dispatcher" element={<Dispatcher />} />
-              <Route path="/fleet" element={<LiveFleet />} />
-              <Route path="/track" element={<OngoingDelivery />} />
-              <Route path="/drivers" element={<Page><TruckDriversList /></Page>} />
-              <Route path="/trucks" element={<Page><TrucksList /></Page>} />
-              <Route path="/trailers" element={<Page><TrailersList /></Page>} />
-              <Route path="/trucks/:id" element={<Page><VehicleDetail kind="trucks" /></Page>} />
-              <Route path="/trailers/:id" element={<Page><VehicleDetail kind="trailers" /></Page>} />
-              <Route path="/cargo" element={<Page><AddCargoForm /></Page>} />
-              <Route path="/cargoList" element={<Page><CargoList /></Page>} />
-              <Route path="/cargoList/:id/preview" element={<Page><CargoPreview /></Page>} />
-              <Route path="/cargoList/:id/edit" element={<Page><AddCargoForm /></Page>} />
-              <Route path="/traffic" element={<Traffic />} />
-              <Route path="/loadboard" element={<LoadBoard />} />
-            </Route>
-            <Route element={<PrivateRoute roles={["driver"]} />}>
-              <Route path="/driver" element={<DriverTrip />} />
-              <Route path="/driver/history" element={<DeliveryHistory />} />
-              <Route path="/driver/reports" element={<RoadReports />} />
-              <Route path="/driver/chat" element={<DriverChat />} />
-            </Route>
+        <PageErrorBoundary resetKey={pathname}>
+          <Suspense fallback={<Loader />}>
+            <Routes>
+              <Route element={<PrivateRoute roles={STAFF} />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dispatcher" element={<Dispatcher />} />
+                <Route path="/fleet" element={<LiveFleet />} />
+                <Route path="/track" element={<OngoingDelivery />} />
+                <Route path="/drivers" element={<Page><TruckDriversList /></Page>} />
+                <Route path="/trucks" element={<Page><TrucksList /></Page>} />
+                <Route path="/trailers" element={<Page><TrailersList /></Page>} />
+                <Route path="/trucks/:id" element={<Page><VehicleDetail kind="trucks" /></Page>} />
+                <Route path="/trailers/:id" element={<Page><VehicleDetail kind="trailers" /></Page>} />
+                <Route path="/cargo" element={<Page><AddCargoForm /></Page>} />
+                <Route path="/cargoList" element={<Page><CargoList /></Page>} />
+                <Route path="/cargoList/:id/preview" element={<Page><CargoPreview /></Page>} />
+                <Route path="/cargoList/:id/edit" element={<Page><AddCargoForm /></Page>} />
+                <Route path="/traffic" element={<Traffic />} />
+                <Route path="/loadboard" element={<LoadBoard />} />
+              </Route>
+              <Route element={<PrivateRoute roles={["driver"]} />}>
+                <Route path="/driver" element={<DriverTrip />} />
+                <Route path="/driver/history" element={<DeliveryHistory />} />
+                <Route path="/driver/reports" element={<RoadReports />} />
+                <Route path="/driver/chat" element={<DriverChat />} />
+              </Route>
 
-            <Route path="/login" element={<Login />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+              <Route path="/login" element={<Login />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </PageErrorBoundary>
       </main>
     </>
   );
