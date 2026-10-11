@@ -140,11 +140,9 @@ const AddCargoForm = () => {
     setSaveError(undefined);
     try {
       if (id) {
-        // @ts-expect-error the form sends a partial cargo
         await editCargo({ id, ...values, weight: weightInKg(values.weight) }).unwrap();
         navigate(`/cargoList/${id}/preview`);
       } else {
-        // @ts-expect-error the form sends a partial cargo
         const created = await addCargo({ ...values, weight: weightInKg(values.weight) }).unwrap();
         setSaved(created.id);
         resetForm();

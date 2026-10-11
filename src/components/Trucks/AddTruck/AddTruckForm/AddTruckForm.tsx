@@ -1,5 +1,5 @@
 import {
-  Truck,
+  type TruckInput,
   useAddNewTruckMutation,
   useEditTruckMutation,
 } from "../../../../app/api/trucks";
@@ -29,19 +29,14 @@ interface AddTruckFormProps {
 
 // Dimensions are entered in feet and pounds and stored metric, as the routing engine expects.
 interface TruckFormValues {
-  id?: string;
-  status?: string;
-  truckNumber?: string;
-  truckModels?: string[];
-  engineVariations?: string[];
-  truckModel?: string;
-  engineVariation?: string;
-  heightFt?: string;
-  widthFt?: string;
-  lengthFt?: string;
-  weightLb?: string;
-  axles?: string;
-  values?: object;
+  truckNumber: string;
+  truckModel: string;
+  engineVariation: string;
+  heightFt: string;
+  widthFt: string;
+  lengthFt: string;
+  weightLb: string;
+  axles: string;
 }
 
 // Empty inputs are allowed; filled ones must be numbers in the routing engine's range.
@@ -79,8 +74,9 @@ const toInput = (value?: number | null) => (value == null ? "" : String(value));
 const metric = (value: string | undefined, convert: (n: number) => number) =>
   value === undefined || value.trim() === "" ? null : Number(convert(Number(value)).toFixed(3));
 
-const toApi = ({ heightFt, widthFt, lengthFt, weightLb, ...rest }: TruckFormValues) => ({
+const toApi = ({ heightFt, widthFt, lengthFt, weightLb, axles, ...rest }: TruckFormValues): TruckInput => ({
   ...rest,
+  axles: axles.trim() === "" ? null : Number(axles),
   heightM: metric(heightFt, ftToM),
   widthM: metric(widthFt, ftToM),
   lengthM: metric(lengthFt, ftToM),
@@ -110,7 +106,6 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
   if (engineVariation && !engineVariations.includes(engineVariation)) engineVariations.push(engineVariation);
 
   const initialValues: TruckFormValues = {
-    id: id || "",
     truckModel: truckModel || "",
     truckNumber: truckNumber || "",
     engineVariation: engineVariation || "",
@@ -130,9 +125,8 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
         initialValues={initialValues}
         validationSchema={truckValidationSchema}
         editEntityForm={editTruckForm}
-        addEntity={(values: TruckFormValues) => addNewTruck(toApi(values) as Omit<Truck, "id">)}
-        editEntity={(values: TruckFormValues) => editTruck(toApi(values) as Truck)}
-        collectionName="trucks"
+        addEntity={(values) => addNewTruck(toApi(values))}
+        editEntity={({ id, ...values }) => editTruck({ id, ...toApi(values) })}
         entityLabel="truck"
         engineVariations={engineVariations}
         fieldLabels={fieldLabels}

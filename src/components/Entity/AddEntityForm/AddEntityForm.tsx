@@ -2,23 +2,24 @@ import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useState } from "react";
 
+import { errorMessage } from "../../../utils/errors";
 import { Modal } from "../../ui/ui";
 import { cx } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
+
+/** An RTK Query mutation call: `unwrap()` rejects when the API refuses the save. */
+type SaveRequest = { unwrap: () => Promise<unknown> };
 
 interface AddEntityFormProps<T> {
   id?: string;
   open: boolean;
   onClose: () => void;
   initialValues: T;
-  // @ts-expect-error not a final version
-  validationSchema: Yup.ObjectSchema;
+  validationSchema: Yup.AnyObjectSchema;
   editEntityForm: boolean;
-  collectionName: string;
   entityLabel: string;
-  editEntity: (values: T) => void;
-  addEntity: (values: T) => void;
-  truckDriverEmail?: string;
+  editEntity: (values: T & { id: string }) => SaveRequest;
+  addEntity: (values: T) => SaveRequest;
   checkEmailExists?: (email: string) => Promise<boolean>;
   engineVariations?: string[];
   truckModels?: string[];
@@ -32,7 +33,7 @@ const humanize = (key: string) => {
   return words.charAt(0).toUpperCase() + words.slice(1).toLowerCase();
 };
 
-const AddEntityForm = <T extends { values?: object }>({
+const AddEntityForm = <T extends object>({
   id,
   open,
   onClose,
@@ -55,21 +56,20 @@ const AddEntityForm = <T extends { values?: object }>({
     setFormError("");
     try {
       if (checkEmailExists && "truckDriverEmail" in values && !editEntityForm) {
-        const emailExists = await checkEmailExists(values["truckDriverEmail"] as string);
+        const emailExists = await checkEmailExists(String(values.truckDriverEmail));
         if (emailExists) {
           setFormError("This email address is already registered.");
           return;
         }
       }
       if (editEntityForm && id) {
-        await editEntity({ ...values, id });
+        await editEntity({ ...values, id }).unwrap();
       } else {
-        await addEntity(values);
+        await addEntity(values).unwrap();
       }
       onClose();
     } catch (err) {
-      console.error(`Failed to save the ${entityLabel}:`, err);
-      setFormError(`Could not save the ${entityLabel}. Please try again.`);
+      setFormError(errorMessage(err, `Could not save the ${entityLabel}. Please try again.`));
     } finally {
       setSubmitting(false);
     }
@@ -79,7 +79,7 @@ const AddEntityForm = <T extends { values?: object }>({
     truckModel: truckModels,
     engineVariation: engineVariations,
   };
-  const keys = Object.keys(initialValues as object).filter((key) => !HIDDEN_FIELDS.includes(key));
+  const keys = Object.keys(initialValues).filter((key) => !HIDDEN_FIELDS.includes(key));
   const formId = `entity-form-${entityLabel}`;
 
   return (

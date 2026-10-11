@@ -18,10 +18,8 @@ interface AddTrailerFormProps {
 }
 
 interface TrailerFormValues {
-  id?: string;
-  trailer?: string;
-  status?: string;
-  trailerNumber?: string;
+  trailer: string;
+  trailerNumber: string;
 }
 
 const trailerValidationSchema = Yup.object().shape({
@@ -42,7 +40,6 @@ const AddTrailerForm: React.FC<AddTrailerFormProps> = ({
   const [editTrailer] = useEditTrailerMutation();
 
   const initialValues: TrailerFormValues = {
-    id: id || "",
     trailer: trailer || "",
     trailerNumber: trailerNumber || "",
   };
@@ -53,13 +50,10 @@ const AddTrailerForm: React.FC<AddTrailerFormProps> = ({
         id={id}
         open={open}
         onClose={onClose}
-        // @ts-expect-error not a final version
         initialValues={initialValues}
         validationSchema={trailerValidationSchema}
         editEntityForm={editTrailerForm}
-        // @ts-expect-error not a final version
         addEntity={addNewTrailer}
-        // @ts-expect-error not a final version
         editEntity={editTrailer}
         entityLabel="trailer"
         fieldLabels={{ trailer: "Trailer type", trailerNumber: "Trailer number" }}

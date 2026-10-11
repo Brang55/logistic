@@ -21,7 +21,6 @@ interface AddDriverFormProps {
 }
 
 interface DriverFormValues {
-  id?: string;
   firstName: string;
   lastName: string;
   truckDriverEmail: string;
@@ -57,7 +56,6 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({
   const [checkDriverEmail] = useLazyCheckDriverEmailQuery();
 
   const initialValues: DriverFormValues = {
-    id: id || "",
     firstName: firstName || "",
     lastName: lastName || "",
     truckNumber: truckNumber || "",
@@ -76,13 +74,10 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({
         id={id}
         open={open}
         onClose={onClose}
-        // @ts-expect-error not a final version
         initialValues={initialValues}
         validationSchema={driverValidationSchema}
         editEntityForm={editDriverForm}
-        // @ts-expect-error not a final version
         addEntity={addNewDriver}
-        // @ts-expect-error not a final version
         editEntity={editDriver}
         entityLabel="driver"
         checkEmailExists={checkEmailExistsInDB}

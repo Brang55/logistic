@@ -8,13 +8,16 @@ export interface Trailer {
   trailerNumber: string;
 }
 
+/** What the API accepts when adding or editing a trailer; it manages the status itself. */
+export type TrailerInput = Partial<Omit<Trailer, "id" | "status">>;
+
 export const trailersApi = api.injectEndpoints({
   endpoints: (builder) => ({
     fetchTrailers: builder.query<Trailer[], void>({
       query: () => "/trailers",
       providesTags: ["Trailer"],
     }),
-    addNewTrailer: builder.mutation<Trailer, Omit<Trailer, "id">>({
+    addNewTrailer: builder.mutation<Trailer, TrailerInput>({
       query: (body) => ({ url: "/trailers", method: "POST", body }),
       invalidatesTags: ["Trailer", "AvailableTrailers"],
     }),
@@ -26,7 +29,7 @@ export const trailersApi = api.injectEndpoints({
       query: (id) => `/trailers/${id}`,
       providesTags: ["Trailer"],
     }),
-    editTrailer: builder.mutation<Trailer, Trailer>({
+    editTrailer: builder.mutation<Trailer, { id: string } & TrailerInput>({
       query: ({ id, ...body }) => ({ url: `/trailers/${id}`, method: "PATCH", body }),
       invalidatesTags: ["Trailer", "AvailableTrailers"],
     }),

@@ -52,6 +52,26 @@ export type CargoAssignment = Pick<Cargo, "driverId" | "truckId" | "trailerId"> 
   acceptRestrictions?: boolean;
 };
 
+/** Cargo fields the dispatcher edits; the API sets status, coordinates, timestamps and delays. */
+export type CargoInput = Partial<
+  Omit<
+    Cargo,
+    | "id"
+    | "status"
+    | "source"
+    | "externalId"
+    | "pickupPoint"
+    | "deliveryPoint"
+    | "pickedUpAt"
+    | "deliveredAt"
+    | "delayMinutes"
+    | "delayReason"
+    | "restrictionsAcceptedAt"
+    | "restrictionsAcceptedBy"
+    | "restrictionsAcceptedTruckId"
+  >
+>;
+
 // Assigning or releasing a driver, truck or trailer changes its availability.
 const ASSIGNMENT_TAGS = [
   "Cargo",
@@ -69,7 +89,7 @@ export const cargosApi = api.injectEndpoints({
       query: () => "/cargos",
       providesTags: ["Cargo"],
     }),
-    addNewCargo: builder.mutation<Cargo, Omit<Cargo, "id">>({
+    addNewCargo: builder.mutation<Cargo, CargoInput>({
       query: (body) => ({ url: "/cargos", method: "POST", body }),
       invalidatesTags: [...ASSIGNMENT_TAGS],
     }),
@@ -81,7 +101,7 @@ export const cargosApi = api.injectEndpoints({
       query: (id) => `/cargos/${id}`,
       providesTags: ["Cargo"],
     }),
-    editCargo: builder.mutation<Cargo, Cargo>({
+    editCargo: builder.mutation<Cargo, { id: string } & CargoInput>({
       query: ({ id, ...body }) => ({ url: `/cargos/${id}`, method: "PATCH", body }),
       invalidatesTags: [...ASSIGNMENT_TAGS],
     }),

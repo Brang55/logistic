@@ -17,13 +17,16 @@ export interface Truck {
   odometerKm?: number | null;
 }
 
+/** What the API accepts when adding or editing a truck; it manages the status itself. */
+export type TruckInput = Partial<Omit<Truck, "id" | "status">>;
+
 export const trucksApi = api.injectEndpoints({
   endpoints: (builder) => ({
     fetchTrucks: builder.query<Truck[], void>({
       query: () => "/trucks",
       providesTags: ["Truck"],
     }),
-    addNewTruck: builder.mutation<Truck, Omit<Truck, "id">>({
+    addNewTruck: builder.mutation<Truck, TruckInput>({
       query: (body) => ({ url: "/trucks", method: "POST", body }),
       invalidatesTags: ["Truck", "AvailableTrucks"],
     }),
@@ -35,7 +38,7 @@ export const trucksApi = api.injectEndpoints({
       query: (id) => `/trucks/${id}`,
       providesTags: ["Truck"],
     }),
-    editTruck: builder.mutation<Truck, Truck>({
+    editTruck: builder.mutation<Truck, { id: string } & TruckInput>({
       query: ({ id, ...body }) => ({ url: `/trucks/${id}`, method: "PATCH", body }),
       invalidatesTags: ["Truck", "AvailableTrucks"],
     }),
