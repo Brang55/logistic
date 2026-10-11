@@ -2,7 +2,7 @@ import {
   Truck,
   useAddNewTruckMutation,
   useEditTruckMutation,
-} from "../../../../app/features/driver/truckSlice";
+} from "../../../../app/api/trucks";
 import { ftToM, lbToT, mToFt, toInputValue, tToLb } from "../../../../utils/units";
 
 import * as Yup from "yup";

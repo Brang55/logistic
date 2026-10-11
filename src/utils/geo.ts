@@ -1,4 +1,4 @@
-import type { LngLat } from "../app/features/driver/routingSlice";
+import type { LngLat } from "../app/api/routing";
 
 /** Straight-line (great-circle) distance in kilometres. */
 export function distanceKm([lng1, lat1]: LngLat, [lng2, lat2]: LngLat): number {

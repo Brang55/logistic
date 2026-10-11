@@ -3,13 +3,13 @@ import { skipToken } from "@reduxjs/toolkit/query/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationArrow, faLocationDot, faPhone, faRoute, faTruck, faUser } from "@fortawesome/free-solid-svg-icons";
 
-import type Cargo from "../../app/features/driver/cargoSlice";
-import { useFetchCargosQuery } from "../../app/features/driver/cargoSlice";
-import { useFetchDriversQuery } from "../../app/features/driver/driverSlice";
-import { useCargoRouteQuery, type CargoRoute, type LngLat } from "../../app/features/driver/routingSlice";
-import { useLatestPositionsQuery } from "../../app/features/driver/telematicsSlice";
-import { useTrafficReportQuery, type TripTraffic } from "../../app/features/driver/tripsSlice";
-import { useFetchTrucksQuery } from "../../app/features/driver/truckSlice";
+import type Cargo from "../../app/api/cargos";
+import { useFetchCargosQuery } from "../../app/api/cargos";
+import { useFetchDriversQuery } from "../../app/api/drivers";
+import { useCargoRouteQuery, type CargoRoute, type LngLat } from "../../app/api/routing";
+import { useLatestPositionsQuery } from "../../app/api/telematics";
+import { useTrafficReportQuery, type TripTraffic } from "../../app/api/trips";
+import { useFetchTrucksQuery } from "../../app/api/trucks";
 import { formatAge, formatDistance, formatDuration } from "../../utils/format";
 import { distanceKm } from "../../utils/geo";
 import { Loader } from "../Loader/Loader";
@@ -19,13 +19,12 @@ import ui from "../ui/ui.module.css";
 import styles from "./OngoingDelivery.module.css";
 import TrackMap from "./TrackMap";
 import { formatSpeed } from "../../utils/units";
+import { isFinished } from "../../utils/status";
 
 type Filter = "active" | "transit" | "scheduled";
 
-const FINISHED = ["delivered", "cancelled"];
-
 // Tracked: not finished, and either on the road or committed (confirmed or with a truck).
-const isTracked = (c: Cargo) => !FINISHED.includes(c.status) && (c.status === "picked_up" || c.status === "confirmed" || !!c.truckId);
+const isTracked = (c: Cargo) => !isFinished(c.status) && (c.status === "picked_up" || c.status === "confirmed" || !!c.truckId);
 
 const inFilter = (c: Cargo, filter: Filter) =>
   filter === "active" || (filter === "transit" ? c.status === "picked_up" : c.status !== "picked_up");
@@ -40,7 +39,7 @@ const currentLoadByTruck = (cargos: Cargo[]) => {
   const current = new Map<string, Cargo>();
   const rank = (c: Cargo) => [c.pickedUpAt ? 0 : 1, c.pickupDate || "9999"] as const;
   for (const cargo of cargos) {
-    if (!cargo.truckId || FINISHED.includes(cargo.status)) continue;
+    if (!cargo.truckId || isFinished(cargo.status)) continue;
     const held = current.get(cargo.truckId);
     const [a, b] = [rank(cargo), held && rank(held)];
     if (!b || a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])) current.set(cargo.truckId, cargo);

@@ -7,8 +7,8 @@ import {
   useDeleteTruckMutation,
   useFetchTrucksQuery,
   type Truck,
-} from "../../../app/features/driver/truckSlice";
-import { useFleetAttentionQuery } from "../../../app/features/driver/vehicleRecordsSlice";
+} from "../../../app/api/trucks";
+import { useFleetAttentionQuery } from "../../../app/api/vehicleRecords";
 import { Loader } from "../../Loader/Loader";
 import { AttentionSummary } from "../../Vehicles/records";
 import { ConfirmDialog, EmptyState, FilterChips, IconButton, PageHeader, ResourceStatus, SearchInput } from "../../ui/ui";

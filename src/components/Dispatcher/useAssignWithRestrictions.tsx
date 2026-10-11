@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-import { useAssignCargoMutation, type CargoAssignment } from "../../app/features/driver/cargoSlice";
+import { useAssignCargoMutation, type CargoAssignment } from "../../app/api/cargos";
 import { groupMessages } from "../../utils/notices";
 import { ConfirmDialog } from "../ui/ui";
+import { errorMessage } from "../../utils/errors";
 
 type AssignRequest = { id: string } & CargoAssignment;
 
@@ -11,9 +12,6 @@ const restrictionsIn = (error: unknown) => {
   const { status, data } = (error ?? {}) as { status?: number; data?: { code?: string; violations?: string[] } };
   return status === 409 && data?.code === "ROUTE_RESTRICTIONS" ? (data.violations ?? []) : undefined;
 };
-
-const errorMessage = (error: unknown) =>
-  (error as { data?: { message?: string } } | undefined)?.data?.message ?? "Could not assign the truck.";
 
 /**
  * Assigns driver, truck and trailer to a load. When the truck's route has restrictions the
@@ -38,7 +36,7 @@ export const useAssignWithRestrictions = () => {
   const acceptAndAssign = async () => {
     if (!pending) return;
     const result = await assignCargo({ ...pending.request, acceptRestrictions: true });
-    if ("error" in result) setPending({ ...pending, error: errorMessage(result.error) });
+    if ("error" in result) setPending({ ...pending, error: errorMessage(result.error, "Could not assign the truck.") });
     else setPending(undefined);
   };
 

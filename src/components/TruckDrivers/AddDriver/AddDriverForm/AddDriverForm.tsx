@@ -2,7 +2,7 @@ import {
   useAddNewDriverMutation,
   useEditDriverMutation,
   useLazyCheckDriverEmailQuery,
-} from "../../../../app/features/driver/driverSlice";
+} from "../../../../app/api/drivers";
 
 import * as Yup from "yup";
 

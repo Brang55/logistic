@@ -4,12 +4,12 @@ import { skipToken } from "@reduxjs/toolkit/query/react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import { useFetchCargosQuery } from "../../app/features/driver/cargoSlice";
-import { useFetchTrucksQuery } from "../../app/features/driver/truckSlice";
+import { useFetchCargosQuery } from "../../app/api/cargos";
+import { useFetchTrucksQuery } from "../../app/api/trucks";
 import {
   useLatestPositionsQuery,
   useTruckHistoryQuery,
-} from "../../app/features/driver/telematicsSlice";
+} from "../../app/api/telematics";
 import { formatAge } from "../../utils/format";
 import { Loader } from "../Loader/Loader";
 import { MAP_DETAILS_INSET, MapDetailsCard, PanelHeader } from "../ui/ui";
@@ -19,11 +19,11 @@ import { useFleetLayer } from "./useFleetLayer";
 import styles from "./LiveFleet.module.css";
 import { theme } from "../../theme";
 import { formatLength, formatSpeed, formatWeight } from "../../utils/units";
+import { isFinished } from "../../utils/status";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
 const HISTORY_SOURCE = "truck-history";
-const FINISHED = ["delivered", "cancelled"];
 const DAY_MS = 24 * 60 * 60 * 1000;
 // A truck that hasn't reported for this long is shown as offline.
 const OFFLINE_AFTER_MS = 30 * 60 * 1000;
@@ -57,7 +57,7 @@ const LiveFleet = () => {
     () =>
       new Map(
         (cargos ?? [])
-          .filter((c) => c.truckId && !FINISHED.includes(c.status))
+          .filter((c) => c.truckId && !isFinished(c.status))
           // Later entries win in the Map, so a picked-up load beats queued ones for the same truck.
           .sort((a, b) => Number(!!a.pickedUpAt) - Number(!!b.pickedUpAt))
           .map((c) => [c.truckId!, c])

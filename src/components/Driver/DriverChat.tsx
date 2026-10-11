@@ -8,16 +8,17 @@ import {
   useSendChatMessageMutation,
   type ChatMessage,
   type DirectoryDriver,
-} from "../../app/features/driver/communitySlice";
-import { useMyTripQuery } from "../../app/features/driver/tripsSlice";
+} from "../../app/api/community";
+import { useMyTripQuery } from "../../app/api/trips";
 import { Loader } from "../Loader/Loader";
 import { PageHeader } from "../ui/ui";
 import { cx, initials, matches } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
-import { errorMessage, formatClock } from "./driverFormat";
+import { formatClock } from "./driverFormat";
 import { useMediaQuery, WIDE_QUERY } from "./useMediaQuery";
 
 import styles from "./DriverTrip.module.css";
+import { errorMessage } from "../../utils/errors";
 
 // Messages from the same driver within this window are grouped under one name.
 const GROUP_MS = 5 * 60 * 1000;

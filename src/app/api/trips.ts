@@ -1,10 +1,10 @@
-import { api } from "../../api";
-import { acquireLiveSocket } from "../../liveSocket";
-import type Cargo from "./cargoSlice";
-import type { ReportType } from "./communitySlice";
-import type { LngLat, RouteIncident, RouteNotice, RoutePlan } from "./routingSlice";
-import type { TruckPosition } from "./telematicsSlice";
-import type { Truck } from "./truckSlice";
+import { api } from "./base";
+import { acquireLiveSocket } from "../liveSocket";
+import type Cargo from "./cargos";
+import type { ReportType } from "./community";
+import type { LngLat, RouteIncident, RouteNotice, RoutePlan } from "./routing";
+import type { TruckPosition } from "./telematics";
+import type { Truck } from "./trucks";
 
 export interface Stop {
   kind: "pickup" | "delivery";

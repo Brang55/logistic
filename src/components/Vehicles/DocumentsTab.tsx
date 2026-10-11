@@ -9,7 +9,7 @@ import {
   useVehicleDocumentsQuery,
   type VehicleDocument,
   type VehicleKind,
-} from "../../app/features/driver/vehicleRecordsSlice";
+} from "../../app/api/vehicleRecords";
 import { Loader } from "../Loader/Loader";
 import { ConfirmDialog, EmptyState, IconButton, Modal } from "../ui/ui";
 import { cx } from "../ui/helpers";

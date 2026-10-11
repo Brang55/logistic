@@ -1,5 +1,5 @@
-import { api } from "../../api";
-import type { Truck } from "./truckSlice";
+import { api } from "./base";
+import type { Truck } from "./trucks";
 
 export type LngLat = [number, number];
 

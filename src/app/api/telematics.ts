@@ -1,8 +1,8 @@
-import { api } from "../../api";
-import { acquireLiveSocket } from "../../liveSocket";
-import { tokenStore } from "../../tokenStore";
-import { authApi } from "./authSlice";
-import type { LngLat } from "./routingSlice";
+import { api } from "./base";
+import { acquireLiveSocket } from "../liveSocket";
+import { tokenStore } from "../tokenStore";
+import { authApi } from "./auth";
+import type { LngLat } from "./routing";
 
 export interface TruckPosition {
   truckId: string;

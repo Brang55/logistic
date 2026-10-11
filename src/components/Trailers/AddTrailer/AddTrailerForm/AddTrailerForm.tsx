@@ -1,7 +1,7 @@
 import {
   useAddNewTrailerMutation,
   useEditTrailerMutation,
-} from "../../../../app/features/driver/trailerSlice";
+} from "../../../../app/api/trailers";
 
 import * as Yup from "yup";
 

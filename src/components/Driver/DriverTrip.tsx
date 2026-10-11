@@ -17,22 +17,22 @@ import {
   faWarehouse,
 } from "@fortawesome/free-solid-svg-icons";
 
-import type Cargo from "../../app/features/driver/cargoSlice";
+import type Cargo from "../../app/api/cargos";
 import {
   useMarkDeliveredMutation,
   useMarkPickedUpMutation,
   useMyTripQuery,
   type MyTrip,
-} from "../../app/features/driver/tripsSlice";
+} from "../../app/api/trips";
 import { formatAge, formatDistance, formatDuration } from "../../utils/format";
 import { distanceKm } from "../../utils/geo";
 import { groupMessages } from "../../utils/notices";
 import { Loader } from "../Loader/Loader";
 import { Badge, Modal, PageHeader } from "../ui/ui";
 import { cx, shipmentRef } from "../ui/helpers";
-import { useRoadReportsQuery } from "../../app/features/driver/communitySlice";
+import { useRoadReportsQuery } from "../../app/api/community";
 import DelayDialog from "./DelayDialog";
-import { errorMessage, formatClock, formatDay, formatWeight, greeting } from "./driverFormat";
+import { formatClock, formatDay, formatWeight, greeting } from "./driverFormat";
 import QuickReports from "./QuickReports";
 import StopConfirmDialog from "./StopConfirmDialog";
 import { Toast } from "./Toast";
@@ -41,6 +41,7 @@ import TripMap from "./TripMap";
 import VoiceAssistant from "./VoiceAssistant";
 
 import styles from "./DriverTrip.module.css";
+import { errorMessage } from "../../utils/errors";
 
 const REFRESH_MS = 15_000;
 // Within this straight-line distance the truck counts as arrived at the stop.

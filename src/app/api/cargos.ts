@@ -1,7 +1,7 @@
-import { api } from "../../api";
+import { api } from "./base";
+import type { CargoStatus } from "../../utils/status";
 
 export default interface Cargo {
-  key: string;
   id: string;
   contactPerson: string;
   deliveryDate: string;
@@ -29,11 +29,10 @@ export default interface Cargo {
   temperatureControl: string;
   truckType: string;
   weight: string;
-  values: object;
   driverId?: string | null;
   truckId?: string | null;
   trailerId?: string | null;
-  status: string;
+  status: CargoStatus;
   source?: string;
   externalId?: string | null;
   pickedUpAt?: string | null;

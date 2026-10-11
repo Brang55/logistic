@@ -2,15 +2,15 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faPhone, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 
-import { useFetchCargosQuery } from "../../app/features/driver/cargoSlice";
-import { useFetchDriversQuery } from "../../app/features/driver/driverSlice";
-import { useLoadTrailerQuery } from "../../app/features/driver/trailerSlice";
-import { useLoadTruckQuery } from "../../app/features/driver/truckSlice";
+import { useFetchCargosQuery } from "../../app/api/cargos";
+import { useFetchDriversQuery } from "../../app/api/drivers";
+import { useLoadTrailerQuery } from "../../app/api/trailers";
+import { useLoadTruckQuery } from "../../app/api/trucks";
 import {
   useFleetAttentionQuery,
   type AttentionItem,
   type VehicleKind,
-} from "../../app/features/driver/vehicleRecordsSlice";
+} from "../../app/api/vehicleRecords";
 import { Loader } from "../Loader/Loader";
 import { CargoStatus, EmptyState, PageHeader, ResourceStatus } from "../ui/ui";
 import { cx, shipmentRef } from "../ui/helpers";
@@ -22,6 +22,7 @@ import { AttentionSummary } from "./records";
 import { attentionText, formatDate, formatKm } from "./recordFormat";
 import styles from "./VehicleDetail.module.css";
 import { formatLength, formatWeight } from "../../utils/units";
+import { isFinished } from "../../utils/status";
 
 const TABS = [
   { value: "overview", label: "Overview" },
@@ -30,8 +31,6 @@ const TABS = [
   { value: "logbook", label: "Logbook" },
 ] as const;
 type Tab = (typeof TABS)[number]["value"];
-
-const FINISHED = ["delivered", "cancelled"];
 
 interface Vehicle {
   label: string;
@@ -163,7 +162,7 @@ const Overview = ({
   const { data: cargos = [] } = useFetchCargosQuery();
   const { data: drivers = [] } = useFetchDriversQuery();
   const loads = cargos
-    .filter((c) => (kind === "trucks" ? c.truckId : c.trailerId) === id && !FINISHED.includes(c.status))
+    .filter((c) => (kind === "trucks" ? c.truckId : c.trailerId) === id && !isFinished(c.status))
     .sort((a, b) => a.pickupDate.localeCompare(b.pickupDate));
 
   return (

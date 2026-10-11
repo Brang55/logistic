@@ -1,9 +1,10 @@
-import { api } from "../../api";
+import { api } from "./base";
+import type { ResourceStatus } from "../../utils/status";
 
 export interface Trailer {
   id: string;
   trailer: string;
-  status: string;
+  status: ResourceStatus;
   trailerNumber: string;
 }
 

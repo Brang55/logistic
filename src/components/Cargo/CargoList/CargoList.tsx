@@ -12,13 +12,13 @@ import {
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
-import type Cargo from "../../../app/features/driver/cargoSlice";
+import type Cargo from "../../../app/api/cargos";
 import {
   useConfirmCargoMutation,
   useDeleteCargoMutation,
   useFetchCargosQuery,
-} from "../../../app/features/driver/cargoSlice";
-import { useFetchTrucksQuery } from "../../../app/features/driver/truckSlice";
+} from "../../../app/api/cargos";
+import { useFetchTrucksQuery } from "../../../app/api/trucks";
 import { Loader } from "../../Loader/Loader";
 import { CargoStatus, ConfirmDialog, EmptyState, FilterChips, IconButton, PageHeader, SearchInput } from "../../ui/ui";
 import { cx, matches, shipmentRef } from "../../ui/helpers";
@@ -33,7 +33,7 @@ const inFilter = (cargo: Cargo, filter: Filter) =>
   filter === "all" ||
   (filter === "open" ? ["new", "edited"].includes(cargo.status) : cargo.status === filter);
 
-const NEEDS_CONFIRMATION = ["new", "edited"];
+const NEEDS_CONFIRMATION: Cargo["status"][] = ["new", "edited"];
 
 const formatDate = (iso: string) =>
   iso ? new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "–";

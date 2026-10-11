@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationCrosshairs, faTrash } from "@fortawesome/free-solid-svg-icons";
 
-import type { RoadReport } from "../../app/features/driver/communitySlice";
+import type { RoadReport } from "../../app/api/community";
 import { formatAge } from "../../utils/format";
 import { cx } from "../ui/helpers";
 import { REPORT_TYPES } from "./reportTypes";

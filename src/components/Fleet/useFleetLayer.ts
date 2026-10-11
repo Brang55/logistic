@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 
-import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
-import type { LngLat } from "../../app/features/driver/routingSlice";
+import type { TruckPosition } from "../../app/api/telematics";
+import type { LngLat } from "../../app/api/routing";
 import { theme } from "../../theme";
 
 const SOURCE = "fleet";

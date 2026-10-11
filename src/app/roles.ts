@@ -1,4 +1,4 @@
-import type { UserRole } from "./features/driver/authSlice";
+import type { UserRole } from "./api/auth";
 
 export const STAFF: UserRole[] = ["admin", "dispatcher"];
 

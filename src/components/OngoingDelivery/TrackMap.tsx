@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import type { CargoRoute, LngLat } from "../../app/features/driver/routingSlice";
-import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
+import type { CargoRoute, LngLat } from "../../app/api/routing";
+import type { TruckPosition } from "../../app/api/telematics";
 import { theme } from "../../theme";
 import { splitLineAt } from "../../utils/geo";
 import { useFleetLayer } from "../Fleet/useFleetLayer";

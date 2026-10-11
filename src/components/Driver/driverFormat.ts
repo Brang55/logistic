@@ -14,7 +14,3 @@ export const greeting = (now = new Date()) => {
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 };
 
-export const errorMessage = (error: unknown) => {
-  const message = (error as { data?: { message?: string | string[] } } | undefined)?.data?.message;
-  return (Array.isArray(message) ? message.join(", ") : message) ?? "Something went wrong. Try again.";
-};

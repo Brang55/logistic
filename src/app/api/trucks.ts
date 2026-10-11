@@ -1,8 +1,9 @@
-import { api } from "../../api";
+import { api } from "./base";
+import type { ResourceStatus } from "../../utils/status";
 
 export interface Truck {
   id: string;
-  status: string;
+  status: ResourceStatus;
   truckNumber: string;
   truckModel: string;
   engineVariation: string;

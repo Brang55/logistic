@@ -7,7 +7,7 @@ import {
   useImportLoadMutation,
   useSyncBookedLoadsMutation,
   type BoardLoad,
-} from "../../app/features/driver/loadBoardSlice";
+} from "../../app/api/loadBoards";
 import { Loader } from "../Loader/Loader";
 import { IconButton, PageHeader } from "../ui/ui";
 

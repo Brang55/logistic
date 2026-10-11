@@ -6,7 +6,7 @@ import {
   useDeleteDriverMutation,
   useFetchDriversQuery,
   type Driver,
-} from "../../../app/features/driver/driverSlice";
+} from "../../../app/api/drivers";
 import { Loader } from "../../Loader/Loader";
 import {
   Badge,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCreateDriverAccountMutation } from "../../../app/features/driver/tripsSlice";
+import { useCreateDriverAccountMutation } from "../../../app/api/trips";
 import { Modal } from "../../ui/ui";
 import { cx } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";

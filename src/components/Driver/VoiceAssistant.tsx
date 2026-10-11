@@ -6,13 +6,13 @@ import {
   useInterpretVoiceMutation,
   type VoiceExecution,
   type VoiceProposal,
-} from "../../app/features/driver/tripsSlice";
+} from "../../app/api/trips";
 
 import { cx } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
-import { errorMessage } from "./driverFormat";
 
 import styles from "./DriverTrip.module.css";
+import { errorMessage } from "../../utils/errors";
 
 // Minimal typing for the Web Speech API (not in TypeScript's DOM library).
 interface RecognitionResultEvent {

@@ -5,7 +5,7 @@ import {
   fetchBaseQuery,
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query/react";
-import { Tokens, tokenStore } from "./tokenStore";
+import { Tokens, tokenStore } from "../tokenStore";
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: "/api",

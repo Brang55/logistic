@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { skipToken } from "@reduxjs/toolkit/query/react";
 
-import type Cargo from "../../app/features/driver/cargoSlice";
-import { useFetchCargosQuery } from "../../app/features/driver/cargoSlice";
-import { useFetchDriversQuery } from "../../app/features/driver/driverSlice";
-import { useFetchTrailersQuery } from "../../app/features/driver/trailerSlice";
-import { useFetchTrucksQuery, type Truck } from "../../app/features/driver/truckSlice";
-import { useCargoRouteQuery, type RoutePlan } from "../../app/features/driver/routingSlice";
-import { useLatestPositionsQuery } from "../../app/features/driver/telematicsSlice";
+import type Cargo from "../../app/api/cargos";
+import { useFetchCargosQuery } from "../../app/api/cargos";
+import { useFetchDriversQuery } from "../../app/api/drivers";
+import { useFetchTrailersQuery } from "../../app/api/trailers";
+import { useFetchTrucksQuery, type Truck } from "../../app/api/trucks";
+import { useCargoRouteQuery, type RoutePlan } from "../../app/api/routing";
+import { useLatestPositionsQuery } from "../../app/api/telematics";
 import { formatDistance, formatDuration } from "../../utils/format";
 import { distanceKm } from "../../utils/geo";
 import { groupMessages } from "../../utils/notices";
@@ -18,6 +18,8 @@ import { useAssignWithRestrictions } from "./useAssignWithRestrictions";
 
 import styles from "./Dispatcher.module.css";
 import { formatCargoWeight, formatLength, formatWeight } from "../../utils/units";
+import { errorMessage } from "../../utils/errors";
+import { isFinished } from "../../utils/status";
 
 interface Draft {
   driverId: string;
@@ -30,8 +32,6 @@ const draftFrom = (cargo?: Cargo): Draft => ({
   truckId: cargo?.truckId ?? "",
   trailerId: cargo?.trailerId ?? "",
 });
-
-const FINISHED = ["delivered", "cancelled"];
 
 const ALERT_LABELS: Record<string, string> = {
   tunnel: "tunnels",
@@ -52,11 +52,6 @@ const truckLimits = (truck: Truck) =>
 // Only resources that are free, plus whatever this cargo already holds, can be picked.
 const selectable = <T extends { id: string; status: string }>(items: T[] | undefined, currentId?: string | null) =>
   (items ?? []).filter((item) => item.status === "available" || item.id === currentId);
-
-const errorMessage = (error: unknown) => {
-  const data = (error as { data?: { message?: string } } | undefined)?.data;
-  return data?.message ?? "Could not calculate a route.";
-};
 
 const RouteSummary = ({ plan }: { plan: RoutePlan }) => {
   const violations = plan.notices.filter((notice) => notice.type === "violation");
@@ -171,7 +166,7 @@ const Dispatcher = () => {
 
   const changed = !!cargo && JSON.stringify(draftFrom(cargo)) !== JSON.stringify(draft);
   // Delivered loads drop out of the dispatch queue.
-  const activeCargos = (cargos ?? []).filter((item) => !FINISHED.includes(item.status));
+  const activeCargos = (cargos ?? []).filter((item) => !isFinished(item.status));
   const plans = route?.routes ?? [];
   // Restrictions already accepted for this truck don't need asking about again.
   const accepted = !!cargo?.restrictionsAcceptedTruckId && cargo.restrictionsAcceptedTruckId === draft.truckId;
@@ -297,7 +292,7 @@ const Dispatcher = () => {
 
               <h4>Route</h4>
               {isRouting && <p className={styles.note}>Calculating route...</p>}
-              {!isRouting && routeError && <p className={styles.error}>{errorMessage(routeError)}</p>}
+              {!isRouting && routeError && <p className={styles.error}>{errorMessage(routeError, "Could not calculate a route.")}</p>}
               {!isRouting && route && plans.length === 0 && (
                 <p className={styles.error}>No route found for this truck.</p>
               )}

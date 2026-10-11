@@ -6,12 +6,12 @@ import {
   useDeleteRoadReportMutation,
   useRoadReportsQuery,
   type RoadReport,
-} from "../../app/features/driver/communitySlice";
+} from "../../app/api/community";
 import {
   useAlertsQuery,
   useTrafficReportQuery,
   type TripTraffic,
-} from "../../app/features/driver/tripsSlice";
+} from "../../app/api/trips";
 import { formatAge, formatDistance, formatDuration } from "../../utils/format";
 import { Loader } from "../Loader/Loader";
 import ReportListItem from "../Driver/ReportListItem";

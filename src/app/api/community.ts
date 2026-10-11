@@ -1,6 +1,7 @@
-import { api } from "../../api";
-import { acquireLiveSocket } from "../../liveSocket";
-import type { LngLat } from "./routingSlice";
+import { api } from "./base";
+import type { ResourceStatus } from "../../utils/status";
+import { acquireLiveSocket } from "../liveSocket";
+import type { LngLat } from "./routing";
 
 export type ReportType = "traffic" | "accident" | "police" | "roadworks" | "hazard" | "closure" | "weather" | "border";
 
@@ -46,7 +47,7 @@ export interface DirectoryDriver {
   lastName: string;
   phoneNumber: string;
   truckNumber: string;
-  status: string;
+  status: ResourceStatus;
   usesApp: boolean;
 }
 

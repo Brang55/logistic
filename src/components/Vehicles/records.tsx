@@ -1,4 +1,4 @@
-import type { AttentionItem, MaintenanceItem, VehicleDocument } from "../../app/features/driver/vehicleRecordsSlice";
+import type { AttentionItem, MaintenanceItem, VehicleDocument } from "../../app/api/vehicleRecords";
 import { Badge } from "../ui/ui";
 import { relativeDays } from "./recordFormat";
 

@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faBoxOpen, faClockRotateLeft, faTruck } from "@fortawesome/free-solid-svg-icons";
 
-import { useDeliveryHistoryQuery, type DeliveryHistory as History } from "../../app/features/driver/communitySlice";
+import { useDeliveryHistoryQuery, type DeliveryHistory as History } from "../../app/api/community";
 import { formatDuration } from "../../utils/format";
 import { Loader } from "../Loader/Loader";
 import { Badge, PageHeader } from "../ui/ui";

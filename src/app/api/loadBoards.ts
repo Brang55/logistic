@@ -1,6 +1,6 @@
-import { api } from "../../api";
-import type Cargo from "./cargoSlice";
-import type { LngLat } from "./routingSlice";
+import { api } from "./base";
+import type Cargo from "./cargos";
+import type { LngLat } from "./routing";
 
 export interface BoardLoad {
   id: string;

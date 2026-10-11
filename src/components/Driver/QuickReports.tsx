@@ -6,13 +6,13 @@ import {
   useCreateRoadReportMutation,
   useDeleteRoadReportMutation,
   type ReportType,
-} from "../../app/features/driver/communitySlice";
+} from "../../app/api/community";
 import { cx } from "../ui/helpers";
-import { errorMessage } from "./driverFormat";
 import { REPORT_TYPE_KEYS, REPORT_TYPES } from "./reportTypes";
 import type { ToastMessage } from "./useToast";
 
 import styles from "./DriverTrip.module.css";
+import { errorMessage } from "../../utils/errors";
 
 interface Props {
   onToast: (text: string, action?: ToastMessage["action"]) => void;

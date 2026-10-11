@@ -12,15 +12,16 @@ import {
   useAddNewCargoMutation,
   useEditCargoMutation,
   useLoadCargoQuery,
-} from "../../../app/features/driver/cargoSlice";
-import { useFetchAvailableDriversQuery, useLoadDriverQuery } from "../../../app/features/driver/driverSlice";
-import { useFetchAvailableTrailersQuery, useLoadTrailerQuery } from "../../../app/features/driver/trailerSlice";
-import { useFetchAvailableTrucksQuery, useLoadTruckQuery } from "../../../app/features/driver/truckSlice";
+} from "../../../app/api/cargos";
+import { useFetchAvailableDriversQuery, useLoadDriverQuery } from "../../../app/api/drivers";
+import { useFetchAvailableTrailersQuery, useLoadTrailerQuery } from "../../../app/api/trailers";
+import { useFetchAvailableTrucksQuery, useLoadTruckQuery } from "../../../app/api/trucks";
 import { EmptyState, PageHeader } from "../../ui/ui";
 import { cx, shipmentRef } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
 import styles from "./AddCargoForm.module.css";
 import { kgToLb, lbToKg } from "../../../utils/units";
+import { errorMessage } from "../../../utils/errors";
 
 // Weight is entered in pounds and stored as kg text; free text from older loads is kept as is.
 const weightInPounds = (kg?: string | null) =>
@@ -73,10 +74,6 @@ const validationSchema = Yup.object().shape(
     formFields.filter((field) => field.required).map((field) => [field.name, Yup.string().required("Required")])
   )
 );
-
-const errorMessage = (error: unknown) =>
-  (error as { data?: { message?: string | string[] } } | undefined)?.data?.message?.toString() ??
-  "Could not save the cargo. Please try again.";
 
 const FormInput = ({ field }: { field: FormField }) => {
   const wide = field.type === "textarea";
@@ -154,7 +151,7 @@ const AddCargoForm = () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (error) {
-      setSaveError(errorMessage(error));
+      setSaveError(errorMessage(error, "Could not save the cargo. Please try again."));
     }
   };
 

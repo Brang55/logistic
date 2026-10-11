@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import type Cargo from "../../app/features/driver/cargoSlice";
-import type { CargoRoute } from "../../app/features/driver/routingSlice";
-import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
+import type Cargo from "../../app/api/cargos";
+import type { CargoRoute } from "../../app/api/routing";
+import type { TruckPosition } from "../../app/api/telematics";
 import { useFleetLayer } from "../Fleet/useFleetLayer";
 import { MAP_DETAILS_INSET } from "../ui/ui";
 

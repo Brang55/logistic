@@ -7,8 +7,8 @@ import {
   useDeleteTrailerMutation,
   useFetchTrailersQuery,
   type Trailer,
-} from "../../../app/features/driver/trailerSlice";
-import { useFleetAttentionQuery } from "../../../app/features/driver/vehicleRecordsSlice";
+} from "../../../app/api/trailers";
+import { useFleetAttentionQuery } from "../../../app/api/vehicleRecords";
 import { Loader } from "../../Loader/Loader";
 import { AttentionSummary } from "../../Vehicles/records";
 import { ConfirmDialog, EmptyState, FilterChips, IconButton, PageHeader, ResourceStatus, SearchInput } from "../../ui/ui";

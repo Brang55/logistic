@@ -1,4 +1,5 @@
-import { api } from "../../api";
+import { api } from "./base";
+import type { ResourceStatus } from "../../utils/status";
 
 export interface Driver {
   id: string;
@@ -8,7 +9,7 @@ export interface Driver {
   truckDriverEmail: string;
   truckNumber: string;
   content: string;
-  status: string;
+  status: ResourceStatus;
   userId?: string | null;
 }
 

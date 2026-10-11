@@ -6,7 +6,7 @@ import {
   useDeleteLogEntryMutation,
   useVehicleLogQuery,
   type VehicleKind,
-} from "../../app/features/driver/vehicleRecordsSlice";
+} from "../../app/api/vehicleRecords";
 import { Loader } from "../Loader/Loader";
 import { Badge, EmptyState, IconButton } from "../ui/ui";
 import { cx } from "../ui/helpers";

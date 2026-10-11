@@ -1,8 +1,8 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleCheck, faFlagCheckered, faTriangleExclamation, faWarehouse } from "@fortawesome/free-solid-svg-icons";
 
-import type Cargo from "../../app/features/driver/cargoSlice";
-import type { Stop } from "../../app/features/driver/tripsSlice";
+import type Cargo from "../../app/api/cargos";
+import type { Stop } from "../../app/api/trips";
 import { Modal } from "../ui/ui";
 import { cx, shipmentRef } from "../ui/helpers";
 import ui from "../ui/ui.module.css";

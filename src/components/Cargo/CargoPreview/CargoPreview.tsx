@@ -10,10 +10,10 @@ import {
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { useLoadCargoQuery } from "../../../app/features/driver/cargoSlice";
-import { useLoadDriverQuery } from "../../../app/features/driver/driverSlice";
-import { useLoadTrailerQuery } from "../../../app/features/driver/trailerSlice";
-import { useLoadTruckQuery } from "../../../app/features/driver/truckSlice";
+import { useLoadCargoQuery } from "../../../app/api/cargos";
+import { useLoadDriverQuery } from "../../../app/api/drivers";
+import { useLoadTrailerQuery } from "../../../app/api/trailers";
+import { useLoadTruckQuery } from "../../../app/api/trucks";
 import { Loader } from "../../Loader/Loader";
 import { CargoStatus, EmptyState } from "../../ui/ui";
 import { cx, initials, shipmentRef } from "../../ui/helpers";

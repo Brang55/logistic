@@ -1,14 +1,12 @@
-import { useNextPickupsQuery } from "../../app/features/driver/tripsSlice";
+import { useNextPickupsQuery } from "../../app/api/trips";
 import { formatDistance, formatDuration } from "../../utils/format";
 import { useAssignWithRestrictions } from "../Dispatcher/useAssignWithRestrictions";
 
 import styles from "./LiveFleet.module.css";
 import { formatMiles } from "../../utils/units";
+import { errorMessage } from "../../utils/errors";
 
 const SHOWN = 5;
-
-const errorMessage = (error: unknown) =>
-  (error as { data?: { message?: string } } | undefined)?.data?.message ?? "Could not load suggestions.";
 
 /**
  * Unassigned loads ranked by drive time from where the truck will be free.
@@ -22,7 +20,7 @@ const NextPickups = ({ truckId, driverId }: { truckId: string; driverId?: string
     <div className={styles.nextPickups}>
       <h4>Suggested next pickups</h4>
       {isFetching && <p className={styles.muted}>Checking drive times...</p>}
-      {!isFetching && error && <p className={styles.muted}>{errorMessage(error)}</p>}
+      {!isFetching && error && <p className={styles.muted}>{errorMessage(error, "Could not load suggestions.")}</p>}
       {!isFetching && data && (
         <>
           <p className={styles.muted}>

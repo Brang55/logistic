@@ -1,12 +1,12 @@
 import { createContext, ReactNode, useSyncExternalStore } from "react";
 import { useDispatch } from "react-redux";
-import { api } from "../app/api";
+import { api } from "../app/api/base";
 import { tokenStore } from "../app/tokenStore";
 import {
   AuthUser,
   useLogoutUserMutation,
   useMeQuery,
-} from "../app/features/driver/authSlice";
+} from "../app/api/auth";
 
 // Define the shape of the auth context
 interface AuthContextType {

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import type { RoadReport } from "../../app/features/driver/communitySlice";
-import type { MyTrip } from "../../app/features/driver/tripsSlice";
+import type { RoadReport } from "../../app/api/community";
+import type { MyTrip } from "../../app/api/trips";
 import { theme } from "../../theme";
 
 import { reportMarkerElement } from "./reportTypes";

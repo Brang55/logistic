@@ -6,8 +6,8 @@ import {
   useDeleteRoadReportMutation,
   useRoadReportsQuery,
   type RoadReport,
-} from "../../app/features/driver/communitySlice";
-import { useMyTripQuery } from "../../app/features/driver/tripsSlice";
+} from "../../app/api/community";
+import { useMyTripQuery } from "../../app/api/trips";
 import { distanceKm } from "../../utils/geo";
 import { Loader } from "../Loader/Loader";
 import { ConfirmDialog, PageHeader } from "../ui/ui";

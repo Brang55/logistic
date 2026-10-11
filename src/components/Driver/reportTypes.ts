@@ -10,7 +10,7 @@ import {
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
-import type { ReportType } from "../../app/features/driver/communitySlice";
+import type { ReportType } from "../../app/api/community";
 
 export interface ReportMeta {
   label: string;

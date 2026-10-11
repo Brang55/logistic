@@ -1,5 +1,5 @@
-import { api } from "../../api";
-import { Tokens, tokenStore } from "../../tokenStore";
+import { api } from "./base";
+import { Tokens, tokenStore } from "../tokenStore";
 
 export type UserRole = "admin" | "dispatcher" | "driver";
 

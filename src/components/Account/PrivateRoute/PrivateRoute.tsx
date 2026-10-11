@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import type { UserRole } from "../../../app/features/driver/authSlice";
+import type { UserRole } from "../../../app/api/auth";
 import { homeFor } from "../../../app/roles";
 import { useAuth } from "../../../hooks/useAuth";
 import { Loader } from "../../Loader/Loader";

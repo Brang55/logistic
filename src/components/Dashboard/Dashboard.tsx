@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
 
-import { useFetchCargosQuery } from "../../app/features/driver/cargoSlice";
-import { useLatestPositionsQuery } from "../../app/features/driver/telematicsSlice";
-import { useAlertsQuery } from "../../app/features/driver/tripsSlice";
-import { useFetchTrucksQuery } from "../../app/features/driver/truckSlice";
-import { useFleetAttentionQuery } from "../../app/features/driver/vehicleRecordsSlice";
+import { useFetchCargosQuery } from "../../app/api/cargos";
+import { useLatestPositionsQuery } from "../../app/api/telematics";
+import { useAlertsQuery } from "../../app/api/trips";
+import { useFetchTrucksQuery } from "../../app/api/trucks";
+import { useFleetAttentionQuery } from "../../app/api/vehicleRecords";
 import { formatAge } from "../../utils/format";
 import { Loader } from "../Loader/Loader";
 import { PageHeader } from "../ui/ui";
 
 import { attentionText } from "../Vehicles/recordFormat";
 import styles from "./Dashboard.module.css";
+import { isFinished } from "../../utils/status";
 
-const FINISHED = ["delivered", "cancelled"];
 // Positions older than this count as offline (matches the Live Fleet page).
 const OFFLINE_AFTER_MS = 30 * 60 * 1000;
 
@@ -39,7 +39,7 @@ const Dashboard = () => {
   const today = new Date().toISOString().slice(0, 10);
   const online = (positions ?? []).filter((p) => now - new Date(p.recordedAt).getTime() < OFFLINE_AFTER_MS);
   const moving = online.filter((p) => (p.speedKmh ?? 0) > 0).length;
-  const active = (cargos ?? []).filter((c) => !FINISHED.includes(c.status));
+  const active = (cargos ?? []).filter((c) => !isFinished(c.status));
   const unassigned = active.filter((c) => !c.truckId).sort((a, b) => a.pickupDate.localeCompare(b.pickupDate));
   const inTransit = active.filter((c) => c.status === "picked_up").length;
   const delayed = active.filter((c) => c.delayMinutes).length;

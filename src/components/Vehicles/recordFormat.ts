@@ -1,4 +1,4 @@
-import type { AttentionItem, MaintenanceItem } from "../../app/features/driver/vehicleRecordsSlice";
+import type { AttentionItem, MaintenanceItem } from "../../app/api/vehicleRecords";
 import type { Tone } from "../ui/helpers";
 import { formatMiles } from "../../utils/units";
 

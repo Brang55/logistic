@@ -1,12 +1,12 @@
 import { FormEvent, useState } from "react";
 
-import { useReportDelayMutation } from "../../app/features/driver/tripsSlice";
+import { useReportDelayMutation } from "../../app/api/trips";
 import { Modal } from "../ui/ui";
 import { cx } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
-import { errorMessage } from "./driverFormat";
 
 import styles from "./DriverTrip.module.css";
+import { errorMessage } from "../../utils/errors";
 
 const MINUTES = [15, 30, 45, 60, 90, 120];
 const REASONS = ["Heavy traffic", "Road works", "Loading took longer", "Border crossing", "Rest break", "Bad weather"];
