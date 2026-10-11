@@ -5,7 +5,8 @@ import { Modal } from "../ui/ui";
 import { cx } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./DelayDialog.module.css";
 import { errorMessage } from "../../utils/errors";
 
 const MINUTES = [15, 30, 45, 60, 90, 120];
@@ -38,7 +39,7 @@ const DelayDialog = ({ cargoId, onClose, onSent }: Props) => {
       title="Report a delay"
       onClose={onClose}
       footer={
-        <div className={styles.dialogButtons}>
+        <div className={shared.dialogButtons}>
           <button className={cx(ui.btn, ui.secondary)} onClick={onClose}>
             Cancel
           </button>
@@ -68,12 +69,12 @@ const DelayDialog = ({ cargoId, onClose, onSent }: Props) => {
         </fieldset>
         <fieldset className={styles.fieldset}>
           <legend className={ui.label}>Reason</legend>
-          <div className={styles.reasonChips}>
+          <div className={shared.reasonChips}>
             {REASONS.map((value) => (
               <button
                 key={value}
                 type="button"
-                className={cx(styles.chip, reason === value && styles.choiceActive)}
+                className={cx(shared.chip, reason === value && styles.choiceActive)}
                 aria-pressed={reason === value}
                 onClick={() => setReason(reason === value ? "" : value)}
               >

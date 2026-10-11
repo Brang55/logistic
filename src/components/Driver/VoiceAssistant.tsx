@@ -11,7 +11,8 @@ import {
 import { cx } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./VoiceAssistant.module.css";
 import { errorMessage } from "../../utils/errors";
 
 // Minimal typing for the Web Speech API (not in TypeScript's DOM library).
@@ -111,8 +112,8 @@ const VoiceAssistant = () => {
   const busy = listening || interpreting.isLoading;
 
   return (
-    <section className={styles.card}>
-      <div className={styles.cardHeader}>
+    <section className={shared.card}>
+      <div className={shared.cardHeader}>
         <h2>
           <FontAwesomeIcon icon={faWaveSquare} /> Voice assistant
         </h2>
@@ -130,7 +131,7 @@ const VoiceAssistant = () => {
         )}
         <div className={styles.voiceText}>
           <strong>{listening ? "Listening..." : interpreting.isLoading ? "Thinking..." : "Hands-free commands"}</strong>
-          <span className={styles.muted}>
+          <span className={shared.muted}>
             {SpeechRecognitionImpl
               ? "Tap the microphone and speak. Nothing changes until you confirm."
               : "Voice input isn't supported in this browser. Type your command instead."}
@@ -153,14 +154,14 @@ const VoiceAssistant = () => {
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
         />
-        <button className={styles.sendButton} type="submit" disabled={!typed.trim() || interpreting.isLoading} aria-label="Send command">
+        <button className={shared.sendButton} type="submit" disabled={!typed.trim() || interpreting.isLoading} aria-label="Send command">
           <FontAwesomeIcon icon={faPaperPlane} />
         </button>
       </form>
       {!transcript && (
-        <div className={styles.examples}>
+        <div className={shared.examples}>
           {EXAMPLES.map((example) => (
-            <button key={example} type="button" className={styles.chip} onClick={() => setTyped(example)}>
+            <button key={example} type="button" className={shared.chip} onClick={() => setTyped(example)}>
               “{example.trim()}{example.endsWith(" ") ? " …" : ""}”
             </button>
           ))}
@@ -189,7 +190,7 @@ const VoiceAssistant = () => {
               <input className={ui.input} value={location} onChange={(e) => setLocation(e.target.value)} />
             </label>
           )}
-          <div className={styles.dialogButtons}>
+          <div className={shared.dialogButtons}>
             <button className={cx(ui.btn, ui.secondary)} onClick={() => setProposal(undefined)}>
               Cancel
             </button>

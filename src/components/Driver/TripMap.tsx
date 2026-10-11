@@ -9,7 +9,8 @@ import { theme } from "../../theme";
 
 import { reportMarkerElement } from "./reportTypes";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./TripMap.module.css";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -77,7 +78,7 @@ const TripMap = ({ trip, reports }: { trip: Trip; reports?: RoadReport[] }) => {
     );
     if (position) {
       const el = document.createElement("div");
-      el.className = styles.truckMarker;
+      el.className = shared.truckMarker;
       markers.push(new mapboxgl.Marker({ element: el }).setLngLat(position).addTo(map));
     }
     return () => markers.forEach((marker) => marker.remove());
@@ -86,7 +87,7 @@ const TripMap = ({ trip, reports }: { trip: Trip; reports?: RoadReport[] }) => {
   useEffect(() => {
     if (!map || !reports) return;
     const markers = reports.map((report) =>
-      new mapboxgl.Marker({ element: reportMarkerElement(report.type, styles.reportMarker) })
+      new mapboxgl.Marker({ element: reportMarkerElement(report.type, shared.reportMarker) })
         .setLngLat(report.point)
         .setPopup(new mapboxgl.Popup({ offset: 16, closeButton: false }).setText(`${report.label}${report.note ? ` · ${report.note}` : ""}`))
         .addTo(map)
@@ -104,7 +105,7 @@ const TripMap = ({ trip, reports }: { trip: Trip; reports?: RoadReport[] }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, nextStopKey]);
 
-  return <div ref={containerRef} className={styles.map} />;
+  return <div ref={containerRef} className={shared.map} />;
 };
 
 export default TripMap;

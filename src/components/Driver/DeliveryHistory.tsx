@@ -8,7 +8,8 @@ import { Badge, PageHeader } from "../ui/ui";
 import { cx, shipmentRef } from "../ui/helpers";
 import { formatClock, formatDay, formatWeight } from "./driverFormat";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./DeliveryHistory.module.css";
 
 type Delivery = History["deliveries"][number];
 
@@ -27,9 +28,9 @@ const startOfWeek = () => {
 const monthLabel = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
 const Stat = ({ value, label }: { value: string | number; label: string }) => (
-  <div className={styles.metric}>
-    <span className={styles.metricValue}>{value}</span>
-    <span className={styles.metricLabel}>{label}</span>
+  <div className={shared.metric}>
+    <span className={shared.metricValue}>{value}</span>
+    <span className={shared.metricLabel}>{label}</span>
   </div>
 );
 
@@ -56,11 +57,11 @@ const DeliveryHistory = () => {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={shared.page}>
       <PageHeader eyebrow="Driver" title="Delivery history" subtitle="Every load you have delivered, newest first" />
 
-      <div className={cx(styles.card, styles.statsCard)}>
-        <div className={styles.historyStats}>
+      <div className={cx(shared.card, styles.statsCard)}>
+        <div className={shared.historyStats}>
           <Stat value={data?.total ?? 0} label="Deliveries in total" />
           <Stat value={thisMonth} label="This month" />
           <Stat value={thisWeek} label="This week" />
@@ -69,12 +70,12 @@ const DeliveryHistory = () => {
       </div>
 
       {deliveries.length === 0 ? (
-        <div className={cx(styles.card, styles.emptyCard)}>
-          <span className={styles.emptyBadge}>
+        <div className={cx(shared.card, shared.emptyCard)}>
+          <span className={shared.emptyBadge}>
             <FontAwesomeIcon icon={faClockRotateLeft} />
           </span>
           <h2>No deliveries yet</h2>
-          <p className={styles.muted}>Loads you deliver appear here, with when they were delivered and whether they were on time.</p>
+          <p className={shared.muted}>Loads you deliver appear here, with when they were delivered and whether they were on time.</p>
         </div>
       ) : (
         months.map((month) => (
@@ -117,7 +118,7 @@ const DeliveryHistory = () => {
                         {duration !== undefined && duration > 0 && ` · ${formatDuration(duration)} on the road`}
                         {delivery.delayMinutes ? ` · ${formatDuration(delivery.delayMinutes * 60)} delay reported` : ""}
                       </span>
-                      <span className={styles.ref}>{shipmentRef(delivery.id)}</span>
+                      <span className={shared.ref}>{shipmentRef(delivery.id)}</span>
                     </div>
                   </li>
                 );

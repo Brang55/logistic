@@ -8,7 +8,8 @@ import { cx, shipmentRef } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
 import { formatWeight } from "./driverFormat";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./StopConfirmDialog.module.css";
 import { formatDistance } from "../../utils/units";
 
 // Further than this from the stop, the dialog warns that the truck doesn't seem to be there.
@@ -41,7 +42,7 @@ const StopConfirmDialog = ({ stop, cargo, distanceKm, busy, error, onConfirm, on
       title={isPickup ? "Confirm pickup" : "Confirm delivery"}
       onClose={onCancel}
       footer={
-        <div className={styles.dialogButtons}>
+        <div className={shared.dialogButtons}>
           <button className={cx(ui.btn, ui.secondary)} onClick={onCancel} disabled={busy}>
             Cancel
           </button>
@@ -52,7 +53,7 @@ const StopConfirmDialog = ({ stop, cargo, distanceKm, busy, error, onConfirm, on
       }
     >
       <div className={styles.dialogStop}>
-        <span className={cx(styles.stopIcon, isPickup ? styles.stopIconPickup : styles.stopIconDelivery)}>
+        <span className={cx(shared.stopIcon, isPickup ? shared.stopIconPickup : shared.stopIconDelivery)}>
           <FontAwesomeIcon icon={isPickup ? faWarehouse : faFlagCheckered} />
         </span>
         <span>

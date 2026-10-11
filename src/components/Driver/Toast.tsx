@@ -3,7 +3,7 @@ import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 
 import type { ToastMessage } from "./useToast";
 
-import styles from "./DriverTrip.module.css";
+import styles from "./Toast.module.css";
 
 export const Toast = ({ toast, onDismiss }: { toast?: ToastMessage; onDismiss: () => void }) =>
   toast ? (

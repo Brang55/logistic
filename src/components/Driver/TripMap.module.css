@@ -1,0 +1,20 @@
+.stopMarker {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
+}
+
+.stopMarkerPickup {
+  background: var(--color-success);
+}
+
+.stopMarkerDelivery {
+  background: var(--color-primary);
+}

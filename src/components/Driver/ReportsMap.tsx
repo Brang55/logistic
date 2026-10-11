@@ -7,7 +7,7 @@ import type { RoadReport } from "../../app/api/community";
 import type { LngLat } from "../../app/api/routing";
 import { reportMarkerElement } from "./reportTypes";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -51,7 +51,7 @@ const ReportsMap = ({ reports, position, focusId }: Props) => {
     if (!map) return;
     const current = markers.current;
     for (const report of reports) {
-      const marker = new mapboxgl.Marker({ element: reportMarkerElement(report.type, styles.reportMarker) })
+      const marker = new mapboxgl.Marker({ element: reportMarkerElement(report.type, shared.reportMarker) })
         .setLngLat(report.point)
         .setPopup(
           new mapboxgl.Popup({ offset: 18, closeButton: false }).setText(
@@ -80,7 +80,7 @@ const ReportsMap = ({ reports, position, focusId }: Props) => {
   useEffect(() => {
     if (!map || !position) return;
     const el = document.createElement("div");
-    el.className = styles.truckMarker;
+    el.className = shared.truckMarker;
     const marker = new mapboxgl.Marker({ element: el }).setLngLat(position).addTo(map);
     return () => void marker.remove();
   }, [map, position]);
@@ -94,7 +94,7 @@ const ReportsMap = ({ reports, position, focusId }: Props) => {
     marker.togglePopup();
   }, [map, focusId]);
 
-  return <div ref={containerRef} className={styles.map} />;
+  return <div ref={containerRef} className={shared.map} />;
 };
 
 export default ReportsMap;

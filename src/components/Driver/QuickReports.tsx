@@ -11,7 +11,8 @@ import { cx } from "../ui/helpers";
 import { REPORT_TYPE_KEYS, REPORT_TYPES } from "./reportTypes";
 import type { ToastMessage } from "./useToast";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./QuickReports.module.css";
 import { errorMessage } from "../../utils/errors";
 
 interface Props {
@@ -41,12 +42,12 @@ const QuickReports = ({ onToast }: Props) => {
   };
 
   return (
-    <section className={styles.card}>
-      <div className={styles.cardHeader}>
+    <section className={shared.card}>
+      <div className={shared.cardHeader}>
         <h2>
           <FontAwesomeIcon icon={faBullhorn} /> Report on the road
         </h2>
-        <span className={styles.ref}>One tap · shared with all drivers</span>
+        <span className={shared.ref}>One tap · shared with all drivers</span>
       </div>
       <div className={styles.reportGrid}>
         {REPORT_TYPE_KEYS.map((type) => {
@@ -58,7 +59,7 @@ const QuickReports = ({ onToast }: Props) => {
               onClick={() => report(type)}
               disabled={sending !== undefined}
             >
-              <span className={styles.reportIcon} style={{ background: meta.color }}>
+              <span className={shared.reportIcon} style={{ background: meta.color }}>
                 <FontAwesomeIcon icon={meta.icon} />
               </span>
               {meta.label}
@@ -66,7 +67,7 @@ const QuickReports = ({ onToast }: Props) => {
           );
         })}
       </div>
-      {error && <p className={styles.formError}>{error}</p>}
+      {error && <p className={shared.formError}>{error}</p>}
     </section>
   );
 };

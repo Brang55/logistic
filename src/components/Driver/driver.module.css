@@ -1,0 +1,370 @@
+/* Styles shared by the driver app's screens. */
+
+.page {
+  padding: 24px 24px 48px;
+}
+
+.muted {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.equipmentChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+}
+
+.equipmentChip svg {
+  color: var(--color-primary);
+}
+
+.equipmentChip span {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Cards */
+.card {
+  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cardHeader h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cardHeader h2 svg {
+  color: var(--color-text-subtle);
+}
+
+.ref {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.stopIcon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+  border-radius: 12px;
+}
+
+.stopIconPickup {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.stopIconDelivery {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.metric {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius);
+}
+
+.metricValue {
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.metricLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: 50%;
+}
+
+.contactText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.contactText strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.callButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-success);
+  text-decoration: none;
+  background: var(--color-success-soft);
+  border-radius: 999px;
+}
+
+.callButton:hover {
+  background: #d1fae5;
+}
+
+.sendButton {
+  flex-shrink: 0;
+  width: 42px;
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.sendButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.examples,
+.reasonChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.chip {
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  color: var(--color-text);
+}
+
+/* Dialogs */
+.dialogButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Empty state */
+.emptyCard {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.emptyCard h2 {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+
+.emptyCard p {
+  max-width: 420px;
+  margin: 0;
+}
+
+.emptyBadge {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  font-size: 26px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: 50%;
+}
+
+/* Map markers */
+.truckMarker {
+  width: 22px;
+  height: 22px;
+  background: var(--color-primary);
+  border: 4px solid #fff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 4px 10px rgba(15, 23, 42, 0.3);
+}
+
+.formError {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.emptyList {
+  margin: 0;
+  padding: 12px 0;
+}
+
+.reportIcon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-size: 17px;
+  color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.18);
+}
+
+.reportMarker {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+.reportMarker svg {
+  width: 14px;
+  height: 14px;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-surface-muted);
+  border-radius: 999px;
+}
+
+.segment {
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.segmentActive {
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.historyStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.historyStats .metricValue {
+  font-size: 24px;
+}
+
+.messages {
+  flex: 1;
+  margin: 0 -20px;
+  padding: 0 20px 12px;
+  overflow-y: auto;
+}
+
+.composer {
+  margin: 0 -20px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.composer .sendButton {
+  height: 42px;
+}
+
+.contactsCard {
+  display: grid;
+  gap: 12px;
+}
+
+.contactsCard .cardHeader {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 16px 16px 40px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .metricValue {
+    font-size: 16px;
+  }
+
+  .historyStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .messages,
+  .composer {
+    margin: 0 -16px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}

@@ -17,7 +17,8 @@ import ui from "../ui/ui.module.css";
 import { formatClock } from "./driverFormat";
 import { useMediaQuery, WIDE_QUERY } from "./useMediaQuery";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./DriverChat.module.css";
 import { errorMessage } from "../../utils/errors";
 
 // Messages from the same driver within this window are grouped under one name.
@@ -34,7 +35,7 @@ const dayLabel = (iso: string) => {
 
 const CallLink = ({ phone, name, compact }: { phone: string; name: string; compact?: boolean }) =>
   phone ? (
-    <a href={`tel:${phone.replace(/\s+/g, "")}`} className={compact ? styles.callIcon : styles.callButton} aria-label={`Call ${name}`}>
+    <a href={`tel:${phone.replace(/\s+/g, "")}`} className={compact ? styles.callIcon : shared.callButton} aria-label={`Call ${name}`}>
       <FontAwesomeIcon icon={faPhone} />
       {!compact && <span>Call</span>}
     </a>
@@ -50,10 +51,10 @@ const Messages = ({ messages, myId }: { messages: ChatMessage[]; myId?: string }
   }, [last]);
 
   if (!messages.length) {
-    return <p className={cx(styles.muted, styles.emptyList)}>No messages yet. Say hello to the other drivers!</p>;
+    return <p className={cx(shared.muted, shared.emptyList)}>No messages yet. Say hello to the other drivers!</p>;
   }
   return (
-    <div className={styles.messages} ref={listRef}>
+    <div className={shared.messages} ref={listRef}>
       {messages.map((message, index) => {
         const previous = messages[index - 1];
         const newDay = !previous || dayLabel(previous.createdAt) !== dayLabel(message.createdAt);
@@ -67,7 +68,7 @@ const Messages = ({ messages, myId }: { messages: ChatMessage[]; myId?: string }
           <div key={message.id}>
             {newDay && <div className={styles.daySeparator}>{dayLabel(message.createdAt)}</div>}
             <div className={cx(styles.message, mine && styles.messageMine, grouped && styles.messageGrouped)}>
-              {!mine && <span className={cx(styles.avatar, styles.chatAvatar, grouped && styles.hidden)}>{initials(first, rest.join(" "))}</span>}
+              {!mine && <span className={cx(shared.avatar, styles.chatAvatar, grouped && styles.hidden)}>{initials(first, rest.join(" "))}</span>}
               <div className={styles.messageBody}>
                 {!grouped && (
                   <div className={styles.messageMeta}>
@@ -111,8 +112,8 @@ const Composer = () => {
   };
 
   return (
-    <form className={styles.composer} onSubmit={submit}>
-      {error && <p className={styles.formError}>{error}</p>}
+    <form className={shared.composer} onSubmit={submit}>
+      {error && <p className={shared.formError}>{error}</p>}
       <div className={styles.composerRow}>
         <textarea
           className={cx(ui.input, styles.composerInput)}
@@ -124,7 +125,7 @@ const Composer = () => {
           onChange={(event) => setText(event.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button className={styles.sendButton} type="submit" disabled={!text.trim() || sending.isLoading} aria-label="Send message">
+        <button className={shared.sendButton} type="submit" disabled={!text.trim() || sending.isLoading} aria-label="Send message">
           <FontAwesomeIcon icon={faPaperPlane} />
         </button>
       </div>
@@ -136,12 +137,12 @@ const Contacts = ({ drivers, myId }: { drivers: DirectoryDriver[]; myId?: string
   const [search, setSearch] = useState("");
   const others = drivers.filter((d) => d.id !== myId && matches(search, d.firstName, d.lastName, d.truckNumber));
   return (
-    <section className={cx(styles.card, styles.contactsCard)}>
-      <div className={styles.cardHeader}>
+    <section className={cx(shared.card, shared.contactsCard)}>
+      <div className={shared.cardHeader}>
         <h2>
           <FontAwesomeIcon icon={faUsers} /> Drivers
         </h2>
-        <span className={styles.ref}>{drivers.length - (myId ? 1 : 0)} colleagues</span>
+        <span className={shared.ref}>{drivers.length - (myId ? 1 : 0)} colleagues</span>
       </div>
       <input
         className={ui.input}
@@ -154,12 +155,12 @@ const Contacts = ({ drivers, myId }: { drivers: DirectoryDriver[]; myId?: string
       <ul className={styles.contactList}>
         {others.map((driver) => (
           <li key={driver.id}>
-            <span className={styles.avatar}>{initials(driver.firstName, driver.lastName)}</span>
-            <span className={styles.contactText}>
+            <span className={shared.avatar}>{initials(driver.firstName, driver.lastName)}</span>
+            <span className={shared.contactText}>
               <strong>
                 {driver.firstName} {driver.lastName}
               </strong>
-              <span className={styles.muted}>
+              <span className={shared.muted}>
                 {[driver.truckNumber, driver.status === "taken" ? "On a trip" : "Available"].filter(Boolean).join(" · ")}
               </span>
               {driver.phoneNumber && <span className={styles.phone}>{driver.phoneNumber}</span>}
@@ -167,7 +168,7 @@ const Contacts = ({ drivers, myId }: { drivers: DirectoryDriver[]; myId?: string
             <CallLink phone={driver.phoneNumber} name={driver.firstName} />
           </li>
         ))}
-        {others.length === 0 && <li className={styles.muted}>No drivers match.</li>}
+        {others.length === 0 && <li className={shared.muted}>No drivers match.</li>}
       </ul>
     </section>
   );
@@ -185,12 +186,12 @@ const DriverChat = () => {
   if (isLoading) return <Loader />;
 
   const chat = (
-    <section className={cx(styles.card, styles.chatCard)}>
-      <div className={styles.cardHeader}>
+    <section className={cx(shared.card, styles.chatCard)}>
+      <div className={shared.cardHeader}>
         <h2>
           <FontAwesomeIcon icon={faComments} /> Drivers' chat
         </h2>
-        <span className={styles.ref}>{participants} drivers talking</span>
+        <span className={shared.ref}>{participants} drivers talking</span>
       </div>
       <Messages messages={messages} myId={myId} />
       <Composer />
@@ -199,20 +200,20 @@ const DriverChat = () => {
   const contacts = <Contacts drivers={drivers} myId={myId} />;
 
   return (
-    <div className={styles.page}>
+    <div className={shared.page}>
       <PageHeader
         eyebrow="Community"
         title="Chat & contacts"
         subtitle="Ask other drivers for advice, or call them directly"
         actions={
           !wide && (
-            <div className={styles.segmented} role="tablist">
+            <div className={shared.segmented} role="tablist">
               {(["chat", "contacts"] as const).map((value) => (
                 <button
                   key={value}
                   role="tab"
                   aria-selected={tab === value}
-                  className={cx(styles.segment, tab === value && styles.segmentActive)}
+                  className={cx(shared.segment, tab === value && shared.segmentActive)}
                   onClick={() => setTab(value)}
                 >
                   {value === "chat" ? "Chat" : "Contacts"}

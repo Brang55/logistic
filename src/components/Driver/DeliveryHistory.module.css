@@ -1,0 +1,94 @@
+/* History */
+.statsCard {
+  margin-bottom: 24px;
+  padding: 12px;
+}
+
+.historyMonth {
+  margin-bottom: 24px;
+}
+
+.monthTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.monthTitle span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.historyList {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historyItem {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.historyTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.historyRoute {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.historyRoute svg {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+.historyMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.historyMeta svg {
+  margin-right: 6px;
+  color: var(--color-text-subtle);
+}
+
+.historyFoot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding-top: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Phones get the shared card padding (driver.module.css) here too, as before the split. */
+@media (max-width: 600px) {
+  .statsCard {
+    padding: 16px;
+  }
+}

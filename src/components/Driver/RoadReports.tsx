@@ -19,7 +19,8 @@ import { Toast } from "./Toast";
 import { useMediaQuery, WIDE_QUERY } from "./useMediaQuery";
 import { useToast } from "./useToast";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./RoadReports.module.css";
 import { milesToKm } from "../../utils/units";
 
 // "Nearby" covers roughly the next couple of hours of driving.
@@ -56,13 +57,13 @@ const RoadReports = () => {
   const map = <ReportsMap reports={data?.reports ?? []} position={position} focusId={focusId} />;
 
   return (
-    <div className={styles.page}>
+    <div className={shared.page}>
       <PageHeader
         eyebrow="Community"
         title="Road reports"
         subtitle="Warnings from drivers on the road, shared live with everyone"
         actions={
-          <span className={styles.equipmentChip}>
+          <span className={shared.equipmentChip}>
             <span className={styles.liveDot} /> {data?.reports.length ?? 0} active reports
           </span>
         }
@@ -74,13 +75,13 @@ const RoadReports = () => {
 
           {!wide && <div className={styles.mapInline}>{map}</div>}
 
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
+          <section className={shared.card}>
+            <div className={shared.cardHeader}>
               <h2>
                 <FontAwesomeIcon icon={faRoad} /> Reports from drivers
               </h2>
               {position && (
-                <div className={styles.segmented} role="tablist">
+                <div className={shared.segmented} role="tablist">
                   {(
                     [
                       ["nearby", `Nearby (${nearbyCount})`],
@@ -91,7 +92,7 @@ const RoadReports = () => {
                       key={value}
                       role="tab"
                       aria-selected={scope === value}
-                      className={cx(styles.segment, scope === value && styles.segmentActive)}
+                      className={cx(shared.segment, scope === value && shared.segmentActive)}
                       onClick={() => setScope(value)}
                     >
                       {label}
@@ -102,7 +103,7 @@ const RoadReports = () => {
             </div>
 
             {visible.length === 0 ? (
-              <p className={cx(styles.muted, styles.emptyList)}>
+              <p className={cx(shared.muted, shared.emptyList)}>
                 {effectiveScope === "nearby"
                   ? `Nothing reported within ${NEARBY_MI} mi of your truck.`
                   : "No reports right now. Use the buttons above to warn other drivers."}

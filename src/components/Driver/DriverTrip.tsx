@@ -40,6 +40,7 @@ import { useToast } from "./useToast";
 import TripMap from "./TripMap";
 import VoiceAssistant from "./VoiceAssistant";
 
+import shared from "./driver.module.css";
 import styles from "./DriverTrip.module.css";
 import { errorMessage } from "../../utils/errors";
 
@@ -57,13 +58,13 @@ const Header = ({ firstName, trip }: { firstName: string; trip?: Trip | null }) 
     actions={
       trip && (
         <div className={styles.equipment}>
-          <span className={styles.equipmentChip}>
+          <span className={shared.equipmentChip}>
             <FontAwesomeIcon icon={faTruck} />
             {trip.truck.truckNumber}
             {trip.truck.plate && <span>{trip.truck.plate}</span>}
           </span>
           {trip.trailer && (
-            <span className={styles.equipmentChip}>
+            <span className={shared.equipmentChip}>
               <FontAwesomeIcon icon={faTrailer} />
               {trip.trailer.trailerNumber}
               {trip.trailer.trailer && <span>{trip.trailer.trailer}</span>}
@@ -108,10 +109,10 @@ const Journey = ({ cargo, etaAt }: { cargo: Cargo; etaAt?: Date }) => {
 };
 
 const Metric = ({ icon, label, value }: { icon: IconDefinition; label: string; value: string }) => (
-  <div className={styles.metric}>
+  <div className={shared.metric}>
     <FontAwesomeIcon icon={icon} className={styles.metricIcon} />
-    <span className={styles.metricValue}>{value}</span>
-    <span className={styles.metricLabel}>{label}</span>
+    <span className={shared.metricValue}>{value}</span>
+    <span className={shared.metricLabel}>{label}</span>
   </div>
 );
 
@@ -127,7 +128,7 @@ const Party = ({ title, name, address, contact, phone }: Record<string, string |
   <div className={styles.party}>
     <span className={styles.partyTitle}>{title}</span>
     <strong>{name || "–"}</strong>
-    {address && <span className={styles.muted}>{address}</span>}
+    {address && <span className={shared.muted}>{address}</span>}
     {(contact || phone) && (
       <span className={styles.partyContact}>
         {contact}
@@ -142,12 +143,12 @@ const Party = ({ title, name, address, contact, phone }: Record<string, string |
 );
 
 const CargoDetails = ({ cargo }: { cargo: Cargo }) => (
-  <section className={styles.card}>
-    <div className={styles.cardHeader}>
+  <section className={shared.card}>
+    <div className={shared.cardHeader}>
       <h2>
         <FontAwesomeIcon icon={faBoxesStacked} /> Cargo
       </h2>
-      <span className={styles.ref}>{shipmentRef(cargo.id)}</span>
+      <span className={shared.ref}>{shipmentRef(cargo.id)}</span>
     </div>
     <dl className={styles.details}>
       <Detail label="Goods">{cargo.descriptionOfGoods}</Detail>
@@ -201,11 +202,11 @@ const DriverTrip = () => {
   if (isLoading) return <Loader />;
   if (error || !data) {
     return (
-      <div className={styles.page}>
-        <div className={cx(styles.card, styles.emptyCard)}>
+      <div className={shared.page}>
+        <div className={cx(shared.card, shared.emptyCard)}>
           <FontAwesomeIcon icon={faTriangleExclamation} className={styles.emptyIcon} />
           <h2>Could not load your trip</h2>
-          <p className={styles.muted}>{errorMessage(error)}</p>
+          <p className={shared.muted}>{errorMessage(error)}</p>
         </div>
       </div>
     );
@@ -216,14 +217,14 @@ const DriverTrip = () => {
 
   if (!trip) {
     return (
-      <div className={styles.page}>
+      <div className={shared.page}>
         <Header firstName={driver.firstName} />
-        <div className={cx(styles.card, styles.emptyCard)}>
-          <span className={styles.emptyBadge}>
+        <div className={cx(shared.card, shared.emptyCard)}>
+          <span className={shared.emptyBadge}>
             <FontAwesomeIcon icon={faTruckFast} />
           </span>
           <h2>No active load</h2>
-          <p className={styles.muted}>
+          <p className={shared.muted}>
             You're all done for now. When your dispatcher assigns your next load, it appears here with the route and
             stop details.
           </p>
@@ -257,14 +258,14 @@ const DriverTrip = () => {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={shared.page}>
       <Header firstName={driver.firstName} trip={trip} />
 
       <div className={styles.tripLayout}>
         <div className={styles.column}>
-          <section className={cx(styles.card, styles.hero, styles.orderHero, isPickup ? styles.heroPickup : styles.heroDelivery)}>
+          <section className={cx(shared.card, styles.hero, styles.orderHero, isPickup ? styles.heroPickup : styles.heroDelivery)}>
             <div className={styles.heroTop}>
-              <span className={cx(styles.stopIcon, isPickup ? styles.stopIconPickup : styles.stopIconDelivery)}>
+              <span className={cx(shared.stopIcon, isPickup ? shared.stopIconPickup : shared.stopIconDelivery)}>
                 <FontAwesomeIcon icon={isPickup ? faWarehouse : faFlagCheckered} />
               </span>
               <div className={styles.heroTitle}>
@@ -273,7 +274,7 @@ const DriverTrip = () => {
                   <Badge tone={isPickup ? "success" : "primary"}>{isPickup ? "Heading to pickup" : "In transit"}</Badge>
                 </div>
                 <h2>{nextStop.name}</h2>
-                {contact.address && contact.address !== nextStop.name && <p className={styles.muted}>{contact.address}</p>}
+                {contact.address && contact.address !== nextStop.name && <p className={shared.muted}>{contact.address}</p>}
               </div>
             </div>
 
@@ -297,13 +298,13 @@ const DriverTrip = () => {
 
             {(contact.name || contact.phone) && (
               <div className={styles.contact}>
-                <span className={styles.avatar}>{(contact.name || "?").slice(0, 1).toUpperCase()}</span>
-                <span className={styles.contactText}>
+                <span className={shared.avatar}>{(contact.name || "?").slice(0, 1).toUpperCase()}</span>
+                <span className={shared.contactText}>
                   <strong>{contact.name}</strong>
-                  <span className={styles.muted}>{isPickup ? "Pickup contact" : "Receiver contact"}</span>
+                  <span className={shared.muted}>{isPickup ? "Pickup contact" : "Receiver contact"}</span>
                 </span>
                 {contact.phone && (
-                  <a href={`tel:${contact.phone}`} className={styles.callButton} aria-label={`Call ${contact.name}`}>
+                  <a href={`tel:${contact.phone}`} className={shared.callButton} aria-label={`Call ${contact.name}`}>
                     <FontAwesomeIcon icon={faPhone} />
                     <span>Call</span>
                   </a>
@@ -330,8 +331,8 @@ const DriverTrip = () => {
             ) : null}
           </section>
 
-          <section className={cx(styles.card, styles.orderTrip)}>
-            <div className={styles.cardHeader}>
+          <section className={cx(shared.card, styles.orderTrip)}>
+            <div className={shared.cardHeader}>
               <h2>
                 <FontAwesomeIcon icon={faRoad} /> Trip
               </h2>
@@ -356,7 +357,7 @@ const DriverTrip = () => {
 
           {violations.length > 0 && (
             // Open by default: the driver must not miss these before driving the route.
-            <details open className={cx(styles.card, styles.warningCard, styles.orderWarnings)}>
+            <details open className={cx(shared.card, styles.warningCard, styles.orderWarnings)}>
               <summary>
                 <FontAwesomeIcon icon={faTriangleExclamation} />
                 {violations.length} truck restriction{violations.length === 1 ? "" : "s"} on this route
@@ -369,7 +370,7 @@ const DriverTrip = () => {
                   </li>
                 ))}
               </ul>
-              <p className={styles.muted}>
+              <p className={shared.muted}>
                 {cargo.restrictionsAcceptedTruckId === trip.truck.id
                   ? "Dispatch approved this route despite these restrictions. Confirm permits or the final approach with your dispatcher."
                   : "Check with your dispatcher before driving these sections."}
@@ -382,12 +383,12 @@ const DriverTrip = () => {
           </div>
 
           {trip.queue.length > 0 && (
-            <section className={cx(styles.card, styles.orderQueue)}>
-              <div className={styles.cardHeader}>
+            <section className={cx(shared.card, styles.orderQueue)}>
+              <div className={shared.cardHeader}>
                 <h2>
                   <FontAwesomeIcon icon={faTruckFast} /> Up next
                 </h2>
-                <span className={styles.ref}>{trip.queue.length} queued</span>
+                <span className={shared.ref}>{trip.queue.length} queued</span>
               </div>
               <ul className={styles.queue}>
                 {trip.queue.map((next) => (
@@ -395,7 +396,7 @@ const DriverTrip = () => {
                     <strong>
                       {next.pickupLocation} → {next.deliveryLocation}
                     </strong>
-                    <span className={styles.muted}>
+                    <span className={shared.muted}>
                       Pickup {formatDay(next.pickupDate)} · {next.descriptionOfGoods}
                     </span>
                   </li>
@@ -424,7 +425,7 @@ const DriverTrip = () => {
             {route.steps.map((step, index) => (
               <li key={index}>
                 <span>{step.instruction}</span>
-                <span className={styles.muted}>{formatDistance(step.distanceM)}</span>
+                <span className={shared.muted}>{formatDistance(step.distanceM)}</span>
               </li>
             ))}
           </ol>

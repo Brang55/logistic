@@ -6,7 +6,8 @@ import { formatAge } from "../../utils/format";
 import { cx } from "../ui/helpers";
 import { REPORT_TYPES } from "./reportTypes";
 
-import styles from "./DriverTrip.module.css";
+import shared from "./driver.module.css";
+import styles from "./ReportListItem.module.css";
 import { formatDistance } from "../../utils/units";
 
 const expiresIn = (iso: string) => {
@@ -38,7 +39,7 @@ const ReportListItem = ({
   return (
     <li className={cx(styles.reportRow, focused && styles.reportFocused)}>
       <button className={styles.reportItem} onClick={onFocus}>
-        <span className={styles.reportIcon} style={{ background: meta.color }}>
+        <span className={shared.reportIcon} style={{ background: meta.color }}>
           <FontAwesomeIcon icon={meta.icon} />
         </span>
         <span className={styles.reportText}>
@@ -52,7 +53,7 @@ const ReportListItem = ({
             )}
           </span>
           {report.note && <span>{report.note}</span>}
-          <span className={styles.muted}>
+          <span className={shared.muted}>
             {reporterName}
             {report.reporter.truckNumber && ` · ${report.reporter.truckNumber}`} · {formatAge(report.createdAt)} · expires in{" "}
             {expiresIn(report.expiresAt)}
