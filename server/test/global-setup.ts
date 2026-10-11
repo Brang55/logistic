@@ -3,7 +3,7 @@ import { Client } from "pg";
 import { createDb } from "../src/db/client";
 import { TEST_DATABASE_URL } from "./test-env";
 
-// Creates the test database if needed, migrates it and empties every table.
+// Creates the test database if needed and migrates it. Each e2e file empties the tables itself.
 export default async function globalSetup() {
   const url = new URL(TEST_DATABASE_URL);
   const dbName = url.pathname.slice(1);
@@ -15,6 +15,5 @@ export default async function globalSetup() {
 
   const { db, pool } = createDb(TEST_DATABASE_URL);
   await migrate(db, { migrationsFolder: "./drizzle" });
-  await pool.query("TRUNCATE users, refresh_tokens, trucks, trailers, drivers, cargos CASCADE");
   await pool.end();
 }
