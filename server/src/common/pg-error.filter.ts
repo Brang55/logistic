@@ -1,4 +1,4 @@
-import { ArgumentsHost, Catch, HttpStatus } from "@nestjs/common";
+import { ArgumentsHost, Catch, HttpStatus, Logger } from "@nestjs/common";
 import { BaseExceptionFilter } from "@nestjs/core";
 import { Response } from "express";
 
@@ -7,11 +7,14 @@ import { Response } from "express";
 const PG_STATUS: Record<string, [number, string]> = {
   "23505": [HttpStatus.CONFLICT, "Record already exists"],
   "23503": [HttpStatus.BAD_REQUEST, "Referenced record does not exist"],
+  "23514": [HttpStatus.BAD_REQUEST, "Value is not allowed"],
   "22P02": [HttpStatus.BAD_REQUEST, "Invalid identifier"],
 };
 
 @Catch()
 export class PgErrorFilter extends BaseExceptionFilter {
+  private readonly logger = new Logger(PgErrorFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const err = exception as { code?: string; cause?: { code?: string; detail?: string } };
     const code = err?.cause?.code ?? err?.code;
@@ -19,10 +22,8 @@ export class PgErrorFilter extends BaseExceptionFilter {
     if (!mapped) return super.catch(exception, host);
 
     const [statusCode, message] = mapped;
-    host
-      .switchToHttp()
-      .getResponse<Response>()
-      .status(statusCode)
-      .json({ statusCode, message, detail: err.cause?.detail });
+    // Postgres details name tables, columns and values, so they stay in the log.
+    if (err.cause?.detail) this.logger.debug(`${code}: ${err.cause.detail}`);
+    host.switchToHttp().getResponse<Response>().status(statusCode).json({ statusCode, message });
   }
 }

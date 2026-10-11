@@ -3,7 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { setupApp } from "./setup-app";
-import { RedisIoAdapter } from "./live/redis-io.adapter";
+import { LiveIoAdapter } from "./live/live-io.adapter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,14 +14,13 @@ async function bootstrap() {
   // Behind a reverse proxy (Caddy in production) so client IPs reach the rate limiter.
   if (config.get("TRUST_PROXY") === "true") app.getHttpAdapter().getInstance().set("trust proxy", 1);
 
+  const corsOrigin = config.get<string>("CORS_ORIGIN")?.split(",") ?? true;
+  app.enableCors({ origin: corsOrigin });
+  const live = new LiveIoAdapter(app, corsOrigin);
   // Needed once more than one API instance runs; a single instance works without Redis.
   const redisUrl = config.get<string>("REDIS_URL");
-  if (redisUrl) {
-    const adapter = new RedisIoAdapter(app, redisUrl);
-    await adapter.connect();
-    app.useWebSocketAdapter(adapter);
-  }
-  app.enableCors({ origin: config.get("CORS_ORIGIN")?.split(",") ?? true });
+  if (redisUrl) await live.connectRedis(redisUrl);
+  app.useWebSocketAdapter(live);
 
   if (config.get("SWAGGER") !== "false") {
     const doc = new DocumentBuilder().setTitle("Logistic API").addBearerAuth().build();

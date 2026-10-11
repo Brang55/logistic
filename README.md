@@ -54,7 +54,9 @@ authenticated with the access token). Two ways to feed them:
     -d '{"positions":[{"vehicleId":"US-201","lng":-96.8,"lat":32.78,"speedKmh":105,"heading":10}]}'
   ```
 
-With `REDIS_URL` set, live updates are shared across API instances.
+With `REDIS_URL` set, live updates are shared across API instances. Some state still lives in each API
+process: the recent alerts list, the latest traffic report, cached trip routes, the simulator and the
+background monitors. Run a single API instance until those move to the database or Redis.
 
 ## Trips, traffic and the driver app
 

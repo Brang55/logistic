@@ -26,7 +26,8 @@ export interface LiveAlert {
  * Dispatchers receive "position", "cargo" and "alert" events; drivers and dispatchers both
  * receive "road-report" and drivers receive "chat-message".
  */
-@WebSocketGateway({ namespace: "live", cors: { origin: true } })
+// Allowed origins come from CORS_ORIGIN through LiveIoAdapter (main.ts).
+@WebSocketGateway({ namespace: "live" })
 export class LiveGateway implements OnGatewayInit {
   private readonly logger = new Logger(LiveGateway.name);
 
