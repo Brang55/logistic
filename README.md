@@ -72,7 +72,7 @@ background monitors. Run a single API instance until those move to the database 
   report delays, route map and directions. The simulator marks loads picked up/delivered on arrival
   unless `SIMULATOR_AUTO_STATUS=false`.
 
-Tests: `cd server && npm test` (unit) and `npm run test:e2e` (uses a separate `logistic_test` database in the same container).
+Tests: `npm test` for the web app (Vitest), and `cd server && npm test` (unit) and `npm run test:e2e` (uses a separate `logistic_test` database in the same container).
 
 Schema changes: edit `server/src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate`.
 

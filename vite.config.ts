@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -15,5 +16,11 @@ export default defineConfig({
     modules: {
       localsConvention: "camelCase", // optional, changes the exported class names convention
     },
+  },
+  test: {
+    // The API (server/) has its own Jest suites.
+    include: ["src/**/*.test.{ts,tsx}"],
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
   },
 });
