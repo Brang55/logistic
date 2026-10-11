@@ -25,6 +25,7 @@ import {
 
 import { useAuth } from "../../hooks/useAuth";
 import LogoutButton from "../Account/LogoutButton/LogoutButton";
+import { AssistantLauncher } from "../Assistant/Assistant";
 
 import styles from "./Navigation.module.css";
 
@@ -117,6 +118,7 @@ const Navigation = () => {
       </div>
 
       <div className={styles.menu}>
+        {user.role !== "driver" && <AssistantLauncher onOpen={() => setOpen(false)} />}
         {sections.map((section) => (
           <div key={section.title} className={styles.section}>
             <span className={styles.sectionTitle}>{section.title}</span>

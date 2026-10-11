@@ -7,6 +7,7 @@ import { join } from "path";
 import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "../../src/app.module";
+import { AssistantModel } from "../../src/assistant/assistant.model";
 import { AuthService } from "../../src/auth/auth.service";
 import { GeocodingService } from "../../src/mapbox/geocoding.service";
 import { RoutingService } from "../../src/routing/routing.types";
@@ -24,7 +25,7 @@ export type TestApp = Awaited<ReturnType<typeof createTestApp>>;
  * Boots the whole API against an emptied test database, with fake geocoding and routing,
  * and signs in one admin, one dispatcher and one driver (a driver user without a driver record).
  */
-export async function createTestApp({ loginRateLimit = 1000 } = {}) {
+export async function createTestApp({ loginRateLimit = 1000, assistantModel }: { loginRateLimit?: number; assistantModel?: AssistantModel } = {}) {
   const uploadDir = mkdtempSync(join(tmpdir(), "logistic-uploads-"));
   Object.assign(process.env, {
     DATABASE_URL: TEST_DATABASE_URL,
@@ -41,12 +42,14 @@ export async function createTestApp({ loginRateLimit = 1000 } = {}) {
   });
   await truncateAll();
 
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(GeocodingService)
     .useValue(geocoder)
     .overrideProvider(RoutingService)
-    .useValue(router)
-    .compile();
+    .useValue(router);
+  // The assistant only runs against a scripted model in tests.
+  if (assistantModel) builder = builder.overrideProvider(AssistantModel).useValue(assistantModel);
+  const moduleRef = await builder.compile();
   const app: INestApplication<App> = moduleRef.createNestApplication();
   setupApp(app);
   // Listen on a real port so Socket.IO clients can connect.

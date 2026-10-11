@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMicrophone, faPaperPlane, faWaveSquare } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -14,34 +14,7 @@ import ui from "../ui/ui.module.css";
 import shared from "./driver.module.css";
 import styles from "./VoiceAssistant.module.css";
 import { errorMessage } from "../../utils/errors";
-
-// Minimal typing for the Web Speech API (not in TypeScript's DOM library).
-interface RecognitionResultEvent {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
-}
-interface Recognition {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((event: RecognitionResultEvent) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-}
-type RecognitionConstructor = new () => Recognition;
-
-const SpeechRecognitionImpl: RecognitionConstructor | undefined =
-  (window as unknown as { SpeechRecognition?: RecognitionConstructor }).SpeechRecognition ??
-  (window as unknown as { webkitSpeechRecognition?: RecognitionConstructor }).webkitSpeechRecognition;
-
-const speak = (text: string) => {
-  if (!("speechSynthesis" in window) || !text) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = navigator.language;
-  window.speechSynthesis.speak(utterance);
-};
+import { speak, useSpeech } from "../../hooks/useSpeech";
 
 const EXAMPLES = ["I'll be 30 minutes late, heavy traffic", "What's my next stop?", "Set the delivery address to "];
 
@@ -50,18 +23,14 @@ const EXAMPLES = ["I'll be 30 minutes late, heavy traffic", "What's my next stop
  * Nothing changes until the driver confirms the proposed action.
  */
 const VoiceAssistant = () => {
-  const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [typed, setTyped] = useState("");
   const [proposal, setProposal] = useState<VoiceProposal>();
   const [minutes, setMinutes] = useState<number>(30);
   const [location, setLocation] = useState("");
   const [reply, setReply] = useState("");
-  const recognition = useRef<Recognition>();
   const [interpret, interpreting] = useInterpretVoiceMutation();
   const [execute, executing] = useExecuteVoiceMutation();
-
-  useEffect(() => () => recognition.current?.stop(), []);
 
   const handle = async (text: string) => {
     if (!text.trim()) return;
@@ -80,20 +49,6 @@ const VoiceAssistant = () => {
     }
   };
 
-  const listen = () => {
-    if (!SpeechRecognitionImpl) return;
-    const r = new SpeechRecognitionImpl();
-    r.lang = navigator.language;
-    r.interimResults = false;
-    r.maxAlternatives = 1;
-    r.onresult = (event) => void handle(event.results[0][0].transcript);
-    r.onerror = (event) => setReply(event.error === "not-allowed" ? "Microphone access was blocked." : "I couldn't hear that. Try again.");
-    r.onend = () => setListening(false);
-    recognition.current = r;
-    setListening(true);
-    r.start();
-  };
-
   const confirm = async () => {
     if (!proposal?.cargoId) return;
     const { action } = proposal.intent;
@@ -107,6 +62,13 @@ const VoiceAssistant = () => {
     setProposal(undefined);
   };
 
+  const speech = useSpeech((text) => void handle(text));
+  const listening = speech.listening;
+  // Microphone problems show where replies do.
+  useEffect(() => {
+    if (speech.error) setReply(speech.error);
+  }, [speech.error]);
+
   const action = proposal?.intent.action;
 
   const busy = listening || interpreting.isLoading;
@@ -119,10 +81,10 @@ const VoiceAssistant = () => {
         </h2>
       </div>
       <div className={styles.voice}>
-        {SpeechRecognitionImpl && (
+        {speech.supported && (
           <button
             className={cx(styles.micButton, listening && styles.listening)}
-            onClick={listen}
+            onClick={speech.listen}
             disabled={busy}
             aria-label="Speak a command"
           >
@@ -132,7 +94,7 @@ const VoiceAssistant = () => {
         <div className={styles.voiceText}>
           <strong>{listening ? "Listening..." : interpreting.isLoading ? "Thinking..." : "Hands-free commands"}</strong>
           <span className={shared.muted}>
-            {SpeechRecognitionImpl
+            {speech.supported
               ? "Tap the microphone and speak. Nothing changes until you confirm."
               : "Voice input isn't supported in this browser. Type your command instead."}
           </span>

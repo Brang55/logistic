@@ -121,6 +121,6 @@ export class VoiceService {
     const where = `${trip.nextStop.kind === "pickup" ? "Pickup" : "Delivery"} in ${trip.nextStop.name}`;
     const route = trip.position ? await this.trips.routeFor(trip).catch(() => null) : null;
     const leg = route?.legs[0];
-    return leg ? `${where}. ${Math.round(leg.distanceM / 1000)} kilometres, about ${formatDuration(leg.durationS)}.` : `${where}.`;
+    return leg ? `${where}. ${Math.round(leg.distanceM / 1609.344)} miles, about ${formatDuration(leg.durationS)}.` : `${where}.`;
   }
 }

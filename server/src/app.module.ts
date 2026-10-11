@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER } from "@nestjs/core";
+import { AssistantModule } from "./assistant/assistant.module";
 import { AuthModule } from "./auth/auth.module";
 import { CargosModule } from "./cargos/cargos.module";
 import { CommunityModule } from "./community/community.module";
@@ -34,6 +35,7 @@ import { TrucksModule } from "./trucks/trucks.module";
     TelematicsModule,
     TripsModule,
     VoiceModule,
+    AssistantModule,
     LoadBoardsModule,
     VehiclesModule,
     CommunityModule,

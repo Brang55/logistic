@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { skipToken } from "@reduxjs/toolkit/query/react";
+import { useSearchParams } from "react-router-dom";
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -128,6 +129,17 @@ const LiveFleet = () => {
     map.fitBounds(bounds, { padding: 80, maxZoom: 8, duration: 0 });
     fitted.current = true;
   }, [map, positions]);
+
+  // "?truck=<id>" (the assistant's "show truck on the map") selects that truck once positions are in.
+  const [params, setParams] = useSearchParams();
+  const requestedTruck = params.get("truck");
+  const select = useRef(selectTruck);
+  select.current = selectTruck;
+  useEffect(() => {
+    if (!requestedTruck || !map || !positions) return;
+    select.current(requestedTruck);
+    setParams({}, { replace: true });
+  }, [requestedTruck, map, positions, setParams]);
 
   // Recent track of the selected truck, extended with its latest live position.
   const selectedPosition = selectedId ? positionsById.get(selectedId) : undefined;
