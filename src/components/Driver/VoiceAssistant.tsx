@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMicrophone, faPaperPlane, faWaveSquare } from "@fortawesome/free-solid-svg-icons";
 import {
   useExecuteVoiceMutation,
   useInterpretVoiceMutation,
   type VoiceExecution,
   type VoiceProposal,
 } from "../../app/features/driver/tripsSlice";
+
+import { cx } from "../ui/helpers";
+import ui from "../ui/ui.module.css";
+import { errorMessage } from "./driverFormat";
 
 import styles from "./DriverTrip.module.css";
 
@@ -36,10 +42,7 @@ const speak = (text: string) => {
   window.speechSynthesis.speak(utterance);
 };
 
-const errorMessage = (error: unknown) =>
-  (error as { data?: { message?: string } } | undefined)?.data?.message ?? "Something went wrong. Try again.";
-
-const EXAMPLES = ["I'll be 30 minutes late, heavy traffic", "Set the delivery address to …", "Picked up the load", "What's my next stop?"];
+const EXAMPLES = ["I'll be 30 minutes late, heavy traffic", "What's my next stop?", "Set the delivery address to "];
 
 /**
  * Hands-free commands: speak (or type) a command, hear what was understood, confirm.
@@ -105,52 +108,93 @@ const VoiceAssistant = () => {
 
   const action = proposal?.intent.action;
 
+  const busy = listening || interpreting.isLoading;
+
   return (
     <section className={styles.card}>
-      <h3>Voice commands</h3>
-      {SpeechRecognitionImpl ? (
-        <button className={`${styles.mic} ${listening ? styles.listening : ""}`} onClick={listen} disabled={listening || interpreting.isLoading}>
-          {listening ? "Listening..." : interpreting.isLoading ? "Thinking..." : "🎤 Tap and speak"}
-        </button>
-      ) : (
-        <p className={styles.muted}>Voice input isn't supported in this browser; type your command instead.</p>
-      )}
+      <div className={styles.cardHeader}>
+        <h2>
+          <FontAwesomeIcon icon={faWaveSquare} /> Voice assistant
+        </h2>
+      </div>
+      <div className={styles.voice}>
+        {SpeechRecognitionImpl && (
+          <button
+            className={cx(styles.micButton, listening && styles.listening)}
+            onClick={listen}
+            disabled={busy}
+            aria-label="Speak a command"
+          >
+            <FontAwesomeIcon icon={faMicrophone} />
+          </button>
+        )}
+        <div className={styles.voiceText}>
+          <strong>{listening ? "Listening..." : interpreting.isLoading ? "Thinking..." : "Hands-free commands"}</strong>
+          <span className={styles.muted}>
+            {SpeechRecognitionImpl
+              ? "Tap the microphone and speak. Nothing changes until you confirm."
+              : "Voice input isn't supported in this browser. Type your command instead."}
+          </span>
+        </div>
+      </div>
+
       <form
-        className={styles.delayRow}
+        className={styles.commandRow}
         onSubmit={(event) => {
           event.preventDefault();
           void handle(typed);
           setTyped("");
         }}
       >
-        <input placeholder="…or type a command" value={typed} onChange={(e) => setTyped(e.target.value)} />
-        <button className={styles.send} type="submit" disabled={!typed.trim() || interpreting.isLoading}>
-          Send
+        <input
+          className={ui.input}
+          placeholder="Type a command"
+          aria-label="Type a command"
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+        />
+        <button className={styles.sendButton} type="submit" disabled={!typed.trim() || interpreting.isLoading} aria-label="Send command">
+          <FontAwesomeIcon icon={faPaperPlane} />
         </button>
       </form>
-      {!transcript && <p className={styles.muted}>Try: {EXAMPLES.map((e) => `“${e}”`).join(" · ")}</p>}
-      {transcript && <p className={styles.muted}>You said: “{transcript}”</p>}
-      {reply && <p className={styles.reply}>{reply}</p>}
+      {!transcript && (
+        <div className={styles.examples}>
+          {EXAMPLES.map((example) => (
+            <button key={example} type="button" className={styles.chip} onClick={() => setTyped(example)}>
+              “{example.trim()}{example.endsWith(" ") ? " …" : ""}”
+            </button>
+          ))}
+        </div>
+      )}
+
+      {transcript && (
+        <div className={styles.conversation}>
+          <p className={styles.bubbleUser}>{transcript}</p>
+          {reply && <p className={styles.bubbleReply}>{reply}</p>}
+        </div>
+      )}
+      {!transcript && reply && <p className={styles.bubbleReply}>{reply}</p>}
 
       {proposal && (
         <div className={styles.proposal}>
           {action === "report_delay" && (
-            <label>
-              Delay (minutes){" "}
-              <input type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
+            <label className={ui.field}>
+              <span className={ui.label}>Delay (minutes)</span>
+              <input className={ui.input} type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
             </label>
           )}
           {(action === "set_pickup_location" || action === "set_delivery_location") && (
-            <label>
-              New address <input value={location} onChange={(e) => setLocation(e.target.value)} />
+            <label className={ui.field}>
+              <span className={ui.label}>New address</span>
+              <input className={ui.input} value={location} onChange={(e) => setLocation(e.target.value)} />
             </label>
           )}
-          <div className={styles.proposalButtons}>
-            <button className={styles.primary} onClick={confirm} disabled={executing.isLoading}>
-              {executing.isLoading ? "Saving..." : "Confirm"}
-            </button>
-            <button className={styles.secondary} onClick={() => setProposal(undefined)}>
+          <div className={styles.dialogButtons}>
+            <button className={cx(ui.btn, ui.secondary)} onClick={() => setProposal(undefined)}>
               Cancel
+            </button>
+            <button className={cx(ui.btn, ui.primary)} onClick={confirm} disabled={executing.isLoading}>
+              {executing.isLoading ? "Saving..." : "Confirm"}
             </button>
           </div>
         </div>

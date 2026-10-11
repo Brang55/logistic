@@ -1,6 +1,6 @@
 import { api } from "../../api";
 
-interface Trailer {
+export interface Trailer {
   id: string;
   trailer: string;
   status: string;

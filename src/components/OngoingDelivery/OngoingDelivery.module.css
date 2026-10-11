@@ -1,25 +1,287 @@
-.ongoingHandler {
-  float: left;
+.track {
+  display: flex;
+  height: 100%;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  min-width: 340px;
+  height: 100%;
+  background: var(--color-surface-muted);
+  border-right: 1px solid var(--color-border);
+}
+
+.panelHeader {
+  padding: 20px 20px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.controls {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.controls > div:first-child {
+  max-width: none;
+}
+
+.list {
+  flex: 1;
+  margin: 0;
+  padding: 16px 20px 20px;
+  overflow-y: auto;
+}
+
+.shipment {
+  display: grid;
+  gap: 12px;
   width: 100%;
-  margin: 0 auto;
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
-.ongoingSection {
-  float: left;
-  width: 30%;
-  padding: 40px;
+.shipment:hover {
+  border-color: var(--color-primary-disabled);
+}
+
+.selected,
+.selected:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.shipmentTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stops {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.stops::before {
+  position: absolute;
+  top: 12px;
+  bottom: 22px;
+  left: 5px;
+  width: 2px;
+  content: "";
+  background: repeating-linear-gradient(to bottom, var(--color-border) 0 3px, transparent 3px 6px);
+}
+
+.stops li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.stopDot {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-success);
+  border-radius: 50%;
+}
+
+.done {
+  background: var(--color-success);
+}
+
+.stopPin {
+  width: 12px;
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--color-danger);
+}
+
+.stopCity {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+}
+
+.meta svg {
+  margin-right: 4px;
+  color: var(--color-text-subtle);
+}
+
+.delay {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b91c1c;
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-sm);
+}
+
+.contact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.call {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  background: var(--color-primary-soft);
+  border-radius: 999px;
+}
+
+.mapArea {
+  position: relative;
+  flex: 1;
   height: 100%;
-  background-color: var(--color-surface-muted);
 }
 
-.ongoingTitle {
-  float: left;
-  margin: 20px 0;
-  font-size: 20px;
-}
-
-.mapHandler {
-  float: left;
-  width: 70%;
+.map {
+  width: 100%;
   height: 100%;
+}
+
+.overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: grid;
+  gap: 2px;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 12px 16px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.queued {
+  color: var(--color-text-muted);
+}
+
+.overlayLeg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.legend {
+  position: absolute;
+  bottom: 36px;
+  left: 16px;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendTruck {
+  width: 0;
+  height: 0;
+  margin: 0 5px;
+  border-right: 6px solid transparent;
+  border-bottom: 12px solid var(--color-primary);
+  border-left: 6px solid transparent;
+}
+
+.legendApproach,
+.legendRoute,
+.legendFleet {
+  flex-shrink: 0;
+  width: 22px;
+  height: 0;
+  border-top: 4px solid var(--color-primary);
+  border-radius: 2px;
+}
+
+.legendApproach {
+  border-top: 4px dashed var(--color-warning);
+}
+
+.legendFleet {
+  border-top-width: 3px;
+  opacity: 0.35;
+}
+
+@media (max-width: 900px) {
+  .track {
+    flex-direction: column-reverse;
+    height: auto;
+  }
+
+  .panel {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    border-right: none;
+  }
+
+  .list {
+    overflow: visible;
+  }
+
+  .mapArea {
+    height: 50vh;
+  }
 }

@@ -46,8 +46,6 @@
     "node_modules", // Commonly excluded
     "dist", // Build folder
     "build", // Build folder for Vite
-    "src/components/Trailers/TrailersList/TrailersList.tsx",
-    "src/components/Trucks/TrucksList/TrucksList.tsx", // Entire folder
     "src/app/features/google/directionSlice.tsx",
     "src/@types/EntityTypes.tsx"
   ]

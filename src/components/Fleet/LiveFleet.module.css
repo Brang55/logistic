@@ -7,18 +7,26 @@
   width: 30%;
   min-width: 320px;
   height: 100%;
-  padding: 20px 30px;
+  padding: 0 30px 20px;
   overflow-y: auto;
   background-color: var(--color-surface-muted);
 }
 
-.title {
-  margin: 0 0 15px;
-  font-size: 20px;
+/* The white heading strip spans the panel's full width. */
+.panel > :first-child {
+  margin: 0 -30px 16px;
+  padding-right: 30px;
+  padding-left: 30px;
+}
+
+.mapArea {
+  position: relative;
+  flex: 1;
+  height: 100%;
 }
 
 .map {
-  flex: 1;
+  width: 100%;
   height: 100%;
 }
 
@@ -80,20 +88,11 @@
   background: var(--color-danger);
 }
 
-.details {
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border);
-}
-
-.details h4 {
-  margin: 15px 0 8px;
-}
-
 .details dl {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 6px 12px;
-  margin: 0;
+  margin: 12px 0 0;
   font-size: 13px;
 }
 

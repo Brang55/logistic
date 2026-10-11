@@ -73,6 +73,12 @@ export const api = createApi({
     "Traffic",
     "MyTrip",
     "BoardLoads",
+    "VehicleDocs",
+    "Maintenance",
+    "VehicleLog",
+    "Attention",
+    "RoadReports",
+    "DeliveryHistory",
   ],
   endpoints: () => ({}),
 });

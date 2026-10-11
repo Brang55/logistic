@@ -13,6 +13,7 @@ export interface Truck {
   lengthM?: number | null;
   weightT?: number | null;
   axles?: number | null;
+  odometerKm?: number | null;
 }
 
 export const trucksApi = api.injectEndpoints({

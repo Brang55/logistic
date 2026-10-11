@@ -1,6 +1,7 @@
 import { api } from "../../api";
 import { acquireLiveSocket } from "../../liveSocket";
 import type Cargo from "./cargoSlice";
+import type { ReportType } from "./communitySlice";
 import type { LngLat, RouteIncident, RouteNotice, RoutePlan } from "./routingSlice";
 import type { TruckPosition } from "./telematicsSlice";
 import type { Truck } from "./truckSlice";
@@ -36,12 +37,29 @@ export interface TripTraffic {
   trafficDelayS: number;
   incidents: RouteIncident[];
   violations: RouteNotice[];
+  /** A dispatcher assigned this truck knowing its route breaks truck restrictions. */
+  restrictionsAccepted: boolean;
   reportedDelay: { minutes: number; reason: string | null; at: string } | null;
+  /** The remaining route from the truck through the load's stops. */
+  geometry: LngLat[] | null;
+  /** Where along `geometry` the pickup is, while the truck is still heading there. */
+  toPickupM: number | null;
+  /** Driver road reports on the remaining route. */
+  roadReports: RouteReport[];
+}
+
+export interface RouteReport {
+  id: string;
+  type: ReportType;
+  label: string;
+  note: string;
+  point: LngLat;
+  createdAt: string;
 }
 
 export interface LiveAlert {
   id: string;
-  kind: "delay-reported" | "traffic-delay" | "incident";
+  kind: "delay-reported" | "traffic-delay" | "incident" | "address-changed" | "loads-imported" | "compliance" | "road-report" | "route-restriction";
   severity: "info" | "warning" | "critical";
   message: string;
   cargoId?: string;
@@ -81,9 +99,10 @@ export interface VoiceExecution {
 }
 
 export interface MyTrip {
-  driver: { id: string; firstName: string; lastName: string };
+  driver: { id: string; firstName: string; lastName: string; truckNumber?: string };
   trip: {
     truck: Truck;
+    trailer: { id: string; trailerNumber: string; trailer: string } | null;
     cargo: Cargo;
     queue: Cargo[];
     position?: TruckPosition;
@@ -135,7 +154,7 @@ export const tripsApi = api.injectEndpoints({
     }),
     markDelivered: builder.mutation<Cargo, string>({
       query: (cargoId) => ({ url: `/me/trip/${cargoId}/delivered`, method: "POST" }),
-      invalidatesTags: ["MyTrip"],
+      invalidatesTags: ["MyTrip", "DeliveryHistory"],
     }),
     reportDelay: builder.mutation<Cargo, { cargoId: string; minutes: number; reason?: string }>({
       query: ({ cargoId, ...body }) => ({ url: `/me/trip/${cargoId}/delay`, method: "POST", body }),
@@ -146,7 +165,7 @@ export const tripsApi = api.injectEndpoints({
     }),
     executeVoice: builder.mutation<{ reply: string }, VoiceExecution>({
       query: (body) => ({ url: "/me/voice/execute", method: "POST", body }),
-      invalidatesTags: ["MyTrip"],
+      invalidatesTags: ["MyTrip", "DeliveryHistory"],
     }),
     createDriverAccount: builder.mutation<unknown, { driverId: string; password: string }>({
       query: ({ driverId, password }) => ({ url: `/drivers/${driverId}/account`, method: "POST", body: { password } }),

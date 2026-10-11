@@ -1,0 +1,74 @@
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBullhorn } from "@fortawesome/free-solid-svg-icons";
+
+import {
+  useCreateRoadReportMutation,
+  useDeleteRoadReportMutation,
+  type ReportType,
+} from "../../app/features/driver/communitySlice";
+import { cx } from "../ui/helpers";
+import { errorMessage } from "./driverFormat";
+import { REPORT_TYPE_KEYS, REPORT_TYPES } from "./reportTypes";
+import type { ToastMessage } from "./useToast";
+
+import styles from "./DriverTrip.module.css";
+
+interface Props {
+  onToast: (text: string, action?: ToastMessage["action"]) => void;
+}
+
+/**
+ * One tap drops a report at the truck's current position for every driver to see.
+ * A mistaken tap is taken back with Undo on the confirmation toast.
+ */
+const QuickReports = ({ onToast }: Props) => {
+  const [createReport] = useCreateRoadReportMutation();
+  const [deleteReport] = useDeleteRoadReportMutation();
+  const [sending, setSending] = useState<ReportType>();
+  const [error, setError] = useState("");
+
+  const report = async (type: ReportType) => {
+    setError("");
+    setSending(type);
+    const result = await createReport({ type });
+    setSending(undefined);
+    if ("error" in result) return setError(errorMessage(result.error));
+    onToast(`${REPORT_TYPES[type].label} reported at your position. Thanks!`, {
+      label: "Undo",
+      run: () => void deleteReport(result.data.id),
+    });
+  };
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHeader}>
+        <h2>
+          <FontAwesomeIcon icon={faBullhorn} /> Report on the road
+        </h2>
+        <span className={styles.ref}>One tap · shared with all drivers</span>
+      </div>
+      <div className={styles.reportGrid}>
+        {REPORT_TYPE_KEYS.map((type) => {
+          const meta = REPORT_TYPES[type];
+          return (
+            <button
+              key={type}
+              className={cx(styles.reportButton, sending === type && styles.reportButtonBusy)}
+              onClick={() => report(type)}
+              disabled={sending !== undefined}
+            >
+              <span className={styles.reportIcon} style={{ background: meta.color }}>
+                <FontAwesomeIcon icon={meta.icon} />
+              </span>
+              {meta.label}
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className={styles.formError}>{error}</p>}
+    </section>
+  );
+};
+
+export default QuickReports;

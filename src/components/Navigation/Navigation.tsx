@@ -5,6 +5,8 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faBars,
   faClipboardList,
+  faClockRotateLeft,
+  faComments,
   faCubes,
   faGauge,
   faLocationDot,
@@ -13,6 +15,7 @@ import {
   faSquarePlus,
   faTrafficLight,
   faTrailer,
+  faTriangleExclamation,
   faTruck,
   faTruckFast,
   faTruckRampBox,
@@ -61,7 +64,22 @@ const STAFF_SECTIONS: { title: string; items: NavItem[] }[] = [
   },
 ];
 
-const DRIVER_SECTIONS: { title: string; items: NavItem[] }[] = [{ title: "Driver", items: [{ to: "/driver", label: "My trip", icon: faTruckFast }] }];
+const DRIVER_SECTIONS: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Driver",
+    items: [
+      { to: "/driver", label: "My trip", icon: faTruckFast, end: true },
+      { to: "/driver/history", label: "History", icon: faClockRotateLeft },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      { to: "/driver/reports", label: "Road reports", icon: faTriangleExclamation },
+      { to: "/driver/chat", label: "Chat & contacts", icon: faComments },
+    ],
+  },
+];
 
 const ROLE_LABELS: Record<string, string> = { admin: "Administrator", dispatcher: "Dispatcher", driver: "Driver" };
 

@@ -14,8 +14,12 @@ import { CargoPreview } from "./components/Cargo/CargoPreview/CargoPreview";
 import Dispatcher from "./components/Dispatcher/Dispatcher";
 import LiveFleet from "./components/Fleet/LiveFleet";
 import DriverTrip from "./components/Driver/DriverTrip";
+import DeliveryHistory from "./components/Driver/DeliveryHistory";
+import RoadReports from "./components/Driver/RoadReports";
+import DriverChat from "./components/Driver/DriverChat";
 import Traffic from "./components/Traffic/Traffic";
 import LoadBoard from "./components/LoadBoard/LoadBoard";
+import VehicleDetail from "./components/Vehicles/VehicleDetail";
 import Login from "./components/Account/Login/Login";
 
 import PrivateRoute from "./components/Account/PrivateRoute/PrivateRoute";
@@ -52,6 +56,12 @@ function App() {
             <Route path="/trailers" element={<div className="page"><TrailersList /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
+            <Route path="/trucks/:id" element={<div className="page"><VehicleDetail kind="trucks" /></div>} />
+          </Route>
+          <Route element={<PrivateRoute roles={STAFF} />}>
+            <Route path="/trailers/:id" element={<div className="page"><VehicleDetail kind="trailers" /></div>} />
+          </Route>
+          <Route element={<PrivateRoute roles={STAFF} />}>
             <Route path="/cargo" element={<div className="page"><AddCargoForm /></div>} />
           </Route>
           <Route element={<PrivateRoute roles={STAFF} />}>
@@ -72,6 +82,9 @@ function App() {
           </Route>
           <Route element={<PrivateRoute roles={["driver"]} />}>
             <Route path="/driver" element={<DriverTrip />} />
+            <Route path="/driver/history" element={<DeliveryHistory />} />
+            <Route path="/driver/reports" element={<RoadReports />} />
+            <Route path="/driver/chat" element={<DriverChat />} />
           </Route>
 
           <Route path="/login" element={<Login />} />

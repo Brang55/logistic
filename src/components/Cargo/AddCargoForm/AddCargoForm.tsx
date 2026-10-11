@@ -1,346 +1,285 @@
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { skipToken } from "@reduxjs/toolkit/query/react";
-import styles from "./AddCargoForm.module.css";
 import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import * as Yup from "yup";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft, faCircleCheck, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+
 import { formFields, FormField } from "../FormFields/FormFields";
-
 import { Loader } from "../../Loader/Loader";
-import { useNavigate } from "react-router-dom";
-
 import {
-  useLoadCargoQuery,
-  useEditCargoMutation,
   useAddNewCargoMutation,
+  useEditCargoMutation,
+  useLoadCargoQuery,
 } from "../../../app/features/driver/cargoSlice";
+import { useFetchAvailableDriversQuery, useLoadDriverQuery } from "../../../app/features/driver/driverSlice";
+import { useFetchAvailableTrailersQuery, useLoadTrailerQuery } from "../../../app/features/driver/trailerSlice";
+import { useFetchAvailableTrucksQuery, useLoadTruckQuery } from "../../../app/features/driver/truckSlice";
+import { EmptyState, PageHeader } from "../../ui/ui";
+import { cx, shipmentRef } from "../../ui/helpers";
+import ui from "../../ui/ui.module.css";
+import styles from "./AddCargoForm.module.css";
+import { kgToLb, lbToKg } from "../../../utils/units";
 
-import {
-  useFetchAvailableDriversQuery,
-  useLoadDriverQuery,
-} from "../../../app/features/driver/driverSlice";
-import {
-  useFetchAvailableTrailersQuery,
-  useLoadTrailerQuery,
-} from "../../../app/features/driver/trailerSlice";
-import {
-  useFetchTrucksQuery,
-  useFetchAvailableTrucksQuery,
-  useLoadTruckQuery,
-} from "../../../app/features/driver/truckSlice";
+// Weight is entered in pounds and stored as kg text; free text from older loads is kept as is.
+const weightInPounds = (kg?: string | null) =>
+  kg && Number.isFinite(Number(kg)) ? String(Math.round(kgToLb(Number(kg)))) : (kg ?? "");
+const weightInKg = (pounds: string) =>
+  pounds.trim() !== "" && Number.isFinite(Number(pounds)) ? String(Math.round(lbToKg(Number(pounds)) * 10) / 10) : pounds;
 
-import { useParams } from "react-router-dom";
+type CargoFormValues = Record<string, string>;
 
-import { useState } from "react";
-import { BackButton } from "../../Back/BackButton";
+const SECTIONS: { title: string; description: string; fields: string[] }[] = [
+  {
+    title: "Shipper",
+    description: "The company handing over the goods.",
+    fields: ["shipperName", "shipperAddress", "contactPerson", "phoneNumber", "emailAddress"],
+  },
+  {
+    title: "Receiver",
+    description: "The company taking delivery.",
+    fields: ["receiverName", "receiverAddress", "receiverContact", "receiverPhone", "receiverEmail"],
+  },
+  {
+    title: "Goods",
+    description: "What is being moved and how it must be handled.",
+    fields: [
+      "descriptionOfGoods",
+      "quantity",
+      "weight",
+      "dimensions",
+      "temperatureControl",
+      "hazardousMaterial",
+      "specialHandlingInstructions",
+    ],
+  },
+  {
+    title: "Route and schedule",
+    description: "Addresses are placed on the map automatically.",
+    fields: ["pickupLocation", "pickupDate", "deliveryLocation", "deliveryDate"],
+  },
+  {
+    title: "Service and payment",
+    description: "",
+    fields: ["truckType", "serviceType", "freightCost", "paymentTerms", "notes"],
+  },
+];
 
-interface CargoFormValues {
-  shipperName: string;
-  shipperAddress: string;
-  contactPerson: string;
-  phoneNumber: string;
-  emailAddress: string;
-  receiverName: string;
-  receiverAddress: string;
-  receiverContact: string;
-  receiverPhone: string;
-  receiverEmail: string;
-  descriptionOfGoods: string;
-  quantity: string;
-  weight: string;
-  dimensions: string;
-  pickupDate: string;
-  deliveryDate: string;
-  pickupLocation: string;
-  deliveryLocation: string;
-  truckType: string;
-  serviceType: string;
-  temperatureControl: string;
-  hazardousMaterial: string;
-  specialHandlingInstructions: string;
-  freightCost: string;
-  paymentTerms: string;
-  notes: string;
-  driverId?: string;
-  truckId?: string;
-  trailerId?: string;
-}
+const fieldsByName = new Map(formFields.map((field) => [field.name, field]));
 
-const generateValidationSchema = (fields: FormField[]) => {
-  const schema: {
-    [key: string]: Yup.StringSchema | Yup.NumberSchema | Yup.MixedSchema;
-  } = {};
-  fields.forEach((field) => {
-    if (field.required) {
-      schema[field.name] = Yup.string().required("Required");
-    }
-  });
-  return Yup.object().shape(schema);
+const validationSchema = Yup.object().shape(
+  Object.fromEntries(
+    formFields.filter((field) => field.required).map((field) => [field.name, Yup.string().required("Required")])
+  )
+);
+
+const errorMessage = (error: unknown) =>
+  (error as { data?: { message?: string | string[] } } | undefined)?.data?.message?.toString() ??
+  "Could not save the cargo. Please try again.";
+
+const FormInput = ({ field }: { field: FormField }) => {
+  const wide = field.type === "textarea";
+  return (
+    <div className={cx(ui.field, wide && ui.fieldWide)}>
+      <label htmlFor={field.name} className={ui.label}>
+        {field.label}
+        {field.required && <span className={ui.required}>*</span>}
+      </label>
+      {field.type === "select" ? (
+        <Field as="select" id={field.name} name={field.name} className={ui.input}>
+          <option value="">Select…</option>
+          {field.options?.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </Field>
+      ) : field.type === "textarea" ? (
+        <Field as="textarea" id={field.name} name={field.name} className={ui.input} />
+      ) : (
+        <Field type={field.type} id={field.name} name={field.name} className={ui.input} />
+      )}
+      <ErrorMessage name={field.name} component="span" className={ui.fieldError} />
+    </div>
+  );
 };
 
 const AddCargoForm = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const {
-    data: cargo,
-    isError,
-    isLoading,
-  } = useLoadCargoQuery(id!, { skip: !id });
+  const { data: cargo, isError, isLoading } = useLoadCargoQuery(id ?? skipToken);
 
-  const cargoDriverId = cargo?.driverId;
-  const cargoTrailerId = cargo?.trailerId;
-  const cargoTruckId = cargo?.truckId;
-
-  const { data: availableDrivers, refetch: refetchAvailableDrivers } =
-    useFetchAvailableDriversQuery();
-
-  const { data: availableTrucks, refetch: refetchAvailableTrucks } =
-    useFetchAvailableTrucksQuery();
-
-  const { data: availableTrailers, refetch: refetchAvailableTrailers } =
-    useFetchAvailableTrailersQuery();
-  const { data: driver } = useLoadDriverQuery(cargoDriverId ?? skipToken);
-  const { data: truck } = useLoadTruckQuery(cargoTruckId ?? skipToken);
-  const { data: trailer } = useLoadTrailerQuery(cargoTrailerId ?? skipToken);
-
-  const { data: trucks } = useFetchTrucksQuery();
-
-  console.log(trailer?.trailerNumber);
+  const { data: availableDrivers = [] } = useFetchAvailableDriversQuery();
+  const { data: availableTrucks = [] } = useFetchAvailableTrucksQuery();
+  const { data: availableTrailers = [] } = useFetchAvailableTrailersQuery();
+  const { data: driver } = useLoadDriverQuery(cargo?.driverId ?? skipToken);
+  const { data: truck } = useLoadTruckQuery(cargo?.truckId ?? skipToken);
+  const { data: trailer } = useLoadTrailerQuery(cargo?.trailerId ?? skipToken);
 
   const [addCargo] = useAddNewCargoMutation();
-
   const [editCargo] = useEditCargoMutation();
+  const [saved, setSaved] = useState<string>();
+  const [saveError, setSaveError] = useState<string>();
 
-  const [cargoExist, setCargoExist] = useState<string>("");
+  if (id && isLoading) return <Loader />;
+  if (id && (isError || !cargo)) {
+    return <EmptyState icon={faTriangleExclamation} title="Cargo not found" text="It may have been deleted." />;
+  }
 
-  const initialValues = {
-    shipperName: cargo ? cargo.shipperName : "",
-    shipperAddress: cargo ? cargo.shipperAddress : "",
-    contactPerson: cargo ? cargo.contactPerson : "",
-    phoneNumber: cargo ? cargo.phoneNumber : "",
-    emailAddress: cargo ? cargo.emailAddress : "",
-    receiverName: cargo ? cargo.receiverName : "",
-    receiverAddress: cargo ? cargo.receiverAddress : "",
-    receiverContact: cargo ? cargo.receiverContact : "",
-    receiverPhone: cargo ? cargo.receiverPhone : "",
-    receiverEmail: cargo ? cargo.receiverEmail : "",
-    descriptionOfGoods: cargo ? cargo.descriptionOfGoods : "",
-    quantity: cargo ? cargo.quantity : "",
-    weight: cargo ? cargo.weight : "",
-    dimensions: cargo ? cargo.dimensions : "",
-    pickupDate: cargo ? cargo.pickupDate : "",
-    deliveryDate: cargo ? cargo.deliveryDate : "",
-    pickupLocation: cargo ? cargo.pickupLocation : "",
-    deliveryLocation: cargo ? cargo.deliveryLocation : "",
-    truckType: cargo ? cargo.truckType : "",
-    serviceType: cargo ? cargo.serviceType : "",
-    temperatureControl: cargo ? cargo.temperatureControl : "",
-    hazardousMaterial: cargo ? cargo.hazardousMaterial : "",
-    specialHandlingInstructions: cargo ? cargo.specialHandlingInstructions : "",
-    freightCost: cargo ? cargo.freightCost : "",
-    paymentTerms: cargo ? cargo.paymentTerms : "",
-    notes: cargo ? cargo.notes : "",
-    driverId: cargo?.driverId ?? "",
-    truckId: cargo?.truckId ?? "",
-    trailerId: cargo?.trailerId ?? "",
-    // Add default initial values for other fields here
-  };
+  const initialValues: CargoFormValues = Object.fromEntries([
+    ...formFields.map((field) => [field.name, String((cargo as Record<string, unknown> | undefined)?.[field.name] ?? "")]),
+    ["weight", weightInPounds(cargo?.weight)],
+    ["driverId", cargo?.driverId ?? ""],
+    ["truckId", cargo?.truckId ?? ""],
+    ["trailerId", cargo?.trailerId ?? ""],
+  ]);
 
-  const validationSchema = generateValidationSchema(formFields);
+  // The current assignment stays selectable even though it is no longer "available".
+  const withCurrent = <T extends { id: string }>(items: T[], current?: T) =>
+    current && !items.some((item) => item.id === current.id) ? [current, ...items] : items;
 
-  const handleSubmit = async (
-    values: CargoFormValues,
-    { setSubmitting, resetForm }: FormikHelpers<CargoFormValues>
-  ) => {
-    setSubmitting(true);
+  const handleSubmit = async (values: CargoFormValues, { resetForm }: FormikHelpers<CargoFormValues>) => {
+    setSaveError(undefined);
     try {
       if (id) {
-        // @ts-expect-error not a final version
-        await editCargo({ id, ...values });
-        await refetchAvailableDrivers();
-        await refetchAvailableTrailers();
-        await refetchAvailableTrucks();
-        navigate(-1);
+        // @ts-expect-error the form sends a partial cargo
+        await editCargo({ id, ...values, weight: weightInKg(values.weight) }).unwrap();
+        navigate(`/cargoList/${id}/preview`);
       } else {
-        // @ts-expect-error not a final version
-        await addCargo(values);
+        // @ts-expect-error the form sends a partial cargo
+        const created = await addCargo({ ...values, weight: weightInKg(values.weight) }).unwrap();
+        setSaved(created.id);
         resetForm();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (error) {
-      console.error("Error submitting the form", error);
-    } finally {
-      setSubmitting(false);
+      setSaveError(errorMessage(error));
     }
   };
 
-  if (isLoading) {
-    return <Loader />;
-  }
-
-  if (isError) {
-    return <h1>There is an error</h1>;
-  }
-
   return (
-    <div className={styles.container}>
-      <div className={styles.cargoOptions}>
-        <span className={styles.cargoName}>
-          {id ? "Edit Cargo" : "Add Cargo"}
-        </span>
-        <span className={styles.backContainer}>
-          {id ? <BackButton /> : null}
-        </span>
-      </div>
+    <>
+      {id && (
+        <div className={styles.top}>
+          <button className={cx(ui.btn, ui.secondary, ui.small)} onClick={() => navigate(-1)}>
+            <FontAwesomeIcon icon={faArrowLeft} /> Back
+          </button>
+        </div>
+      )}
+      <PageHeader
+        title={id ? "Edit cargo" : "Add cargo"}
+        subtitle={
+          id
+            ? `${shipmentRef(id)} · changes to a planned load send it back for confirmation`
+            : "Fields marked * are required. New loads appear in Dispatch, ready for a truck."
+        }
+      />
+
+      {saved && (
+        <div className={cx(ui.alert, ui.alertSuccess, styles.banner)}>
+          <FontAwesomeIcon icon={faCircleCheck} />
+          <span>
+            Cargo {shipmentRef(saved)} added. <Link to={`/cargoList/${saved}/preview`}>View it</Link> or{" "}
+            <Link to="/dispatcher">assign a truck in Dispatch</Link>.
+          </span>
+        </div>
+      )}
+
       <Formik<CargoFormValues>
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ isSubmitting }) => (
-          <>
-            {isSubmitting && <Loader />}
-            <Form>
-              {formFields.map((field) => (
-                <div className={styles.formGroup} key={field.name}>
-                  <label htmlFor={field.name}>{field.label}</label>
-                  {field.type === "select" ? (
-                    <Field
-                      as="select"
-                      name={field.name}
-                      className="form-control"
-                    >
-                      <option value="">Select...</option>
-                      {field.options &&
-                        field.options.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                    </Field>
-                  ) : field.type === "textarea" ? (
-                    <Field
-                      as="textarea"
-                      name={field.name}
-                      className="form-control"
-                    />
-                  ) : field.type === "file" ? (
-                    <Field
-                      type="file"
-                      name={field.name}
-                      className="form-control"
-                    />
-                  ) : (
-                    <Field
-                      type={field.type}
-                      name={field.name}
-                      className="form-control"
-                    />
-                  )}
-
-                  <ErrorMessage
-                    name={field.name}
-                    component="span"
-                    className={styles.errorMsg}
-                  />
+        {({ isSubmitting, submitCount, isValid }) => (
+          <Form noValidate className={styles.form}>
+            {SECTIONS.map((section) => (
+              <section key={section.title} className={cx(ui.card, styles.section)}>
+                <div className={styles.sectionIntro}>
+                  <h2 className={ui.cardTitle}>{section.title}</h2>
+                  {section.description && <p className={ui.secondaryText}>{section.description}</p>}
                 </div>
-              ))}
-              {id && (
-                <>
-                  <div className={styles.formGroupContainer}>
-                    <h2>Configure Cargo</h2>
-                    <div className={styles.formGroupConfigure}>
-                      <label htmlFor="driverId">Driver</label>
-                      <Field
-                        as="select"
-                        name="driverId"
-                        className="form-control"
-                      >
-                        <option value="">
-                          {cargo?.driverId
-                            ? `${driver?.firstName} ${driver?.lastName}`
-                            : "Select Driver..."}
-                        </option>
-                        {availableDrivers?.map((driver) => (
-                          <option key={driver.id} value={driver.id}>
-                            {driver.firstName} {driver.lastName}
-                          </option>
-                        ))}
-                      </Field>
-                      <ErrorMessage
-                        name="driverId"
-                        component="span"
-                        className={styles.errorMsg}
-                      />
-                    </div>
+                <div className={ui.formGrid}>
+                  {section.fields.map((name) => {
+                    const field = fieldsByName.get(name);
+                    return field ? <FormInput key={name} field={field} /> : null;
+                  })}
+                </div>
+              </section>
+            ))}
 
-                    <div className={styles.formGroupConfigure}>
-                      <label htmlFor="truckId">Truck</label>
-                      <Field
-                        as="select"
-                        name="truckId"
-                        className="form-control"
-                      >
-                        <option value="">
-                          {cargo?.truckId
-                            ? truck?.truckModel
-                            : "Select Driver..."}
+            {id && (
+              <section className={cx(ui.card, styles.section)}>
+                <div className={styles.sectionIntro}>
+                  <h2 className={ui.cardTitle}>Assignment</h2>
+                  <p className={ui.secondaryText}>Only free drivers, trucks and trailers are listed.</p>
+                </div>
+                <div className={ui.formGrid}>
+                  <div className={ui.field}>
+                    <label htmlFor="driverId" className={ui.label}>
+                      Driver
+                    </label>
+                    <Field as="select" id="driverId" name="driverId" className={ui.input}>
+                      <option value="">No driver</option>
+                      {withCurrent(availableDrivers, driver).map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.firstName} {item.lastName}
                         </option>
-                        {availableTrucks?.map((truck) => (
-                          <option key={truck.id} value={truck.id}>
-                            {truck.truckModel}
-                          </option>
-                        ))}
-                      </Field>
-                      <ErrorMessage
-                        name="truckId"
-                        component="span"
-                        className={styles.errorMsg}
-                      />
-                    </div>
-
-                    <div className={styles.formGroupConfigure}>
-                      <label htmlFor="trailerId">Trailer</label>
-                      <Field
-                        as="select"
-                        name="trailerId"
-                        className="form-control"
-                      >
-                        <option value="">
-                          {cargo?.trailerId
-                            ? trailer?.trailerNumber
-                            : "Select Trailer..."}
-                        </option>
-                        {availableTrailers?.map((trailer) => (
-                          <option key={trailer.id} value={trailer.id}>
-                            {trailer.trailerNumber}
-                          </option>
-                        ))}
-                      </Field>
-                      <ErrorMessage
-                        name="trailerId"
-                        component="span"
-                        className={styles.errorMsg}
-                      />
-                    </div>
+                      ))}
+                    </Field>
                   </div>
-                </>
-              )}
-              {cargoExist && <div className={styles.error}>{cargoExist}</div>}
-              <button
-                type="submit"
-                className={styles.cargoSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting
-                  ? "Submitting..."
-                  : id
-                  ? "Update Cargo"
-                  : "Add Cargo"}
-              </button>
-            </Form>
-          </>
+                  <div className={ui.field}>
+                    <label htmlFor="truckId" className={ui.label}>
+                      Truck
+                    </label>
+                    <Field as="select" id="truckId" name="truckId" className={ui.input}>
+                      <option value="">No truck</option>
+                      {withCurrent(availableTrucks, truck).map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.truckNumber} · {item.truckModel}
+                        </option>
+                      ))}
+                    </Field>
+                  </div>
+                  <div className={ui.field}>
+                    <label htmlFor="trailerId" className={ui.label}>
+                      Trailer
+                    </label>
+                    <Field as="select" id="trailerId" name="trailerId" className={ui.input}>
+                      <option value="">No trailer</option>
+                      {withCurrent(availableTrailers, trailer).map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.trailerNumber} · {item.trailer}
+                        </option>
+                      ))}
+                    </Field>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            <div className={styles.actionBar}>
+              <span className={ui.secondaryText}>
+                {saveError ? (
+                  <span className={ui.fieldError}>{saveError}</span>
+                ) : submitCount > 0 && !isValid ? (
+                  <span className={ui.fieldError}>Some required fields are missing.</span>
+                ) : null}
+              </span>
+              <div className={ui.actions}>
+                <button type="button" className={cx(ui.btn, ui.secondary)} onClick={() => (id ? navigate(-1) : navigate("/cargoList"))}>
+                  Cancel
+                </button>
+                <button type="submit" className={cx(ui.btn, ui.primary)} disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : id ? "Save changes" : "Add cargo"}
+                </button>
+              </div>
+            </div>
+          </Form>
         )}
       </Formik>
-    </div>
+    </>
   );
 };
 

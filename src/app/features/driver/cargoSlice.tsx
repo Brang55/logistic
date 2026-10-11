@@ -34,15 +34,24 @@ export default interface Cargo {
   truckId?: string | null;
   trailerId?: string | null;
   status: string;
+  source?: string;
+  externalId?: string | null;
   pickedUpAt?: string | null;
   deliveredAt?: string | null;
   delayMinutes?: number | null;
   delayReason?: string | null;
+  /** Set when a dispatcher assigned the truck despite restrictions on its route. */
+  restrictionsAcceptedAt?: string | null;
+  restrictionsAcceptedBy?: string | null;
+  restrictionsAcceptedTruckId?: string | null;
   pickupPoint?: { x: number; y: number } | null;
   deliveryPoint?: { x: number; y: number } | null;
 }
 
-export type CargoAssignment = Pick<Cargo, "driverId" | "truckId" | "trailerId">;
+export type CargoAssignment = Pick<Cargo, "driverId" | "truckId" | "trailerId"> & {
+  /** Assign even though the truck's route breaks height or weight limits. */
+  acceptRestrictions?: boolean;
+};
 
 // Assigning or releasing a driver, truck or trailer changes its availability.
 const ASSIGNMENT_TAGS = [

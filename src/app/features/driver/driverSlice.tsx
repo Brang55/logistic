@@ -1,6 +1,6 @@
 import { api } from "../../api";
 
-interface Driver {
+export interface Driver {
   id: string;
   firstName: string;
   lastName: string;

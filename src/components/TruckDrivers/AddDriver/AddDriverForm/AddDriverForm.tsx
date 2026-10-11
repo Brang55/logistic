@@ -30,12 +30,12 @@ interface DriverFormValues {
 }
 
 const driverValidationSchema = Yup.object().shape({
-  firstName: Yup.string().required("First Name is required"),
-  lastName: Yup.string().required("Last Name is required"),
+  firstName: Yup.string().required("First name is required"),
+  lastName: Yup.string().required("Last name is required"),
   truckDriverEmail: Yup.string()
     .email("Invalid email")
     .required("Email is required"),
-  truckNumber: Yup.string().required("Truck Number is required"),
+  truckNumber: Yup.string().required("Truck number is required"),
   phoneNumber: Yup.string().required("Phone number is required"),
 });
 
@@ -86,6 +86,13 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({
         editEntity={editDriver}
         entityLabel="driver"
         checkEmailExists={checkEmailExistsInDB}
+        fieldLabels={{
+          firstName: "First name",
+          lastName: "Last name",
+          truckNumber: "Usual truck number",
+          truckDriverEmail: "Email",
+          phoneNumber: "Phone",
+        }}
       />
     </>
   );

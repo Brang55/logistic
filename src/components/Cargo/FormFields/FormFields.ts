@@ -72,10 +72,10 @@ export const formFields: FormField[] = [
     required: true,
   },
   { name: "quantity", label: "Quantity", type: "number", required: true },
-  { name: "weight", label: "Weight (kg)", type: "number", required: true },
+  { name: "weight", label: "Weight (lb)", type: "number", required: true },
   {
     name: "dimensions",
-    label: "Dimensions (LxWxH in cm)",
+    label: "Dimensions (LxWxH in inches)",
     type: "text",
     required: true,
   },
