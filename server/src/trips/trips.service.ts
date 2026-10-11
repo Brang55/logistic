@@ -1,7 +1,8 @@
 import { Inject, Injectable, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { and, asc, eq, isNotNull, isNull, notInArray, sql, SQL } from "drizzle-orm";
-import { Cargo, FINISHED_STATUSES } from "../cargos/cargos.service";
+import { Cargo } from "../cargos/cargos.service";
+import { FINISHED_STATUSES } from "../common/cargo-status";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
 import { cargos, drivers, trailers, trucks } from "../db/schema";
@@ -99,7 +100,6 @@ export class TripsService {
     }));
   }
 
-  /** Truck-aware route from the truck's position through the current load's remaining stops. */
   /** The trailer coupled for a load, so the driver knows which one to pick up. */
   async trailerFor(cargo: Cargo) {
     if (!cargo.trailerId) return null;
@@ -107,6 +107,7 @@ export class TripsService {
     return trailer ? { id: trailer.id, trailerNumber: trailer.trailerNumber, trailer: trailer.trailer } : null;
   }
 
+  /** Truck-aware route from the truck's position through the current load's remaining stops. */
   async routeFor(trip: Trip, options: { includeQueue?: boolean } = {}): Promise<RoutePlan | null> {
     const loads = options.includeQueue ? [trip.cargo, ...trip.queue] : [trip.cargo];
     const stops = loads.flatMap(stopsOf).map((stop) => stop.point);

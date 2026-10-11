@@ -64,6 +64,13 @@
       "when": 1791570722284,
       "tag": "0008_route_restrictions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791740965018,
+      "tag": "0009_status_checks",
+      "breakpoints": true
     }
   ]
 }

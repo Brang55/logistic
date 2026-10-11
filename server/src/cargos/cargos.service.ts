@@ -6,9 +6,10 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from "@nestjs/common";
-import { and, asc, count, desc, eq, inArray, notInArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, notInArray } from "drizzle-orm";
 import { AuthUser } from "../auth/auth-user";
-import { AVAILABLE, nullIfEmpty, TAKEN } from "../common/assignable";
+import { AVAILABLE, nullIfEmpty, ResourceStatus, TAKEN } from "../common/assignable";
+import { CargoStatus, FINISHED_STATUSES, PLANNING_STATUSES } from "../common/cargo-status";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
 import { cargos, drivers, trailers, trucks } from "../db/schema";
@@ -36,28 +37,24 @@ type Point = { x: number; y: number };
 const toPoint = ([x, y]: LngLat): Point => ({ x, y });
 const toLngLat = ({ x, y }: Point): LngLat => [x, y];
 
-/** Cargo in these states no longer holds its driver, truck or trailer. */
-export const FINISHED_STATUSES = ["delivered", "cancelled"];
-const PLANNING_STATUSES = ["new", "confirmed", "edited"];
-
 // Drizzle can't update a union of tables generically, so each resource gets its own setter.
 const RESOURCES = [
   {
     key: "driverId",
     column: cargos.driverId,
-    setStatus: (tx: Tx, id: string, status: string) =>
+    setStatus: (tx: Tx, id: string, status: ResourceStatus) =>
       tx.update(drivers).set({ status }).where(eq(drivers.id, id)),
   },
   {
     key: "truckId",
     column: cargos.truckId,
-    setStatus: (tx: Tx, id: string, status: string) =>
+    setStatus: (tx: Tx, id: string, status: ResourceStatus) =>
       tx.update(trucks).set({ status }).where(eq(trucks.id, id)),
   },
   {
     key: "trailerId",
     column: cargos.trailerId,
-    setStatus: (tx: Tx, id: string, status: string) =>
+    setStatus: (tx: Tx, id: string, status: ResourceStatus) =>
       tx.update(trailers).set({ status }).where(eq(trailers.id, id)),
   },
 ] as const;
@@ -73,7 +70,7 @@ export class CargosService {
     private readonly alerts: AlertsService,
   ) {}
 
-  findAll(status?: string) {
+  findAll(status?: CargoStatus) {
     return this.db
       .select()
       .from(cargos)
@@ -202,11 +199,13 @@ export class CargosService {
       throw new ConflictException("Cargo was already picked up");
     }
     if (!cargo.truckId) throw new ConflictException("Cargo has no truck assigned");
+    // Guarded again in the update so two confirmations at once can't both pick it up.
     const [updated] = await this.db
       .update(cargos)
       .set({ status: "picked_up", pickedUpAt: new Date() })
-      .where(eq(cargos.id, id))
+      .where(and(eq(cargos.id, id), isNull(cargos.pickedUpAt), inArray(cargos.status, PLANNING_STATUSES)))
       .returning();
+    if (!updated) throw new ConflictException("Cargo was already picked up");
     return this.changed(updated);
   }
 
@@ -219,8 +218,9 @@ export class CargosService {
       const [row] = await tx
         .update(cargos)
         .set({ status: "delivered", deliveredAt: new Date() })
-        .where(eq(cargos.id, id))
+        .where(and(eq(cargos.id, id), isNotNull(cargos.pickedUpAt), notInArray(cargos.status, FINISHED_STATUSES)))
         .returning();
+      if (!row) throw new ConflictException("Cargo is already finished");
       await syncAssignment(tx, cargo, emptyAssignment);
       return row;
     });
@@ -304,10 +304,16 @@ export class CargosService {
     return found ? toPoint(found) : null;
   }
 
+  // Only a load that hasn't left yet can be (re)confirmed.
   async confirm(id: string) {
-    const [cargo] = await this.db.update(cargos).set({ status: "confirmed" }).where(eq(cargos.id, id)).returning();
-    if (!cargo) throw new NotFoundException("Cargo not found");
-    return this.changed(cargo);
+    const [cargo] = await this.db
+      .update(cargos)
+      .set({ status: "confirmed" })
+      .where(and(eq(cargos.id, id), inArray(cargos.status, PLANNING_STATUSES)))
+      .returning();
+    if (cargo) return this.changed(cargo);
+    const current = await this.findOne(id);
+    throw new ConflictException(`A ${current.status.replace("_", " ")} cargo can't be confirmed`);
   }
 
   // Deleting a cargo frees the driver, truck and trailer that were assigned to it.

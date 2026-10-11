@@ -274,7 +274,7 @@ async function seedDriverCommunity(db: Database) {
           delayReason: load.delay ? (load.delay > 120 ? "Receiver closed, redelivered next morning" : "Heavy traffic") : null,
           driverId: demoDriver.id,
           truckId: truckIds.get(demoDriver.truckNumber) ?? null,
-          status: "delivered",
+          status: "delivered" as const,
         };
       }),
     );
@@ -317,7 +317,7 @@ export async function seed(db: Database) {
         paymentTerms: i % 3 ? "Prepaid" : "Collect",
         pickupDate: day(1 + (i % 3)),
         deliveryDate: day(2 + (i % 3)),
-        status: i % 2 ? "confirmed" : "new",
+        status: i % 2 ? ("confirmed" as const) : ("new" as const),
       })),
     );
 

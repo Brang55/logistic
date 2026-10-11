@@ -15,6 +15,8 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { RESOURCE_STATUSES } from "../common/assignable";
+import { CARGO_STATUSES } from "../common/cargo-status";
 
 // WGS84 point. Drizzle's built-in geometry column drops the SRID, which would store
 // SRID 0 and break distance functions, so this writes EWKT with SRID 4326 explicitly.
@@ -28,6 +30,11 @@ const point4326 = customType<{ data: { x: number; y: number }; driverData: strin
 });
 
 export const userRole = pgEnum("user_role", ["admin", "dispatcher", "driver"]);
+
+// Status columns stay text (simple to extend) but only accept the known values.
+const resourceStatus = () => text("status", { enum: RESOURCE_STATUSES }).notNull().default("available");
+const statusCheck = (name: string, column: unknown, values: readonly string[]) =>
+  check(name, sql`${column} in (${sql.join(values.map((v) => sql.raw(`'${v}'`)), sql`, `)})`);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -62,7 +69,7 @@ export const trucks = pgTable("trucks", {
   truckNumber: text("truck_number").notNull().unique(),
   truckModel: text("truck_model").notNull().default(""),
   engineVariation: text("engine_variation").notNull().default(""),
-  status: text("status").notNull().default("available"),
+  status: resourceStatus(),
   plate: text("plate"),
   vin: text("vin"),
   // Metric, as the routing engines expect; the web app shows them in imperial units.
@@ -75,7 +82,7 @@ export const trucks = pgTable("trucks", {
   // The vehicle's id in the telematics provider (Samsara, Geotab, ...); falls back to truck number.
   telematicsId: text("telematics_id").unique(),
   ...timestamps,
-});
+}, (table) => [statusCheck("trucks_status_check", table.status, RESOURCE_STATUSES)]);
 
 // GPS fixes from telematics (or the simulator). Append-only.
 export const positions = pgTable(
@@ -99,9 +106,9 @@ export const trailers = pgTable("trailers", {
   id: uuid("id").primaryKey().defaultRandom(),
   trailer: text("trailer").notNull().default(""),
   trailerNumber: text("trailer_number").notNull().unique(),
-  status: text("status").notNull().default("available"),
+  status: resourceStatus(),
   ...timestamps,
-});
+}, (table) => [statusCheck("trailers_status_check", table.status, RESOURCE_STATUSES)]);
 
 export const drivers = pgTable("drivers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -112,15 +119,15 @@ export const drivers = pgTable("drivers", {
   truckDriverEmail: text("truck_driver_email").notNull().unique(),
   truckNumber: text("truck_number").notNull().default(""),
   content: text("content").notNull().default(""),
-  status: text("status").notNull().default("available"),
+  status: resourceStatus(),
   ...timestamps,
-});
+}, (table) => [statusCheck("drivers_status_check", table.status, RESOURCE_STATUSES)]);
 
 const cargoText = (name: string) => text(name).notNull().default("");
 
 export const cargos = pgTable("cargos", {
   id: uuid("id").primaryKey().defaultRandom(),
-  status: text("status").notNull().default("new"),
+  status: text("status", { enum: CARGO_STATUSES }).notNull().default("new"),
   shipperName: cargoText("shipper_name"),
   shipperAddress: cargoText("shipper_address"),
   contactPerson: cargoText("contact_person"),
@@ -168,7 +175,10 @@ export const cargos = pgTable("cargos", {
   source: text("source").notNull().default("manual"),
   externalId: text("external_id"),
   ...timestamps,
-}, (table) => [uniqueIndex("cargos_source_external_idx").on(table.source, table.externalId)]);
+}, (table) => [
+  uniqueIndex("cargos_source_external_idx").on(table.source, table.externalId),
+  statusCheck("cargos_status_check", table.status, CARGO_STATUSES),
+]);
 
 export type User = typeof users.$inferSelect;
 export type UserRole = (typeof userRole.enumValues)[number];

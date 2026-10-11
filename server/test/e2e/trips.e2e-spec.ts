@@ -71,6 +71,18 @@ describe("trips (e2e)", () => {
     expect(await status("drivers", driver.id)).toBe("available");
   });
 
+  it("won't confirm, pick up or deliver a finished load again", async () => {
+    const cargo = await newCargo(t, "P1", "D1", { truckId: truck.id, driverId: driver.id });
+    await asDriver(t.api().post(`/api/me/trip/${cargo.id}/picked-up`)).expect(200);
+    const onTheRoad = await t.asDispatcher(t.api().post(`/api/cargos/${cargo.id}/confirm`)).expect(409);
+    expect(onTheRoad.body.message).toBe("A picked up cargo can't be confirmed");
+
+    await asDriver(t.api().post(`/api/me/trip/${cargo.id}/delivered`)).expect(200);
+    await t.asDispatcher(t.api().post(`/api/cargos/${cargo.id}/confirm`)).expect(409);
+    expect(await cargoStatus(cargo.id)).toBe("delivered");
+    await t.asDispatcher(t.api().post("/api/cargos/00000000-0000-0000-0000-000000000000/confirm")).expect(404);
+  });
+
   it("stops drivers from touching other drivers' loads", async () => {
     const other = await newCargo(t, "P1", "D1");
     await asDriver(t.api().post(`/api/me/trip/${other.id}/picked-up`)).expect(403);

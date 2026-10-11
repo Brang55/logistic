@@ -61,6 +61,18 @@ describe("fleet and cargo (e2e)", () => {
     expect(await status(other.id)).toBe("available");
   });
 
+  it("only accepts known statuses, calendar dates and numeric weights", async () => {
+    await t.asDispatcher(t.api().post("/api/trucks")).send({ truckNumber: "T-X", status: "broken" }).expect(400);
+    await t.asDispatcher(t.api().get("/api/trucks?status=broken")).expect(400);
+    await t.asDispatcher(t.api().get("/api/cargos?status=lost")).expect(400);
+
+    const cargo = (body: object) => t.asDispatcher(t.api().post("/api/cargos")).send(body);
+    await cargo({ pickupDate: "tomorrow" }).expect(400);
+    await cargo({ deliveryDate: "2026-1-5" }).expect(400);
+    await cargo({ weight: "heavy" }).expect(400);
+    await cargo({ pickupDate: "", deliveryDate: "2026-01-05", weight: "" }).expect(201);
+  });
+
   it("filters by status", async () => {
     const available = await t.asDispatcher(t.api().get("/api/trucks?status=available")).expect(200);
     expect(available.body.length).toBeGreaterThan(0);
