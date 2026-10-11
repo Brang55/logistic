@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run build
+
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    services:
+      # Same image as docker-compose.yml; the e2e global setup creates logistic_test itself.
+      db:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: logistic
+          POSTGRES_PASSWORD: logistic
+          POSTGRES_DB: logistic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U logistic -h 127.0.0.1"
+          --health-interval 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run test:e2e

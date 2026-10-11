@@ -27,7 +27,8 @@ Fill in `.env.production`:
 | `POSTGRES_PASSWORD` | `openssl rand -hex 24` |
 | `JWT_ACCESS_SECRET` | `openssl rand -hex 32` |
 | `VITE_MAPBOX_ACCESS_TOKEN` | public `pk.` token, URL-restricted to your domain in the Mapbox console |
-| `MAPBOX_SECRET_TOKEN` | secret `sk.` token (routing, geocoding, traffic) |
+| `MAPBOX_SECRET_TOKEN` | secret `sk.` token (geocoding; routing fallback) |
+| `TOMTOM_API_KEY` | TomTom key for truck routing, traffic and the truck drive-time matrix |
 | `OWNER_EMAIL`, `OWNER_PASSWORD` | the first admin login |
 | `TELEMATICS_PROVIDER` | `simulator` for a demo server, empty when real telematics post to the webhook |
 | `TELEMATICS_WEBHOOK_SECRET` | `openssl rand -hex 24`; give it to the telematics provider |
@@ -53,10 +54,12 @@ docker compose --env-file .env.production -f docker-compose.prod.yml restart api
 
 - **Logs**: `docker compose --env-file .env.production -f docker-compose.prod.yml logs -f api`
 - **Update**: `git pull && docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build`
-- **Backups**: `./scripts/backup.sh` writes `backups/logistic-<date>.dump` (keeps 14). Add it to cron:
+- **Backups**: `./scripts/backup.sh` writes `backups/logistic-<date>.dump` and `backups/uploads-<date>.tgz`
+  (document scans), keeping 14 of each. Add it to cron:
   `0 3 * * * cd /opt/logistic && ./scripts/backup.sh >> backups/backup.log 2>&1`, and copy `backups/` off
   the server (e.g. to object storage).
-- **Restore**: `docker compose ... exec -T db pg_restore -U logistic -d logistic --clean < backups/<file>.dump`
+- **Restore**: `docker compose ... exec -T db pg_restore -U logistic -d logistic --clean < backups/<file>.dump`;
+  document scans: `docker compose ... exec -T api tar -xz -C /app < backups/uploads-<date>.tgz`
 - **Telematics webhook**: `https://app.example.com/api/telematics/webhook` with header
   `x-telematics-secret` (format in the README).
 
