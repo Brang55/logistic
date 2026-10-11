@@ -1,3 +1,7 @@
+import { sql } from "drizzle-orm";
+import { AuthService } from "../../src/auth/auth.service";
+import { Database } from "../../src/db/client";
+import { DB } from "../../src/db/db.module";
 import { createTestApp, TestApp } from "../support/app";
 
 describe("auth (e2e)", () => {
@@ -23,6 +27,17 @@ describe("auth (e2e)", () => {
     await t.api().post("/api/auth/refresh").send({ refreshToken: login.body.refreshToken }).expect(401);
     // Replay revokes every session for the user, including the newest one.
     await t.api().post("/api/auth/refresh").send({ refreshToken: refreshed.body.refreshToken }).expect(401);
+  });
+
+  it("lets only one of two simultaneous refreshes use a token", async () => {
+    // Called on the service directly so both requests read the token before either revokes it.
+    const auth = t.app.get(AuthService);
+    const { refreshToken } = await auth.login("admin@test.local", "password123");
+    // Open a few pool connections first, as on a busy server, so both reads really run at once.
+    const db = t.app.get<Database>(DB);
+    await Promise.all(Array.from({ length: 4 }, () => db.execute(sql`select pg_sleep(0.05)`)));
+    const results = await Promise.allSettled([auth.refresh(refreshToken), auth.refresh(refreshToken)]);
+    expect(results.map((r) => r.status).sort()).toEqual(["fulfilled", "rejected"]);
   });
 
   it("rejects a wrong password", async () => {
