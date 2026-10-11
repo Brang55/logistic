@@ -14,7 +14,7 @@ import { MockLoadBoard } from "./mock-load-boards";
   providers: [
     LoadBoardsService,
     // Real adapters (DAT, Truckstop, Timocom, Trans.eu) go here once API access is in place.
-    { provide: LOAD_BOARD_PROVIDERS, useFactory: () => [new MockLoadBoard("mock-eu-exchange", "EU"), new MockLoadBoard("mock-us-exchange", "US")] },
+    { provide: LOAD_BOARD_PROVIDERS, useFactory: () => [new MockLoadBoard("mock-us-exchange")] },
   ],
 })
 export class LoadBoardsModule {}

@@ -5,6 +5,8 @@ export interface VehicleDimensions {
   heightM?: number | null;
   widthM?: number | null;
   weightT?: number | null;
+  lengthM?: number | null;
+  axles?: number | null;
 }
 
 export interface RouteRequest {
@@ -58,12 +60,12 @@ export interface TravelEstimate {
   distanceM: number | null;
 }
 
-/** Routing engine abstraction so Mapbox can be swapped for a truck-specialised provider later. */
+/** Routing engine abstraction: TomTom truck routing, or Mapbox when no TomTom key is set. */
 export abstract class RoutingService {
   abstract route(request: RouteRequest): Promise<RoutePlan[]>;
 
-  /** At most `maxMatrixDestinations` destinations per call. */
-  abstract travelTimes(origin: LngLat, destinations: LngLat[]): Promise<TravelEstimate[]>;
+  /** At most `maxMatrixDestinations` destinations per call. Engines without truck support ignore `vehicle`. */
+  abstract travelTimes(origin: LngLat, destinations: LngLat[], vehicle?: VehicleDimensions): Promise<TravelEstimate[]>;
 
   readonly maxMatrixDestinations: number = 9;
 }

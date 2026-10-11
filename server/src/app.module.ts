@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER } from "@nestjs/core";
 import { AuthModule } from "./auth/auth.module";
 import { CargosModule } from "./cargos/cargos.module";
+import { CommunityModule } from "./community/community.module";
 import { PgErrorFilter } from "./common/pg-error.filter";
 import { DbModule } from "./db/db.module";
 import { DriversModule } from "./drivers/drivers.module";
@@ -11,7 +12,9 @@ import { LoadBoardsModule } from "./loadboards/loadboards.module";
 import { MapboxModule } from "./mapbox/mapbox.module";
 import { RoutingModule } from "./routing/routing.module";
 import { TelematicsModule } from "./telematics/telematics.module";
+import { TomTomModule } from "./tomtom/tomtom.module";
 import { TripsModule } from "./trips/trips.module";
+import { VehiclesModule } from "./vehicles/vehicles.module";
 import { VoiceModule } from "./voice/voice.module";
 import { TrailersModule } from "./trailers/trailers.module";
 import { TrucksModule } from "./trucks/trucks.module";
@@ -21,6 +24,7 @@ import { TrucksModule } from "./trucks/trucks.module";
     ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
     MapboxModule,
+    TomTomModule,
     AuthModule,
     TrucksModule,
     TrailersModule,
@@ -31,6 +35,8 @@ import { TrucksModule } from "./trucks/trucks.module";
     TripsModule,
     VoiceModule,
     LoadBoardsModule,
+    VehiclesModule,
+    CommunityModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: PgErrorFilter }],

@@ -17,6 +17,10 @@ interface Leg {
   pickedUp: boolean;
   /** Arrived; kept until the load changes so the same load isn't driven again. */
   done: boolean;
+  /** Whether the load was already picked up when this leg was planned. */
+  plannedPickedUp: boolean;
+  /** The driver confirms pickup/delivery in the app; the simulator only drives and waits. */
+  driverConfirms: boolean;
 }
 
 const CRUISE_KMH = 82;
@@ -27,7 +31,8 @@ const HEARTBEAT_MS = 60_000;
  * Demo telematics: each truck with an active load drives from its last position through
  * the load's remaining stops along a real truck route, at a configurable time-lapse speed.
  * On arrival it marks the load picked up / delivered (like a geofence would), then moves on
- * to the next queued load. Trucks without loads stay where they are.
+ * to the next queued load. When the driver uses the driver app, the truck instead drives to
+ * the next stop and waits there for the driver to confirm. Trucks without loads stay put.
  */
 @Injectable()
 export class SimulatedTelematicsProvider extends TelematicsProvider {
@@ -93,7 +98,7 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
 
       const { point, heading } = leg.path.at(leg.progressM);
       fixes.push({ truckId, point, heading: Math.round(heading), speedKmh: leg.done ? 0 : Math.round(leg.speedKmh), recordedAt: now });
-      if (this.autoStatus && updates.length) arrivals.push(updates);
+      if (this.autoStatus && !leg.driverConfirms && updates.length) arrivals.push(updates);
     }
 
     if (now.getTime() - this.lastHeartbeat >= HEARTBEAT_MS) {
@@ -123,8 +128,10 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
     this.planning = true;
     try {
       const trips = new Map((await this.trips.activeTrips()).map((trip) => [trip.truck.id, trip]));
+      // Re-plan when the load changes, or when its pickup was confirmed since planning.
       for (const [truckId, leg] of this.legs) {
-        if (trips.get(truckId)?.cargo.id !== leg.cargoId) this.legs.delete(truckId);
+        const trip = trips.get(truckId);
+        if (trip?.cargo.id !== leg.cargoId || !!trip.cargo.pickedUpAt !== leg.plannedPickedUp) this.legs.delete(truckId);
       }
       for (const [truckId, trip] of trips) {
         if (!this.legs.has(truckId)) this.legs.set(truckId, await this.legFor(trip));
@@ -137,9 +144,10 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
   }
 
   private async legFor(trip: Trip): Promise<Leg> {
-    const stops = stopsOf(trip.cargo);
+    // App drivers confirm each stop themselves, so the truck only drives to the next one.
+    const stops = trip.driverUsesApp ? stopsOf(trip.cargo).slice(0, 1) : stopsOf(trip.cargo);
     const points: LngLat[] = [...(trip.position ? [trip.position.point] : []), ...stops.map((s) => s.point)];
-    const needsPickup = stops[0].kind === "pickup";
+    const needsPickup = stops[0].kind === "pickup" && !trip.driverUsesApp;
     const { path, pickupAtM } = await this.pathThrough(trip, points, needsPickup && !!trip.position);
     return {
       cargoId: trip.cargo.id,
@@ -150,6 +158,8 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
       pickupAtM: needsPickup ? (pickupAtM ?? 0) : undefined,
       pickedUp: !needsPickup,
       done: false,
+      plannedPickedUp: !!trip.cargo.pickedUpAt,
+      driverConfirms: trip.driverUsesApp,
     };
   }
 

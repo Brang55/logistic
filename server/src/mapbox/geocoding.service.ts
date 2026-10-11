@@ -20,6 +20,8 @@ export class GeocodingService {
       const res = await this.mapbox.get<GeocodeResponse>("/search/geocode/v6/forward", {
         q: query,
         limit: "1",
+        // The fleet operates in the US only for now.
+        country: "us",
         permanent: "true",
       });
       return res.features[0]?.geometry.coordinates ?? null;

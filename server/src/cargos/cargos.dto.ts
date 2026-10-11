@@ -1,6 +1,6 @@
 import { PartialType, PickType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsOptional, IsString, IsUUID, ValidateIf } from "class-validator";
+import { IsBoolean, IsOptional, IsString, IsUUID, ValidateIf } from "class-validator";
 
 // The cargo form sends numeric inputs (quantity, weight) as numbers or strings.
 const AsString = () => (target: object, key: string) => {
@@ -132,7 +132,12 @@ export class CreateCargoDto {
 
 export class UpdateCargoDto extends PartialType(CreateCargoDto) {}
 
-export class AssignCargoDto extends PickType(UpdateCargoDto, ["driverId", "truckId", "trailerId"] as const) {}
+export class AssignCargoDto extends PickType(UpdateCargoDto, ["driverId", "truckId", "trailerId"] as const) {
+  /** Assign even though the truck's route breaks height/weight limits; recorded on the cargo. */
+  @IsOptional()
+  @IsBoolean()
+  acceptRestrictions?: boolean;
+}
 
 export class CargoRouteQueryDto {
   /** Route with this truck instead of the assigned one. */

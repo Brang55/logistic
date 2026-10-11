@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   ConflictException,
   Inject,
   Injectable,
@@ -6,6 +7,7 @@ import {
   UnprocessableEntityException,
 } from "@nestjs/common";
 import { and, asc, count, desc, eq, inArray, notInArray } from "drizzle-orm";
+import { AuthUser } from "../auth/auth-user";
 import { AVAILABLE, nullIfEmpty, TAKEN } from "../common/assignable";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
@@ -27,6 +29,8 @@ export interface CargoOrigin {
   deliveryPoint: LngLat;
 }
 type Assignment = Pick<Cargo, "driverId" | "truckId" | "trailerId">;
+type RestrictionCheck = { truck: typeof trucks.$inferSelect; violations: string[] };
+type Acceptance = Pick<Cargo, "restrictionsAcceptedAt" | "restrictionsAcceptedBy" | "restrictionsAcceptedTruckId">;
 type Point = { x: number; y: number };
 
 const toPoint = ([x, y]: LngLat): Point => ({ x, y });
@@ -120,12 +124,64 @@ export class CargosService {
     return this.save(id, { ...dto, ...points, status });
   }
 
-  // Dispatcher assignment changes only the driver, truck and trailer, keeping the cargo's status.
-  assign(id: string, dto: AssignCargoDto) {
-    return this.save(id, dto);
+  /**
+   * Dispatcher assignment changes only the driver, truck and trailer, keeping the cargo's status.
+   * A truck whose route breaks height or weight limits is refused unless the dispatcher
+   * accepts the restrictions; the acceptance is recorded for that truck.
+   */
+  async assign(id: string, { acceptRestrictions, ...dto }: AssignCargoDto, user: AuthUser) {
+    const current = await this.findOne(id);
+    const truckId = "truckId" in dto ? nullIfEmpty(dto.truckId) : current.truckId;
+
+    let acceptance: Partial<Acceptance> = {};
+    let check: RestrictionCheck | undefined;
+    if (!truckId) {
+      acceptance = noAcceptance;
+    } else if (truckId !== current.restrictionsAcceptedTruckId) {
+      check = await this.restrictionsFor(id, truckId);
+      if (check.violations.length && !acceptRestrictions) {
+        throw new ConflictException({
+          statusCode: 409,
+          code: "ROUTE_RESTRICTIONS",
+          message: `${check.truck.truckNumber}'s route to ${current.deliveryLocation} breaks truck restrictions`,
+          violations: check.violations,
+        });
+      }
+      acceptance = check.violations.length
+        ? { restrictionsAcceptedAt: new Date(), restrictionsAcceptedBy: user.email, restrictionsAcceptedTruckId: truckId }
+        : noAcceptance;
+    }
+
+    const cargo = await this.save(id, { ...dto, ...acceptance });
+    if (check?.violations.length) {
+      this.alerts.raise({
+        kind: "route-restriction",
+        severity: "warning",
+        message: `${user.email} assigned ${check.truck.truckNumber} to ${cargo.pickupLocation} → ${cargo.deliveryLocation} despite ${check.violations.length} truck restriction${check.violations.length === 1 ? "" : "s"}: ${check.violations[0]}`,
+        cargoId: cargo.id,
+        truckId: check.truck.id,
+      });
+    }
+    return cargo;
   }
 
-  private save(id: string, changes: UpdateCargoDto & Partial<Pick<Cargo, "status" | "pickupPoint" | "deliveryPoint">>) {
+  /**
+   * Restriction violations on the route the dispatcher sees for this truck (the primary one).
+   * A routing outage or an unlocatable address doesn't block the assignment.
+   */
+  private async restrictionsFor(id: string, truckId: string): Promise<RestrictionCheck> {
+    const truck = await this.trucks.findOne(truckId);
+    try {
+      const { routes } = await this.route(id, { truckId });
+      const notices = routes[0]?.notices ?? [];
+      return { truck, violations: [...new Set(notices.filter((n) => n.type === "violation").map((n) => n.message))] };
+    } catch (err) {
+      if (err instanceof BadGatewayException || err instanceof UnprocessableEntityException) return { truck, violations: [] };
+      throw err;
+    }
+  }
+
+  private save(id: string, changes: UpdateCargoDto & Partial<Pick<Cargo, "status" | "pickupPoint" | "deliveryPoint"> & Acceptance>) {
     return this.db.transaction(async (tx) => {
       const current = await tx.query.cargos.findFirst({ where: eq(cargos.id, id) });
       if (!current) throw new NotFoundException("Cargo not found");
@@ -195,7 +251,8 @@ export class CargosService {
   };
 
   /**
-   * Routes pickup → delivery (optionally starting from `from`, e.g. the truck's position)
+   * Routes pickup → delivery (optionally starting from `from`, e.g. the truck's position,
+   * skipping the pickup once the load is on board)
    * using the given truck's dimensions, or the assigned truck's when none is given.
    */
   async route(id: string, options: { truckId?: string; from?: LngLat }) {
@@ -206,11 +263,11 @@ export class CargosService {
 
     const pickup = toLngLat(pickupPoint);
     const delivery = toLngLat(deliveryPoint);
-    const routes = await this.routing.route({
-      coordinates: options.from ? [options.from, pickup, delivery] : [pickup, delivery],
-      vehicle: truck ?? undefined,
-    });
-    return { pickup, delivery, truck, routes };
+    // From the truck's position, a load already on board goes straight to delivery.
+    const pickedUp = !!cargo.pickedUpAt;
+    const coordinates = options.from ? [options.from, ...(pickedUp ? [] : [pickup]), delivery] : [pickup, delivery];
+    const routes = await this.routing.route({ coordinates, vehicle: truck ?? undefined });
+    return { pickup, delivery, pickedUp, truck, routes };
   }
 
   // Geocodes pickup/delivery text that is new or changed. Failures leave the point empty
@@ -265,6 +322,7 @@ export class CargosService {
 }
 
 const emptyAssignment: Assignment = { driverId: null, truckId: null, trailerId: null };
+const noAcceptance: Acceptance = { restrictionsAcceptedAt: null, restrictionsAcceptedBy: null, restrictionsAcceptedTruckId: null };
 
 // Only touch the keys present in the request, so a partial update keeps existing assignments.
 function normalizeRefs(dto: UpdateCargoDto): Partial<Assignment> {

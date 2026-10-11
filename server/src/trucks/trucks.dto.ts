@@ -76,6 +76,12 @@ export class CreateTruckDto {
   @IsInt()
   @Min(1)
   axles?: number | null;
+
+  @ToOptionalNumber()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  odometerKm?: number | null;
 }
 
 export class UpdateTruckDto extends PartialType(CreateTruckDto) {}
