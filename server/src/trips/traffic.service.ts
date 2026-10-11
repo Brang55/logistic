@@ -139,6 +139,7 @@ export class TrafficService implements OnApplicationBootstrap, OnApplicationShut
       });
     }
     this.trips.retainRoutes(trips);
+    this.forgetFinishedAlerts(trips.map((trip) => trip.cargo.id));
     this.latest = { at: new Date(), trips: results };
     results.forEach((trip) => this.raiseAlerts(trip));
     return results;
@@ -153,6 +154,14 @@ export class TrafficService implements OnApplicationBootstrap, OnApplicationShut
       if (!trip.geometry || !this.isOnRoute(report, trip.geometry)) continue;
       trip.roadReports = [report, ...trip.roadReports.filter((r) => r.id !== report.id)];
       this.raiseReportAlert(trip, report);
+    }
+  }
+
+  /** Alert keys start with the cargo id; drop those of loads no longer on the road so the set stays small. */
+  private forgetFinishedAlerts(activeCargoIds: string[]) {
+    const active = new Set(activeCargoIds);
+    for (const key of this.alerted) {
+      if (!active.has(key.slice(0, key.indexOf(":")))) this.alerted.delete(key);
     }
   }
 
