@@ -103,9 +103,10 @@ export class SimulatedTelematicsProvider extends TelematicsProvider {
 
     if (now.getTime() - this.lastHeartbeat >= HEARTBEAT_MS) {
       this.lastHeartbeat = now.getTime();
+      // Stored positions predate this tick, so a truck that just moved (or just arrived) skips the heartbeat.
+      const moved = new Set(fixes.map((fix) => fix.truckId));
       for (const position of await this.positions.latest()) {
-        const leg = this.legs.get(position.truckId);
-        if (leg && !leg.done) continue;
+        if (moved.has(position.truckId)) continue;
         fixes.push({ truckId: position.truckId, point: position.point, heading: position.heading, speedKmh: 0, recordedAt: now });
       }
     }
