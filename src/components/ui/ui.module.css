@@ -413,6 +413,47 @@ textarea.input {
   resize: vertical;
 }
 
+/* Dropdowns draw their own chevron: the native arrow differs per browser and sat flush against the border.
+   The chevron is --color-text-muted (data URIs cannot read CSS variables). */
+/* Single-line fields share one height, so dropdowns line up with the inputs beside them. */
+input.input,
+select.input {
+  height: 40px;
+}
+
+select.input {
+  padding-right: 38px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+  background: var(--color-surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2364748b' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E")
+    no-repeat right 12px center / 16px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+select.input:hover:not(:disabled, :focus) {
+  border-color: var(--color-text-subtle);
+}
+
+select.input:disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+  background-color: var(--color-surface-muted);
+}
+
+/* Touch screens (phones and tablets): a finger-sized target. */
+@media (pointer: coarse) {
+  input.input,
+  select.input {
+    height: 44px;
+  }
+}
+
 .fieldError {
   font-size: 12px;
   color: var(--color-danger);
