@@ -10,6 +10,12 @@ import ui from "../../ui/ui.module.css";
 /** An RTK Query mutation call: `unwrap()` rejects when the API refuses the save. */
 type SaveRequest = { unwrap: () => Promise<unknown> };
 
+/** A select option whose label differs from the value sent to the API (e.g. an id). */
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
 interface AddEntityFormProps<T> {
   id?: string;
   open: boolean;
@@ -23,6 +29,10 @@ interface AddEntityFormProps<T> {
   checkEmailExists?: (email: string) => Promise<boolean>;
   engineVariations?: string[];
   truckModels?: string[];
+  /** Fields shown as a select of labelled options; the first option is the empty choice. */
+  selects?: Partial<Record<keyof T & string, SelectOption[]>>;
+  /** Asked before saving, e.g. to confirm side effects; resolving false keeps the form open. */
+  confirmSave?: (values: T) => Promise<boolean>;
   fieldLabels?: Record<string, string>;
 }
 
@@ -46,6 +56,8 @@ const AddEntityForm = <T extends object>({
   checkEmailExists,
   engineVariations,
   truckModels,
+  selects,
+  confirmSave,
   fieldLabels,
 }: AddEntityFormProps<T>) => {
   const [formError, setFormError] = useState<string>("");
@@ -62,6 +74,7 @@ const AddEntityForm = <T extends object>({
           return;
         }
       }
+      if (confirmSave && !(await confirmSave(values))) return;
       if (editEntityForm && id) {
         await editEntity({ ...values, id }).unwrap();
       } else {
@@ -75,9 +88,11 @@ const AddEntityForm = <T extends object>({
     }
   };
 
-  const selectOptions: Record<string, string[] | undefined> = {
-    truckModel: truckModels,
-    engineVariation: engineVariations,
+  const asOptions = (values?: string[]) => values && [{ value: "", label: "Select…" }, ...values.map((value) => ({ value, label: value }))];
+  const selectOptions: Record<string, SelectOption[] | undefined> = {
+    truckModel: asOptions(truckModels),
+    engineVariation: asOptions(engineVariations),
+    ...selects,
   };
   const keys = Object.keys(initialValues).filter((key) => !HIDDEN_FIELDS.includes(key));
   const formId = `entity-form-${entityLabel}`;
@@ -109,10 +124,9 @@ const AddEntityForm = <T extends object>({
                   </label>
                   {options ? (
                     <Field as="select" id={key} name={key} className={ui.input}>
-                      <option value="">Select…</option>
                       {options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
+                        <option key={option.value} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </Field>

@@ -8,6 +8,9 @@ import {
   useFetchTrucksQuery,
   type Truck,
 } from "../../../app/api/trucks";
+import { useFetchDriversQuery } from "../../../app/api/drivers";
+import { useFetchTrailersQuery } from "../../../app/api/trailers";
+import { fullName } from "../../../utils/crew";
 import { useFleetAttentionQuery } from "../../../app/api/vehicleRecords";
 import { Loader } from "../../Loader/Loader";
 import { AttentionSummary } from "../../Vehicles/records";
@@ -29,6 +32,8 @@ const TrucksList = () => {
   const { data: trucks = [], isError, isLoading } = useFetchTrucksQuery();
   const [deleteTruck, deleting] = useDeleteTruckMutation();
   const { data: attention = [] } = useFleetAttentionQuery();
+  const { data: drivers = [] } = useFetchDriversQuery();
+  const { data: trailers = [] } = useFetchTrailersQuery();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -37,14 +42,17 @@ const TrucksList = () => {
   const [removing, setRemoving] = useState<Truck>();
 
   const available = trucks.filter((t) => t.status === "available").length;
+  const driverNames = useMemo(() => new Map(drivers.map((d) => [d.id, fullName(d)])), [drivers]);
+  const trailerNames = useMemo(() => new Map(trailers.map((t) => [t.id, `${t.trailerNumber} · ${t.trailer}`])), [trailers]);
+  const driverOf = (truck: Truck) => (truck.driverId ? driverNames.get(truck.driverId) : undefined);
   const visible = useMemo(
     () =>
       trucks.filter(
         (t) =>
           (filter === "all" || t.status === filter) &&
-          matches(search, t.truckNumber, t.truckModel, t.plate, t.engineVariation)
+          matches(search, t.truckNumber, t.truckModel, t.plate, t.engineVariation, t.driverId && driverNames.get(t.driverId))
       ),
-    [trucks, filter, search]
+    [trucks, filter, search, driverNames]
   );
 
   if (isLoading) return <Loader />;
@@ -78,7 +86,7 @@ const TrucksList = () => {
 
       <div className={ui.card}>
         <div className={ui.toolbar}>
-          <SearchInput value={search} onChange={setSearch} placeholder="Search number, model or plate" />
+          <SearchInput value={search} onChange={setSearch} placeholder="Search number, model, plate or driver" />
           <FilterChips<Filter>
             value={filter}
             onChange={setFilter}
@@ -104,6 +112,7 @@ const TrucksList = () => {
               <thead>
                 <tr>
                   <th>Truck</th>
+                  <th>Driver and trailer</th>
                   <th>Make and model</th>
                   <th>Dimensions</th>
                   <th>Weight</th>
@@ -119,6 +128,14 @@ const TrucksList = () => {
                       <span>
                         <span className={ui.primaryText}>{truck.truckNumber}</span>
                         {truck.plate && <span className={ui.secondaryText}>{truck.plate}</span>}
+                      </span>
+                    </td>
+                    <td data-label="Driver and trailer">
+                      <span>
+                        <span className={driverOf(truck) ? ui.primaryText : ui.muted}>{driverOf(truck) ?? "No driver"}</span>
+                        <span className={ui.secondaryText}>
+                          {(truck.trailerId && trailerNames.get(truck.trailerId)) || "No trailer hooked"}
+                        </span>
                       </span>
                     </td>
                     <td data-label="Make and model">
@@ -174,6 +191,7 @@ const TrucksList = () => {
           lengthM={editing.lengthM}
           weightT={editing.weightT}
           axles={editing.axles}
+          trailerId={editing.trailerId}
         />
       )}
       {removing && (

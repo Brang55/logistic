@@ -46,7 +46,7 @@ export interface DirectoryDriver {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  truckNumber: string;
+  truckNumber: string | null;
   status: ResourceStatus;
   usesApp: boolean;
 }
@@ -55,7 +55,7 @@ export interface ChatMessage {
   id: string;
   body: string;
   createdAt: string;
-  sender: { driverId: string; name: string; phoneNumber: string; truckNumber: string };
+  sender: { driverId: string; name: string; phoneNumber: string; truckNumber: string | null };
 }
 
 type ReportEvent = RoadReport | { id: string; removed: true };

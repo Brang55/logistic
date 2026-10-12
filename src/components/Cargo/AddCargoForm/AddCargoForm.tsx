@@ -13,9 +13,9 @@ import {
   useEditCargoMutation,
   useLoadCargoQuery,
 } from "../../../app/api/cargos";
-import { useFetchAvailableDriversQuery, useLoadDriverQuery } from "../../../app/api/drivers";
-import { useFetchAvailableTrailersQuery, useLoadTrailerQuery } from "../../../app/api/trailers";
-import { useFetchAvailableTrucksQuery, useLoadTruckQuery } from "../../../app/api/trucks";
+import { useFetchTrucksQuery } from "../../../app/api/trucks";
+import { crewOf } from "../../../utils/crew";
+import CrewPicker from "../../Dispatcher/CrewPicker";
 import { EmptyState, PageHeader } from "../../ui/ui";
 import { cx, shipmentRef } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
@@ -107,12 +107,7 @@ const AddCargoForm = () => {
   const navigate = useNavigate();
   const { data: cargo, isError, isLoading } = useLoadCargoQuery(id ?? skipToken);
 
-  const { data: availableDrivers = [] } = useFetchAvailableDriversQuery();
-  const { data: availableTrucks = [] } = useFetchAvailableTrucksQuery();
-  const { data: availableTrailers = [] } = useFetchAvailableTrailersQuery();
-  const { data: driver } = useLoadDriverQuery(cargo?.driverId ?? skipToken);
-  const { data: truck } = useLoadTruckQuery(cargo?.truckId ?? skipToken);
-  const { data: trailer } = useLoadTrailerQuery(cargo?.trailerId ?? skipToken);
+  const { data: trucks = [] } = useFetchTrucksQuery();
 
   const [addCargo] = useAddNewCargoMutation();
   const [editCargo] = useEditCargoMutation();
@@ -127,14 +122,9 @@ const AddCargoForm = () => {
   const initialValues: CargoFormValues = Object.fromEntries([
     ...formFields.map((field) => [field.name, String((cargo as Record<string, unknown> | undefined)?.[field.name] ?? "")]),
     ["weight", weightInPounds(cargo?.weight)],
-    ["driverId", cargo?.driverId ?? ""],
-    ["truckId", cargo?.truckId ?? ""],
-    ["trailerId", cargo?.trailerId ?? ""],
+    // driverId stays "" for the truck's own driver; the API fills it in.
+    ...Object.entries(crewOf(cargo, trucks)),
   ]);
-
-  // The current assignment stays selectable even though it is no longer "available".
-  const withCurrent = <T extends { id: string }>(items: T[], current?: T) =>
-    current && !items.some((item) => item.id === current.id) ? [current, ...items] : items;
 
   const handleSubmit = async (values: CargoFormValues, { resetForm }: FormikHelpers<CargoFormValues>) => {
     setSaveError(undefined);
@@ -187,7 +177,7 @@ const AddCargoForm = () => {
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ isSubmitting, submitCount, isValid }) => (
+        {({ isSubmitting, submitCount, isValid, values, setValues }) => (
           <Form noValidate className={styles.form}>
             {SECTIONS.map((section) => (
               <section key={section.title} className={cx(ui.card, styles.section)}>
@@ -208,48 +198,15 @@ const AddCargoForm = () => {
               <section className={cx(ui.card, styles.section)}>
                 <div className={styles.sectionIntro}>
                   <h2 className={ui.cardTitle}>Assignment</h2>
-                  <p className={ui.secondaryText}>Only free drivers, trucks and trailers are listed.</p>
+                  <p className={ui.secondaryText}>The truck brings its driver and hooked trailer.</p>
                 </div>
                 <div className={ui.formGrid}>
-                  <div className={ui.field}>
-                    <label htmlFor="driverId" className={ui.label}>
-                      Driver
-                    </label>
-                    <Field as="select" id="driverId" name="driverId" className={ui.input}>
-                      <option value="">No driver</option>
-                      {withCurrent(availableDrivers, driver).map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.firstName} {item.lastName}
-                        </option>
-                      ))}
-                    </Field>
-                  </div>
-                  <div className={ui.field}>
-                    <label htmlFor="truckId" className={ui.label}>
-                      Truck
-                    </label>
-                    <Field as="select" id="truckId" name="truckId" className={ui.input}>
-                      <option value="">No truck</option>
-                      {withCurrent(availableTrucks, truck).map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.truckNumber} · {item.truckModel}
-                        </option>
-                      ))}
-                    </Field>
-                  </div>
-                  <div className={ui.field}>
-                    <label htmlFor="trailerId" className={ui.label}>
-                      Trailer
-                    </label>
-                    <Field as="select" id="trailerId" name="trailerId" className={ui.input}>
-                      <option value="">No trailer</option>
-                      {withCurrent(availableTrailers, trailer).map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.trailerNumber} · {item.trailer}
-                        </option>
-                      ))}
-                    </Field>
-                  </div>
+                  <CrewPicker
+                    value={{ truckId: values.truckId, driverId: values.driverId, trailerId: values.trailerId }}
+                    onChange={(crew) => setValues({ ...values, ...crew })}
+                    current={cargo}
+                    idPrefix="cargo"
+                  />
                 </div>
               </section>
             )}

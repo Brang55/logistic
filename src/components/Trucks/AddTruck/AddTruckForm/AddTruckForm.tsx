@@ -2,7 +2,9 @@ import {
   type TruckInput,
   useAddNewTruckMutation,
   useEditTruckMutation,
+  useFetchTrucksQuery,
 } from "../../../../app/api/trucks";
+import { useFetchTrailersQuery } from "../../../../app/api/trailers";
 import { ftToM, lbToT, mToFt, toInputValue, tToLb } from "../../../../utils/units";
 
 import * as Yup from "yup";
@@ -25,6 +27,7 @@ interface AddTruckFormProps {
   lengthM?: number | null;
   weightT?: number | null;
   axles?: number | null;
+  trailerId?: string | null;
 }
 
 // Dimensions are entered in feet and pounds and stored metric, as the routing engine expects.
@@ -37,6 +40,7 @@ interface TruckFormValues {
   lengthFt: string;
   weightLb: string;
   axles: string;
+  trailerId: string;
 }
 
 // Empty inputs are allowed; filled ones must be numbers in the routing engine's range.
@@ -56,6 +60,7 @@ const fieldLabels = {
   lengthFt: "Length (ft)",
   weightLb: "Gross weight (lb)",
   axles: "Axles",
+  trailerId: "Current trailer",
 };
 
 const truckValidationSchema = Yup.object().shape({
@@ -96,10 +101,25 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
   lengthM,
   weightT,
   axles,
+  trailerId,
 }) => {
   const [addNewTruck] = useAddNewTruckMutation();
 
   const [editTruck] = useEditTruckMutation();
+  const { data: trucks = [] } = useFetchTrucksQuery();
+  const { data: trailers = [] } = useFetchTrailersQuery();
+
+  // Hooking a trailer that is on another truck unhooks it there.
+  const hookedTo = new Map(trucks.filter((t) => t.trailerId && t.id !== id).map((t) => [t.trailerId, t.truckNumber]));
+  const trailerOptions = [
+    { value: "", label: "No trailer" },
+    ...trailers.map((trailer) => ({
+      value: trailer.id,
+      label: [trailer.trailerNumber, trailer.trailer, hookedTo.has(trailer.id) && `on ${hookedTo.get(trailer.id)}`]
+        .filter(Boolean)
+        .join(" · "),
+    })),
+  ];
 
   // Keep a value that isn't in the list (e.g. from imported data) selectable.
   const engineVariations = ["Diesel", "LNG", "Electric", "Hybrid"];
@@ -114,6 +134,7 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
     lengthFt: toInputValue(lengthM, mToFt, 1),
     weightLb: toInputValue(weightT, tToLb),
     axles: toInput(axles),
+    trailerId: trailerId || "",
   };
 
   return (
@@ -129,6 +150,7 @@ const AddTruckForm: React.FC<AddTruckFormProps> = ({
         editEntity={({ id, ...values }) => editTruck({ id, ...toApi(values) })}
         entityLabel="truck"
         engineVariations={engineVariations}
+        selects={{ trailerId: trailerOptions }}
         fieldLabels={fieldLabels}
       />
     </>
