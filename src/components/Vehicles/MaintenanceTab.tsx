@@ -15,6 +15,7 @@ import { Loader } from "../Loader/Loader";
 import { ConfirmDialog, EmptyState, IconButton, Modal } from "../ui/ui";
 import { cx } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
+import table from "../ui/table.module.css";
 import { MaintenanceStatus } from "./records";
 import { apiErrorMessage, CHECKLISTS, dueText, formatDate, formatKm, intervalText, todayIso } from "./recordFormat";
 import styles from "./VehicleDetail.module.css";
@@ -66,15 +67,15 @@ const MaintenanceTab = ({ kind, vehicleId, odometerKm }: Props) => {
           text="Add a standard checklist to track oil changes, inspections, brakes and tyres."
         />
       ) : (
-        <div className={ui.tableWrap}>
-          <table className={ui.table}>
+        <div className={table.tableWrap}>
+          <table className={table.table}>
             <thead>
               <tr>
                 <th>Check</th>
                 <th>Last done</th>
                 <th>Next due</th>
                 <th>Status</th>
-                <th className={ui.right}>Actions</th>
+                <th className={table.right}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -102,11 +103,11 @@ const MaintenanceTab = ({ kind, vehicleId, odometerKm }: Props) => {
                       <span className={ui.secondaryText}>{dueText(item)}</span>
                     </span>
                   </td>
-                  <td data-label="Status">
+                  <td data-label="Status" className={table.cellStatus}>
                     <MaintenanceStatus item={item} />
                   </td>
-                  <td data-label="" className={ui.right}>
-                    <div className={ui.rowActions}>
+                  <td data-label="" className={table.right}>
+                    <div className={table.rowActions}>
                       <button className={cx(ui.btn, ui.secondary, ui.small)} onClick={() => setCompleting(item)}>
                         <FontAwesomeIcon icon={faCheck} /> Mark done
                       </button>

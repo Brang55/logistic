@@ -4,6 +4,7 @@
   flex-shrink: 0;
   width: var(--sidebar-width);
   height: 100vh;
+  height: 100dvh;
   color: var(--color-sidebar-text);
   background: var(--color-sidebar);
   border-right: 1px solid rgba(255, 255, 255, 0.06);
@@ -186,7 +187,11 @@
   color: var(--color-sidebar-muted);
 }
 
-/* Phones and small tablets: a top bar, with the menu opening below it. */
+.backdrop {
+  display: none;
+}
+
+/* Phones and small tablets: a top bar, with the menu opening over the page below it. */
 @media (max-width: 900px) {
   .nav {
     position: sticky;
@@ -199,7 +204,7 @@
   }
 
   .topbar {
-    height: 56px;
+    height: var(--topbar-height);
     padding: 0 12px 0 16px;
   }
 
@@ -215,12 +220,34 @@
   }
 
   .menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
     display: none;
-    max-height: calc(100vh - 56px);
-    padding-bottom: 16px;
+    max-height: calc(100vh - var(--topbar-height));
+    max-height: calc(100dvh - var(--topbar-height));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    background: var(--color-sidebar);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: var(--shadow-lg);
   }
 
   .open .menu {
     display: flex;
+  }
+
+  .open .backdrop {
+    position: fixed;
+    inset: var(--topbar-height) 0 0;
+    display: block;
+    background: rgba(15, 23, 42, 0.45);
+    animation: fadeIn 150ms ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
   }
 }

@@ -233,3 +233,39 @@
     height: 360px;
   }
 }
+
+/* Phones: one scrolling page, no lists scrolling inside it; the reports map comes before the list. */
+@media (max-width: 900px) {
+  .page {
+    gap: 16px;
+    padding: 16px 12px calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .reports {
+    padding: 16px;
+  }
+
+  .reportsHeader {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .reportsList {
+    max-height: none;
+  }
+
+  .reportsMap {
+    order: -1;
+    height: 300px;
+  }
+
+  .tripHeader {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .alerts {
+    max-height: none;
+    padding: 16px;
+  }
+}

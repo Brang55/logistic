@@ -1,0 +1,211 @@
+/* List pages: stat tiles, the search/filter toolbar and tables. */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat {
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.statValue {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* Toolbar: search + filters */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Tables. On phones each row becomes a card: the first cell is its title, a `cellStatus` cell sits
+   top-right, the other cells pair up two per row under their data-label (`cellWide` takes a whole row),
+   and the actions cell runs along the bottom. */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  font-size: 14px;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #fafbff;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.right {
+  text-align: right;
+}
+
+.rowActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+@media (max-width: 760px) {
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .stat {
+    padding: 10px 12px;
+  }
+
+  .statValue {
+    font-size: 19px;
+  }
+
+  .statLabel {
+    font-size: 12px;
+  }
+
+  /* The search and filters stay in reach while a long list scrolls. */
+  .toolbar {
+    position: sticky;
+    top: var(--topbar-height);
+    z-index: 5;
+    padding: 12px;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .tableWrap {
+    padding: 10px;
+    overflow: visible;
+    background: var(--color-surface-muted);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table tbody tr:hover {
+    background: var(--color-surface);
+  }
+
+  .table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    font-size: 14px;
+    text-align: left;
+    overflow-wrap: anywhere;
+    border: none;
+  }
+
+  .table td::before {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    content: attr(data-label);
+  }
+
+  .table td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .table tr:has(.cellStatus) td:first-child {
+    grid-column: 1;
+  }
+
+  .table td.cellStatus {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .table td.cellWide {
+    grid-column: 1 / -1;
+  }
+
+  .table td.right {
+    grid-column: 1 / -1;
+    margin: 0 -14px -6px;
+    padding: 8px 10px 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .table td:first-child::before,
+  .table td.cellStatus::before,
+  .table td.right::before,
+  .table td[data-label=""]::before {
+    content: none;
+  }
+}

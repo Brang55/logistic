@@ -17,6 +17,7 @@ import { AttentionSummary } from "../../Vehicles/records";
 import { ConfirmDialog, EmptyState, FilterChips, IconButton, PageHeader, ResourceStatus, SearchInput } from "../../ui/ui";
 import { cx, matches } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
+import table from "../../ui/table.module.css";
 import AddTruckForm from "../AddTruck/AddTruckForm/AddTruckForm";
 import { formatLength, formatWeight } from "../../../utils/units";
 
@@ -69,23 +70,23 @@ const TrucksList = () => {
         }
       />
 
-      <div className={ui.stats}>
-        <div className={ui.stat}>
-          <span className={ui.statValue}>{trucks.length}</span>
-          <span className={ui.statLabel}>Total trucks</span>
+      <div className={table.stats}>
+        <div className={table.stat}>
+          <span className={table.statValue}>{trucks.length}</span>
+          <span className={table.statLabel}>Total trucks</span>
         </div>
-        <div className={ui.stat}>
-          <span className={ui.statValue}>{available}</span>
-          <span className={ui.statLabel}>Available</span>
+        <div className={table.stat}>
+          <span className={table.statValue}>{available}</span>
+          <span className={table.statLabel}>Available</span>
         </div>
-        <div className={ui.stat}>
-          <span className={ui.statValue}>{trucks.length - available}</span>
-          <span className={ui.statLabel}>On a trip</span>
+        <div className={table.stat}>
+          <span className={table.statValue}>{trucks.length - available}</span>
+          <span className={table.statLabel}>On a trip</span>
         </div>
       </div>
 
       <div className={ui.card}>
-        <div className={ui.toolbar}>
+        <div className={table.toolbar}>
           <SearchInput value={search} onChange={setSearch} placeholder="Search number, model, plate or driver" />
           <FilterChips<Filter>
             value={filter}
@@ -107,8 +108,8 @@ const TrucksList = () => {
             text={trucks.length ? "Try a different search or filter." : "Add your first truck to start dispatching."}
           />
         ) : (
-          <div className={ui.tableWrap}>
-            <table className={ui.table}>
+          <div className={table.tableWrap}>
+            <table className={table.table}>
               <thead>
                 <tr>
                   <th>Truck</th>
@@ -118,19 +119,19 @@ const TrucksList = () => {
                   <th>Weight</th>
                   <th>Status</th>
                   <th>Attention</th>
-                  <th className={ui.right}>Actions</th>
+                  <th className={table.right}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((truck) => (
-                  <tr key={truck.id} className={ui.clickable} onClick={() => navigate(`/trucks/${truck.id}`)}>
+                  <tr key={truck.id} className={table.clickable} onClick={() => navigate(`/trucks/${truck.id}`)}>
                     <td data-label="Truck">
                       <span>
                         <span className={ui.primaryText}>{truck.truckNumber}</span>
                         {truck.plate && <span className={ui.secondaryText}>{truck.plate}</span>}
                       </span>
                     </td>
-                    <td data-label="Driver and trailer">
+                    <td data-label="Driver and trailer" className={table.cellWide}>
                       <span>
                         <span className={driverOf(truck) ? ui.primaryText : ui.muted}>{driverOf(truck) ?? "No driver"}</span>
                         <span className={ui.secondaryText}>
@@ -150,14 +151,14 @@ const TrucksList = () => {
                     <td data-label="Weight" className={ui.muted}>
                       {load(truck) || "Not set"}
                     </td>
-                    <td data-label="Status">
+                    <td data-label="Status" className={table.cellStatus}>
                       <ResourceStatus status={truck.status} />
                     </td>
                     <td data-label="Attention">
                       <AttentionSummary items={attention.filter((item) => item.kind === "trucks" && item.vehicleId === truck.id)} />
                     </td>
-                    <td data-label="" className={ui.right}>
-                      <div className={ui.rowActions}>
+                    <td data-label="" className={table.right}>
+                      <div className={table.rowActions}>
                         <IconButton icon={faPen} label={`Edit ${truck.truckNumber}`} onClick={() => setEditing(truck)} />
                         <IconButton
                           icon={faTrash}

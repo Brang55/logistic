@@ -43,34 +43,27 @@
   gap: 8px;
 }
 
-/* The heading strip at the top of a map page's side panel; stays put while the list scrolls. */
-.panelHeader {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: grid;
-  gap: 2px;
-  padding: 20px 24px 16px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.panelHeader .title {
-  font-size: 20px;
-}
-
-.panelHeader .subtitle {
-  margin: 0;
-  font-size: 13px;
-}
-
 @media (max-width: 600px) {
   .header {
+    gap: 12px;
+    margin-bottom: 16px;
     padding: 16px;
+  }
+
+  .header > :first-child {
+    flex: 1 1 100%;
   }
 
   .title {
     font-size: 21px;
+  }
+
+  .actions {
+    flex: 1 1 100%;
+  }
+
+  .actions > * {
+    flex: 1;
   }
 }
 
@@ -161,7 +154,15 @@
   background: var(--color-danger-soft);
 }
 
-/* Cards and stats */
+/* Touch screens: big enough to hit with a finger. */
+@media (pointer: coarse) {
+  .iconBtn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Cards */
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -186,42 +187,6 @@
 
 .cardBody {
   padding: 20px;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat {
-  padding: 14px 16px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-}
-
-.statValue {
-  display: block;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.statLabel {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-/* Toolbar: search + filters */
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .search {
@@ -291,56 +256,29 @@
   color: var(--color-text-subtle);
 }
 
-/* Tables: on narrow screens each row becomes a card (cells show their data-label). */
-.tableWrap {
-  overflow-x: auto;
-}
+/* Phones: the search takes the full width and the chips stay on one row that scrolls sideways. */
+@media (max-width: 760px) {
+  .search {
+    flex-basis: 100%;
+    max-width: none;
+    min-width: 0;
+  }
 
-.table {
-  width: 100%;
-  font-size: 14px;
-  border-collapse: collapse;
-}
+  .chips {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
 
-.table th {
-  padding: 10px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  background: var(--color-surface-muted);
-  border-bottom: 1px solid var(--color-border);
-}
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
 
-.table td {
-  padding: 12px 16px;
-  vertical-align: middle;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr:hover {
-  background: #fafbff;
-}
-
-.clickable {
-  cursor: pointer;
-}
-
-.right {
-  text-align: right;
-}
-
-.rowActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 2px;
+  .chip {
+    flex-shrink: 0;
+    padding: 8px 14px;
+  }
 }
 
 .primaryText {
@@ -356,48 +294,6 @@
 
 .muted {
   color: var(--color-text-muted);
-}
-
-@media (max-width: 760px) {
-  .table thead {
-    display: none;
-  }
-
-  .table,
-  .table tbody,
-  .table tr,
-  .table td {
-    display: block;
-    width: 100%;
-  }
-
-  .table tr {
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .table td {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 6px 16px;
-    text-align: right;
-    border: none;
-  }
-
-  .table td::before {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    text-align: left;
-    text-transform: uppercase;
-    content: attr(data-label);
-  }
-
-  .table td.right::before,
-  .table td[data-label=""]::before {
-    content: none;
-  }
 }
 
 /* Badges */
@@ -541,124 +437,6 @@ textarea.input {
   color: #991b1b;
   background: var(--color-danger-soft);
   border: 1px solid var(--color-danger-border);
-}
-
-/* Modal */
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(2px);
-}
-
-.modal {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 560px;
-  max-height: calc(100vh - 32px);
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-}
-
-.modalSmall {
-  max-width: 420px;
-}
-
-.modalHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px 0;
-}
-
-.modalTitle {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.modalBody {
-  padding: 20px 24px;
-  overflow-y: auto;
-}
-
-.modalFooter {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 24px;
-  background: var(--color-surface-muted);
-  border-top: 1px solid var(--color-border);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-}
-
-/* Details card floating over a map */
-.mapDetails {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  width: min(380px, calc(100% - 32px));
-  max-height: calc(100% - 32px);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  animation: mapDetailsIn 180ms ease-out;
-}
-
-/* Ends above the assistant button in the bottom-right corner of staff pages. */
-:global(body:has([data-assistant-launcher])) .mapDetails {
-  max-height: calc(100% - 112px);
-}
-
-.mapDetailsHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 16px 12px 20px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.mapDetailsTitle {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.mapDetailsSubtitle {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.mapDetailsBody {
-  min-height: 0;
-  padding: 4px 20px 20px;
-  overflow-y: auto;
-}
-
-@keyframes mapDetailsIn {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mapDetails {
-    animation: none;
-  }
 }
 
 /* Avatar */

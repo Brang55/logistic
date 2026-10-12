@@ -13,7 +13,9 @@ import {
 } from "../../app/api/telematics";
 import { formatAge } from "../../utils/format";
 import { Loader } from "../Loader/Loader";
-import { MAP_DETAILS_INSET, MapDetailsCard, PanelHeader } from "../ui/ui";
+import { FLAT_MAP_OPTIONS, fitPadding, mapDetailsInset, ShowAllControl } from "../ui/mapFit";
+import page from "../ui/mapPage.module.css";
+import { MapDetailsCard, PanelHeader } from "../ui/ui";
 import NextPickups from "./NextPickups";
 import { useFleetLayer } from "./useFleetLayer";
 
@@ -30,10 +32,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const OFFLINE_AFTER_MS = 30 * 60 * 1000;
 
 // Keeps the selected truck centred in the part of the map the details card doesn't cover.
-const besideDetails = (map: mapboxgl.Map): [number, number] => [
-  -Math.min(MAP_DETAILS_INSET, map.getContainer().clientWidth / 2) / 2,
-  0,
-];
+const besideDetails = (map: mapboxgl.Map): [number, number] => [-mapDetailsInset(map) / 2, 0];
 
 const LiveFleet = () => {
   const { data: trucks, isLoading } = useFetchTrucksQuery();
@@ -73,9 +72,22 @@ const LiveFleet = () => {
     if (position && map) map.flyTo({ center: position.point, zoom: Math.max(map.getZoom(), 7), offset: besideDetails(map) });
   };
 
+  // Frame every truck: once positions first arrive, when a truck is deselected, and from the "Show all" button.
+  const showAll = (instant = false) => {
+    if (!map || !positions?.length) return false;
+    const bounds = new mapboxgl.LngLatBounds();
+    positions.forEach((p) => bounds.extend(p.point));
+    // An explicit `duration: undefined` would break mapbox's animation, so leave it out to animate.
+    map.fitBounds(bounds, { padding: fitPadding(80), maxZoom: 8, ...(instant && { duration: 0 }) });
+    return true;
+  };
+  const showAllRef = useRef(showAll);
+  showAllRef.current = showAll;
+
   const clearSelection = () => {
     setSelectedId(undefined);
     setHistorySince(undefined);
+    showAll();
   };
 
   // A truck picked on the map may be far down the list: bring its card into view.
@@ -102,7 +114,10 @@ const LiveFleet = () => {
       // Continental US until the fleet's own extent is known.
       center: [-98.5, 39.8],
       zoom: 3,
+      ...FLAT_MAP_OPTIONS,
     });
+    mapInstance.touchZoomRotate.disableRotation();
+    mapInstance.addControl(new ShowAllControl(() => showAllRef.current()), "top-left");
     mapInstance.on("load", () => {
       mapInstance.addSource(HISTORY_SOURCE, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       mapInstance.addLayer({
@@ -120,14 +135,9 @@ const LiveFleet = () => {
     };
   }, []);
 
-  // Fit every truck once positions first arrive.
   const fitted = useRef(false);
   useEffect(() => {
-    if (!map || fitted.current || !positions?.length) return;
-    const bounds = new mapboxgl.LngLatBounds();
-    positions.forEach((p) => bounds.extend(p.point));
-    map.fitBounds(bounds, { padding: 80, maxZoom: 8, duration: 0 });
-    fitted.current = true;
+    if (!fitted.current) fitted.current = showAllRef.current(true);
   }, [map, positions]);
 
   // "?truck=<id>" (the assistant's "show truck on the map") selects that truck once positions are in.
@@ -175,11 +185,12 @@ const LiveFleet = () => {
   };
 
   return (
-    <div className={styles.fleet}>
-      <section className={styles.panel}>
+    <div className={page.layout}>
+      <section className={page.panel}>
         <PanelHeader
           title="Live fleet"
-          subtitle={`Where every truck is now, where it's been today and what it could pick up next · ${trucks?.length ?? 0} trucks · ${(positions ?? []).filter((p) => (p.speedKmh ?? 0) > 0).length} moving now`}
+          description="Where every truck is now, where it's been today and what it could pick up next"
+          subtitle={`${trucks?.length ?? 0} trucks · ${(positions ?? []).filter((p) => (p.speedKmh ?? 0) > 0).length} moving now`}
         />
         {/* The map container must always render: the map is created once, on mount. */}
         {isLoading && <Loader />}
@@ -210,8 +221,8 @@ const LiveFleet = () => {
           })}
         </ul>
       </section>
-      <div className={styles.mapArea}>
-        <div ref={containerRef} className={styles.map} />
+      <div className={page.mapArea}>
+        <div ref={containerRef} className={page.map} />
         {selectedTruck && (
           <MapDetailsCard
             title={`${selectedTruck.truckNumber} · ${selectedTruck.truckModel}`}

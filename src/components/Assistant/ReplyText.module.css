@@ -1,0 +1,172 @@
+/* Reply text (markdown): a short answer, then compact sections, lists and tables. */
+.reply > :first-child {
+  margin-top: 0;
+}
+
+.reply > :last-child {
+  margin-bottom: 0;
+}
+
+.reply p {
+  margin: 0 0 8px;
+}
+
+.reply h1,
+.reply h2,
+.reply h3,
+.reply h4 {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.reply ul,
+.reply ol {
+  display: grid;
+  gap: 3px;
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.reply strong {
+  font-weight: 650;
+  color: var(--color-text);
+}
+
+.reply a {
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.reply a:hover {
+  text-decoration: underline;
+}
+
+.reply code {
+  padding: 1px 4px;
+  font-size: 12px;
+  background: var(--color-surface);
+  border-radius: 4px;
+}
+
+.tableWrap {
+  margin: 0 0 8px;
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.reply table {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+
+.reply th,
+.reply td {
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Cells wrap so tables fit the panel; headers and the first column (usually the load) stay on one line. */
+.reply th,
+.reply td:first-child {
+  white-space: nowrap;
+}
+
+.reply th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--color-surface-muted);
+}
+
+.reply tr:last-child td {
+  border-bottom: none;
+}
+
+.reply tbody tr:nth-child(even) td {
+  background: #fafbfd;
+}
+
+/* Phones: a reply table doesn't fit side by side, so each row becomes a small card. The first column
+   is its title and the other cells follow as "label  value" lines (labels come from data-label). */
+@media (max-width: 600px) {
+  .tableWrap {
+    overflow: visible;
+    background: none;
+    border: none;
+  }
+
+  .reply table,
+  .reply tbody,
+  .reply tr,
+  .reply td {
+    display: block;
+  }
+
+  .reply thead {
+    display: none;
+  }
+
+  .reply tbody {
+    display: grid;
+    gap: 8px;
+  }
+
+  .reply tr {
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .reply td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    text-align: right;
+    white-space: normal;
+    border: none;
+  }
+
+  .reply tbody tr:nth-child(even) td {
+    background: none;
+  }
+
+  .reply td::before {
+    flex-shrink: 0;
+    max-width: 45%;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    content: attr(data-label);
+  }
+
+  /* tbody: outranks the last row's "no bottom border" rule above. */
+  .reply tbody td:first-child {
+    display: block;
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .reply tbody td:first-child::before {
+    content: none;
+  }
+}

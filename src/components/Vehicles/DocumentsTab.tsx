@@ -14,6 +14,7 @@ import { Loader } from "../Loader/Loader";
 import { ConfirmDialog, EmptyState, IconButton, Modal } from "../ui/ui";
 import { cx } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
+import table from "../ui/table.module.css";
 import { DocumentStatus } from "./records";
 import { apiErrorMessage, DOCUMENT_TYPES, formatDate, NEW_DOCUMENT_TYPES } from "./recordFormat";
 import styles from "./VehicleDetail.module.css";
@@ -71,8 +72,8 @@ const DocumentsTab = ({ kind, vehicleId }: Props) => {
           text="Add the registration, insurance and inspection certificates, with their expiry dates and scans."
         />
       ) : (
-        <div className={ui.tableWrap}>
-          <table className={ui.table}>
+        <div className={table.tableWrap}>
+          <table className={table.table}>
             <thead>
               <tr>
                 <th>Document</th>
@@ -80,7 +81,7 @@ const DocumentsTab = ({ kind, vehicleId }: Props) => {
                 <th>Issued</th>
                 <th>Expires</th>
                 <th>File</th>
-                <th className={ui.right}>Actions</th>
+                <th className={table.right}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -114,8 +115,8 @@ const DocumentsTab = ({ kind, vehicleId }: Props) => {
                       <span className={ui.muted}>No file</span>
                     )}
                   </td>
-                  <td data-label="" className={ui.right}>
-                    <div className={ui.rowActions}>
+                  <td data-label="" className={table.right}>
+                    <div className={table.rowActions}>
                       <IconButton icon={faPen} label={`Edit ${doc.title}`} onClick={() => setEditing(doc)} />
                       <IconButton icon={faTrash} label={`Delete ${doc.title}`} danger onClick={() => setRemoving(doc)} />
                     </div>

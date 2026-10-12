@@ -1,0 +1,203 @@
+/* Map pages (Dispatch, Live fleet, Track cargo): a side panel with a list next to a map. On phones the
+   map is pinned on top and only the list under it scrolls, so every load, truck and route stays in view. */
+.layout {
+  display: flex;
+  height: 100%;
+}
+
+.panel {
+  width: 30%;
+  min-width: 320px;
+  height: 100%;
+  padding: 0 30px 20px;
+  overflow-y: auto;
+  background-color: var(--color-surface-muted);
+}
+
+/* The white heading strip spans the panel's full width. */
+.panel > :first-child {
+  margin: 0 -30px 16px;
+  padding-right: 30px;
+  padding-left: 30px;
+}
+
+.mapArea {
+  position: relative;
+  flex: 1;
+  height: 100%;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+    height: calc(100vh - var(--topbar-height));
+    height: calc(100dvh - var(--topbar-height));
+    overflow: hidden;
+  }
+
+  .mapArea {
+    order: -1;
+    flex: 0 0 var(--map-phone-height);
+    height: auto;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .panel {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    padding: 0 16px calc(88px + env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+
+  .panel > :first-child {
+    margin: 0 -16px 12px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+/* The heading strip at the top of a map page's side panel; stays put while the list scrolls. */
+.panelHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  padding: 20px 24px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.panelHeader h1 {
+  font-size: 20px;
+}
+
+.panelHeader p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Map side panels on phones: the list under the map has little height, so the heading is compact. */
+@media (max-width: 900px) {
+  .panelHeader {
+    padding: 12px 16px;
+  }
+
+  .panelHeader h1 {
+    font-size: 18px;
+  }
+
+  .panelHeader p {
+    font-size: 12px;
+  }
+
+  .description {
+    display: none;
+  }
+}
+
+/* Details card floating over a map */
+.mapDetails {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: mapDetailsIn 180ms ease-out;
+}
+
+/* Ends above the assistant button in the bottom-right corner of staff pages. */
+:global(body:has([data-assistant-launcher])) .mapDetails {
+  max-height: calc(100% - 112px);
+}
+
+.mapDetailsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mapDetailsTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mapDetailsSubtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.mapDetailsBody {
+  min-height: 0;
+  padding: 4px 20px 20px;
+  overflow-y: auto;
+}
+
+@keyframes mapDetailsIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+/* Phones: the map is pinned above the list, so the details take the list's place under the map
+   and leave the whole map in view. */
+@media (max-width: 900px) {
+  .mapDetails,
+  :global(body:has([data-assistant-launcher])) .mapDetails {
+    position: fixed;
+    top: calc(var(--topbar-height) + var(--map-phone-height));
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: none;
+    border-right: none;
+    border-bottom: none;
+    border-left: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.12);
+    animation-name: mapDetailsUp;
+  }
+
+  .mapDetailsHeader {
+    padding: 12px 12px 10px 16px;
+  }
+
+  .mapDetailsBody {
+    padding: 4px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes mapDetailsUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapDetails {
+    animation: none;
+  }
+}

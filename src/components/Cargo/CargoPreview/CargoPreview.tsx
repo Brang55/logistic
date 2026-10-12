@@ -18,6 +18,7 @@ import { Loader } from "../../Loader/Loader";
 import { CargoStatus, EmptyState } from "../../ui/ui";
 import { cx, initials, shipmentRef } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
+import table from "../../ui/table.module.css";
 import styles from "./CargoPreview.module.css";
 import { formatCargoWeight } from "../../../utils/units";
 
@@ -104,20 +105,20 @@ export const CargoPreview = () => {
       </div>
 
       <div className={styles.summary}>
-        <div className={ui.stat}>
-          <span className={ui.statLabel}>Goods</span>
+        <div className={table.stat}>
+          <span className={table.statLabel}>Goods</span>
           <span className={styles.summaryValue}>{cargo.descriptionOfGoods || "–"}</span>
         </div>
-        <div className={ui.stat}>
-          <span className={ui.statLabel}>Weight</span>
+        <div className={table.stat}>
+          <span className={table.statLabel}>Weight</span>
           <span className={styles.summaryValue}>{cargo.weight ? formatCargoWeight(cargo.weight) : "–"}</span>
         </div>
-        <div className={ui.stat}>
-          <span className={ui.statLabel}>Freight cost</span>
+        <div className={table.stat}>
+          <span className={table.statLabel}>Freight cost</span>
           <span className={styles.summaryValue}>{cargo.freightCost || "–"}</span>
         </div>
-        <div className={ui.stat}>
-          <span className={ui.statLabel}>Service</span>
+        <div className={table.stat}>
+          <span className={table.statLabel}>Service</span>
           <span className={styles.summaryValue}>{cargo.serviceType || "–"}</span>
         </div>
       </div>
