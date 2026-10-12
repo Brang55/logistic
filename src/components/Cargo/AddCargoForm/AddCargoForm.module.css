@@ -51,4 +51,12 @@
     gap: 12px;
     padding: 16px;
   }
+
+  .actionBar {
+    padding: 12px 16px;
+  }
+
+  .actionBar > :empty {
+    display: none;
+  }
 }

@@ -167,12 +167,85 @@
   opacity: 0.6;
 }
 
+/* Phones: each load is a card. Route and rate on top, then tags and the nearest truck, and the button
+   along the bottom. */
 @media (max-width: 900px) {
-  .load {
-    grid-template-columns: 1fr 1fr;
+  .page {
+    padding: 16px 12px calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .filters select {
+    flex: 1 1 140px;
+    padding: 10px;
+  }
+
+  .filters .primary {
+    flex: 1 1 auto;
+  }
+
+  .guide {
+    padding: 12px;
   }
 
   .columns {
     display: none;
+  }
+
+  .load {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "route rate"
+      "tags tags"
+      "truck truck"
+      "action action";
+    align-items: start;
+    gap: 10px 12px;
+    margin-bottom: 10px;
+    padding: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .route {
+    grid-area: route;
+  }
+
+  .tags {
+    grid-area: tags;
+  }
+
+  .rate {
+    grid-area: rate;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .rate strong {
+    font-size: 17px;
+  }
+
+  .truck {
+    grid-area: truck;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .truck::before {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    content: "Nearest free truck:";
+  }
+
+  .actions {
+    grid-area: action;
+  }
+
+  .actions button {
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 14px;
   }
 }
