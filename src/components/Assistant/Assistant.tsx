@@ -11,6 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { useAssistantStatusQuery } from "../../app/api/assistant";
+import { isPhone } from "../../hooks/useMediaQuery";
 import { useSpeech } from "../../hooks/useSpeech";
 import { groupMessages } from "../../utils/notices";
 import { cx } from "../ui/helpers";
@@ -32,7 +33,6 @@ const EXAMPLES = [
 
 // Pages that are mostly a map: the panel gets out of the way when the assistant sends you there.
 const MAP_PAGES = ["/fleet", "/dispatcher", "/track"];
-const NARROW = "(max-width: 900px)";
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -252,7 +252,7 @@ export const AssistantLauncher = () => {
   // on map pages, and on phones, where the panel covers the whole screen.
   const chat = useAssistantChat({
     onNavigate: (path) => {
-      if (window.matchMedia(NARROW).matches || MAP_PAGES.some((page) => path.startsWith(page))) minimize();
+      if (isPhone() || MAP_PAGES.some((page) => path.startsWith(page))) minimize();
     },
   });
 

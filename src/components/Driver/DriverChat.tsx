@@ -15,7 +15,7 @@ import { PageHeader } from "../ui/ui";
 import { cx, initials, matches } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
 import { formatClock } from "./driverFormat";
-import { useMediaQuery, WIDE_QUERY } from "./useMediaQuery";
+import { useMediaQuery, WIDE_QUERY } from "../../hooks/useMediaQuery";
 
 import shared from "./driver.module.css";
 import styles from "./DriverChat.module.css";

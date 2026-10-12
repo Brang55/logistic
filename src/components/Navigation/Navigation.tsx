@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -89,6 +89,18 @@ const Navigation = () => {
   // Mobile only: the menu collapses behind the top-bar toggle.
   const [open, setOpen] = useState(false);
 
+  // While the menu is open the page behind it stays put, and Escape closes it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.documentElement.style.overflow = "";
+    };
+  }, [open]);
+
   // The login page is full screen.
   if (!user) return null;
 
@@ -117,6 +129,7 @@ const Navigation = () => {
         </button>
       </div>
 
+      <div className={styles.backdrop} onClick={() => setOpen(false)} aria-hidden />
       <div className={styles.menu}>
         {sections.map((section) => (
           <div key={section.title} className={styles.section}>

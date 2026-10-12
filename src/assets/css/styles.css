@@ -39,6 +39,16 @@
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.18);
   --sidebar-width: 248px;
+  /* Phones: height of the top bar, and of the map that map pages pin above their list. */
+  --topbar-height: 56px;
+  --map-phone-height: max(220px, calc((100vh - var(--topbar-height)) * 0.45));
+}
+
+/* dvh follows the phone browser's address bar as it shows and hides. */
+@supports (height: 100dvh) {
+  :root {
+    --map-phone-height: max(220px, calc((100dvh - var(--topbar-height)) * 0.45));
+  }
 }
 
 * {
@@ -117,6 +127,7 @@ table * {
   flex: 1;
   min-width: 0;
   height: 100vh;
+  height: 100dvh;
   padding: 0;
   overflow-y: auto;
 }
@@ -147,7 +158,24 @@ body:has([data-assistant-launcher]) .mapboxgl-ctrl-bottom-right {
 
   .main {
     height: auto;
-    min-height: calc(100vh - 56px);
+    min-height: calc(100vh - var(--topbar-height));
+    min-height: calc(100dvh - var(--topbar-height));
     overflow: visible;
+  }
+
+  body:has([data-assistant-launcher]) .page {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  /* The map sits above the list here, clear of the assistant button. */
+  body:has([data-assistant-launcher]) .mapboxgl-ctrl-bottom-right {
+    margin-bottom: 0;
+  }
+
+  /* Below 16px, iOS Safari zooms the page in when a field gets focus. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }

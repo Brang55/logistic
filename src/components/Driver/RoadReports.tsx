@@ -16,7 +16,7 @@ import QuickReports from "./QuickReports";
 import ReportListItem from "./ReportListItem";
 import ReportsMap from "./ReportsMap";
 import { Toast } from "./Toast";
-import { useMediaQuery, WIDE_QUERY } from "./useMediaQuery";
+import { useMediaQuery, WIDE_QUERY } from "../../hooks/useMediaQuery";
 import { useToast } from "./useToast";
 
 import shared from "./driver.module.css";
