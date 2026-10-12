@@ -278,9 +278,12 @@ export class CargoTools {
       {
         key: "truckId",
         noun: "truck",
+        // Names the driver the truck brings, so the user sees who will drive the load.
         lookup: async (id: string) => {
           const truck = await this.trucks.findOne(id);
-          return { label: `truck ${truck.truckNumber}`, taken: truck.status === TAKEN };
+          const driver = truck.driverId ? await this.drivers.findOne(truck.driverId) : null;
+          const crew = driver ? ` (driven by ${driver.firstName} ${driver.lastName})` : " (no driver seated)";
+          return { label: `truck ${truck.truckNumber}${crew}`, taken: truck.status === TAKEN };
         },
       },
       {
@@ -307,6 +310,8 @@ export class CargoTools {
       roles: [...STAFF],
       description:
         "Propose assigning a truck, driver and/or trailer to a load. Omit a field to keep it as is; null removes it. " +
+        "A truck brings its own driver and hooked trailer, so usually only truckId is needed; set driverId only " +
+        "for a different (relief) driver on this one load. Removing the truck removes the driver too. " +
         "Use ids from find_trucks, find_drivers and find_trailers. The user confirms first.",
       input_schema: schema(
         {

@@ -1,7 +1,7 @@
 import { RouteRequest } from "../../src/routing/routing.types";
 import { SimulatedTelematicsProvider } from "../../src/telematics/simulated-telematics.provider";
 import { TrafficService } from "../../src/trips/traffic.service";
-import { alertsFor, moveTruck, newCargo, newDriverWithLogin, newTruck } from "../support/actors";
+import { alertsFor, moveTruck, newCargo, newCrewedTruck, newDriverWithLogin, newTruck } from "../support/actors";
 import { createTestApp, TestApp } from "../support/app";
 import { fakeRoute, PLACES, router } from "../support/fakes";
 
@@ -20,7 +20,7 @@ describe("trips (e2e)", () => {
     t = await createTestApp();
     truck = await newTruck(t, { truckNumber: "TRIP-1" });
     await moveTruck(t, "TRIP-1", [40, 0]).expect(202);
-    const dana = await newDriverWithLogin(t, { firstName: "Dana", lastName: "Driver", email: "dana@test.local" });
+    const dana = await newDriverWithLogin(t, { firstName: "Dana", lastName: "Driver", email: "dana@test.local", truckId: truck.id });
     driver = dana.driver;
     asDriver = t.as(dana.token);
   });
@@ -90,8 +90,11 @@ describe("trips (e2e)", () => {
   });
 
   it("keeps a truck taken until its last queued load is delivered, driving them in order", async () => {
-    const first = await newCargo(t, "P1", "D1", { truckId: truck.id, pickupDate: "2026-01-01" });
-    const second = await newCargo(t, "P2", "D2", { truckId: truck.id, pickupDate: "2026-01-02" });
+    // The simulator only confirms stops for drivers who don't use the driver app.
+    const simTruck = await newCrewedTruck(t, { truckNumber: "TRIP-SIM" });
+    await moveTruck(t, "TRIP-SIM", [40, 0]).expect(202);
+    const first = await newCargo(t, "P1", "D1", { truckId: simTruck.id, pickupDate: "2026-01-01" });
+    const second = await newCargo(t, "P2", "D2", { truckId: simTruck.id, pickupDate: "2026-01-02" });
     const simulator = t.app.get(SimulatedTelematicsProvider);
     const sink = async () => undefined;
 
@@ -100,15 +103,15 @@ describe("trips (e2e)", () => {
     await simulator.tick(sink);
     expect(await cargoStatus(first.id)).toBe("delivered");
     expect(await cargoStatus(second.id)).toBe("new");
-    expect(await status("trucks", truck.id)).toBe("taken");
+    expect(await status("trucks", simTruck.id)).toBe("taken");
 
     // The truck's last position is the first delivery, so it drives on to the second load.
-    await moveTruck(t, "TRIP-1", PLACES.D1);
+    await moveTruck(t, "TRIP-SIM", PLACES.D1);
     await simulator.plan();
     await simulator.tick(sink);
     await simulator.tick(sink);
     expect(await cargoStatus(second.id)).toBe("delivered");
-    expect(await status("trucks", truck.id)).toBe("available");
+    expect(await status("trucks", simTruck.id)).toBe("available");
   });
 
   it("reports traffic delays, closures and unaccepted restrictions once per new problem", async () => {

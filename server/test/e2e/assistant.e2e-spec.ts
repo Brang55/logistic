@@ -1,5 +1,5 @@
 import { CargosService } from "../../src/cargos/cargos.service";
-import { newCargo, newTruck } from "../support/actors";
+import { newCargo, newCrewedTruck } from "../support/actors";
 import { createTestApp, TestApp } from "../support/app";
 import { callTool, lastResult, lastToolResults, lastUserText, say, ScriptedModel } from "../support/assistant";
 
@@ -34,7 +34,7 @@ describe("dispatcher assistant (e2e)", () => {
 
   beforeAll(async () => {
     t = await createTestApp({ assistantModel: model });
-    truck = await newTruck(t, { truckNumber: "AST-1", weightT: 20 });
+    truck = await newCrewedTruck(t, { truckNumber: "AST-1", weightT: 20 });
     dallasLoad = await newCargo(t, "Dallas", "Chicago", { weight: "18144" });
   });
   afterAll(() => t.close());
@@ -51,7 +51,7 @@ describe("dispatcher assistant (e2e)", () => {
     expect(res.body.reply).toContain("Please confirm");
     expect(res.body.actions).toHaveLength(1);
     expect(res.body.actions[0]).toMatchObject({ tool: "assign_cargo", title: "Assign load", warnings: [] });
-    expect(res.body.actions[0].summary).toMatch(/^Assign truck AST-1 to SH-\w{6} \(Dallas → Chicago\)$/);
+    expect(res.body.actions[0].summary).toMatch(/^Assign truck AST-1 \(driven by AST-1 Driver\) to SH-\w{6} \(Dallas → Chicago\)$/);
     // The model saw today's date, the open page, and imperial units in the lookup.
     expect(lastUserText(model.requests[0])).toContain("Open page: /dispatcher.");
     expect(lastToolResults(model.requests[1])[0].content).toContain('"weightLb":40001');
@@ -74,7 +74,7 @@ describe("dispatcher assistant (e2e)", () => {
   });
 
   it("keeps an assignment pending until truck restrictions are accepted", async () => {
-    await newTruck(t, { truckNumber: "HEAVY-1", weightT: 30 });
+    await newCrewedTruck(t, { truckNumber: "HEAVY-1", weightT: 30 });
     await newCargo(t, "Memphis", "Old Town");
     assignScript("Old Town", "HEAVY-1");
     const { body } = await message("put HEAVY-1 on the Old Town load");

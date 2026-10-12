@@ -1,7 +1,7 @@
 import { PartialType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
-import { RESOURCE_STATUSES, ResourceStatus } from "../common/assignable";
+import { OptionalRef, RESOURCE_STATUSES, ResourceStatus } from "../common/assignable";
 
 // Form inputs arrive as strings; an empty input clears the value instead of becoming 0.
 // Reads the raw input because implicit conversion has already turned "" into 0.
@@ -83,6 +83,10 @@ export class CreateTruckDto {
   @IsInt()
   @Min(0)
   odometerKm?: number | null;
+
+  /** The trailer hooked up now; "" or null for none. The driver is seated from the driver's profile. */
+  @OptionalRef()
+  trailerId?: string | null;
 }
 
 export class UpdateTruckDto extends PartialType(CreateTruckDto) {}

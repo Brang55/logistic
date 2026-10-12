@@ -1,4 +1,4 @@
-import { newTruck } from "../support/actors";
+import { newCrewedTruck, newTruck } from "../support/actors";
 import { createTestApp, TestApp } from "../support/app";
 
 describe("fleet and cargo (e2e)", () => {
@@ -36,9 +36,9 @@ describe("fleet and cargo (e2e)", () => {
   });
 
   it("marks assigned resources taken and frees them on reassignment and delete", async () => {
-    const truck = await newTruck(t, { truckNumber: "T-A" });
-    const other = await newTruck(t, { truckNumber: "T-B" });
-    const status = async (id: string) => (await t.asDispatcher(t.api().get(`/api/trucks/${id}`))).body.status;
+    const truck = await newCrewedTruck(t, { truckNumber: "T-A" });
+    const other = await newCrewedTruck(t, { truckNumber: "T-B" });
+    const status = async (id: string, kind = "trucks") => (await t.asDispatcher(t.api().get(`/api/${kind}/${id}`))).body.status;
 
     const cargo = (
       await t
@@ -46,12 +46,13 @@ describe("fleet and cargo (e2e)", () => {
         .send({ shipperName: "S", weight: 1200, truckId: truck.id, driverId: "" })
         .expect(201)
     ).body;
-    expect(cargo).toMatchObject({ status: "new", weight: "1200", truckId: truck.id, driverId: null });
-    expect(await status(truck.id)).toBe("taken");
+    expect(cargo).toMatchObject({ status: "new", weight: "1200", truckId: truck.id, driverId: truck.driverId });
+    expect([await status(truck.id), await status(truck.driverId, "drivers")]).toEqual(["taken", "taken"]);
 
     const edited = await t.asDispatcher(t.api().patch(`/api/cargos/${cargo.id}`)).send({ truckId: other.id }).expect(200);
-    expect(edited.body.status).toBe("edited");
+    expect(edited.body).toMatchObject({ status: "edited", driverId: other.driverId });
     expect([await status(truck.id), await status(other.id)]).toEqual(["available", "taken"]);
+    expect([await status(truck.driverId, "drivers"), await status(other.driverId, "drivers")]).toEqual(["available", "taken"]);
 
     await t.asDispatcher(t.api().post(`/api/cargos/${cargo.id}/confirm`)).expect(200);
     const confirmed = await t.asDispatcher(t.api().get("/api/cargos?status=confirmed")).expect(200);

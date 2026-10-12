@@ -8,8 +8,8 @@ import { PLACES } from "../support/fakes";
 async function driverOnLoad(t: TestApp, name: string) {
   const truck = await newTruck(t, { truckNumber: `${name.toUpperCase()}-1` });
   const firstName = name[0].toUpperCase() + name.slice(1);
-  const { driver, token } = await newDriverWithLogin(t, { firstName, lastName: "Driver", email: `${name}@test.local` });
-  const cargo = await newCargo(t, "Dallas", "Chicago", { truckId: truck.id, driverId: driver.id });
+  const { driver, token } = await newDriverWithLogin(t, { firstName, lastName: "Driver", email: `${name}@test.local`, truckId: truck.id });
+  const cargo = await newCargo(t, "Dallas", "Chicago", { truckId: truck.id });
   return { truck, driver, cargo, as: t.as(token) };
 }
 
@@ -78,8 +78,8 @@ describe("driver assistant without Claude (keyword fallback, e2e)", () => {
   it("refuses to act on a load that is no longer the driver's", async () => {
     const { body } = await say_("picked up the load");
     expect(body.actions[0].summary).toBe("Confirm pickup in Dallas");
-    // Dispatch takes the driver off the load before they confirm.
-    await t.asDispatcher(t.api().post(`/api/cargos/${me.cargo.id}/assign`)).send({ driverId: "" }).expect(200);
+    // Dispatch takes the truck, and with it the driver, off the load before they confirm.
+    await t.asDispatcher(t.api().post(`/api/cargos/${me.cargo.id}/assign`)).send({ truckId: "" }).expect(200);
     const refused = await confirm(body.actions[0].id).expect(400);
     expect(refused.body.message).toBe("You have no load assigned right now.");
     expect((await loadCargo(me.cargo.id)).pickedUpAt).toBeNull();

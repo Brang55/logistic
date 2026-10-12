@@ -431,12 +431,11 @@ export class DriverTools {
     };
   }
 
-  /** The truck the driver is on: their current load's, else the one on their profile. */
+  /** The truck the driver is on: their current load's, else the one they are seated in. */
   private async truckOf(user: AuthUser) {
     const { driver, trip } = await this.current(user);
     if (trip) return trip.truck;
-    const truck = driver.truckNumber ? (await this.trucks.findAll()).find((t) => t.truckNumber === driver.truckNumber) : undefined;
-    if (!truck) throw new BadRequestException("You aren't on a truck right now.");
-    return truck;
+    if (!driver.truckId) throw new BadRequestException("You aren't on a truck right now.");
+    return this.trucks.findOne(driver.truckId);
   }
 }

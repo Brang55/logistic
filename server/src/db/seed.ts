@@ -49,15 +49,16 @@ const demoTrailers = [
   { trailerNumber: "UT-06", trailer: "Fontaine Velocity step deck" },
 ];
 
+// `seat` is the truck each driver drives; US-209 and US-210 have no driver.
 const demoDrivers = [
-  { firstName: "James", lastName: "Carter", truckDriverEmail: "j.carter@demo.logistic", phoneNumber: "+1 214 555 0101", truckNumber: "US-201" },
-  { firstName: "Maria", lastName: "Gonzalez", truckDriverEmail: "m.gonzalez@demo.logistic", phoneNumber: "+1 312 555 0144", truckNumber: "US-202" },
-  { firstName: "Darnell", lastName: "Washington", truckDriverEmail: "d.washington@demo.logistic", phoneNumber: "+1 323 555 0123", truckNumber: "US-203" },
-  { firstName: "Emily", lastName: "Novak", truckDriverEmail: "e.novak@demo.logistic", phoneNumber: "+1 614 555 0156", truckNumber: "US-204" },
-  { firstName: "Tyler", lastName: "Brooks", truckDriverEmail: "t.brooks@demo.logistic", phoneNumber: "+1 404 555 0188", truckNumber: "US-205" },
-  { firstName: "Ray", lastName: "Hernandez", truckDriverEmail: "r.hernandez@demo.logistic", phoneNumber: "+1 713 555 0199", truckNumber: "US-206" },
-  { firstName: "Sean", lastName: "Murphy", truckDriverEmail: "s.murphy@demo.logistic", phoneNumber: "+1 615 555 0147", truckNumber: "US-207" },
-  { firstName: "Linda", lastName: "Park", truckDriverEmail: "l.park@demo.logistic", phoneNumber: "+1 602 555 0110", truckNumber: "US-208" },
+  { firstName: "James", lastName: "Carter", truckDriverEmail: "j.carter@demo.logistic", phoneNumber: "+1 214 555 0101", seat: "US-201" },
+  { firstName: "Maria", lastName: "Gonzalez", truckDriverEmail: "m.gonzalez@demo.logistic", phoneNumber: "+1 312 555 0144", seat: "US-202" },
+  { firstName: "Darnell", lastName: "Washington", truckDriverEmail: "d.washington@demo.logistic", phoneNumber: "+1 323 555 0123", seat: "US-203" },
+  { firstName: "Emily", lastName: "Novak", truckDriverEmail: "e.novak@demo.logistic", phoneNumber: "+1 614 555 0156", seat: "US-204" },
+  { firstName: "Tyler", lastName: "Brooks", truckDriverEmail: "t.brooks@demo.logistic", phoneNumber: "+1 404 555 0188", seat: "US-205" },
+  { firstName: "Ray", lastName: "Hernandez", truckDriverEmail: "r.hernandez@demo.logistic", phoneNumber: "+1 713 555 0199", seat: "US-206" },
+  { firstName: "Sean", lastName: "Murphy", truckDriverEmail: "s.murphy@demo.logistic", phoneNumber: "+1 615 555 0147", seat: "US-207" },
+  { firstName: "Linda", lastName: "Park", truckDriverEmail: "l.park@demo.logistic", phoneNumber: "+1 602 555 0110", seat: "US-208" },
 ];
 
 // Where each demo truck is parked before the simulator moves it.
@@ -77,9 +78,18 @@ const DEPOTS: Record<string, { x: number; y: number }> = {
 // Trips already under way when the demo starts. The demo driver (US-201) is left free, so the
 // dispatcher can assign Dallas → Chicago live.
 const DEMO_TRIPS = [
-  { shipperName: "Peach State Foods", truckNumber: "US-205", driverEmail: "t.brooks@demo.logistic" },
-  { shipperName: "Pacific Furniture", truckNumber: "US-203", driverEmail: "d.washington@demo.logistic" },
+  { shipperName: "Peach State Foods", truckNumber: "US-205" },
+  { shipperName: "Pacific Furniture", truckNumber: "US-203" },
 ];
+
+// The trailer hooked to each truck at the start; the other trucks run without one.
+const HOOKED_TRAILERS: Record<string, string> = {
+  "US-201": "UT-01",
+  "US-202": "UT-02",
+  "US-203": "UT-04",
+  "US-205": "UT-05",
+  "US-206": "UT-03",
+};
 
 // Docks as real street addresses with fixed coordinates, so the demo needs no geocoding calls.
 // Checked with TomTom truck routing (US-201's size): every demo route is permitted for a 53' rig,
@@ -220,10 +230,36 @@ const DEMO_HISTORY = [
   { from: "12000 Rojas Dr, El Paso, TX 79936", to: "4100 Platinum Way, Dallas, TX 75237", goods: "Building materials", weight: lb(46000), quantity: "22 pallets", shipper: "Sun City Materials", receiver: "North Texas Builders", daysAgo: 34, hours: 10, delay: 0 },
 ];
 
+/**
+ * Seats each demo driver in their truck and hooks the demo trailers. Trucks, drivers and trailers
+ * the dispatcher has already paired differently are left alone.
+ */
+async function seatDemoCrews(db: Database) {
+  const fleet = await db.select().from(trucks);
+  const byNumber = new Map(fleet.map((truck) => [truck.truckNumber, truck]));
+  const seated = new Set(fleet.map((truck) => truck.driverId));
+  const hooked = new Set(fleet.map((truck) => truck.trailerId));
+  const driverIds = new Map((await db.select().from(drivers)).map((d) => [d.truckDriverEmail, d.id]));
+  const trailerIds = new Map((await db.select().from(trailers)).map((t) => [t.trailerNumber, t.id]));
+
+  for (const { truckDriverEmail, seat } of demoDrivers) {
+    const truck = byNumber.get(seat);
+    const driverId = driverIds.get(truckDriverEmail);
+    if (!truck || truck.driverId || !driverId || seated.has(driverId)) continue;
+    await db.update(trucks).set({ driverId }).where(eq(trucks.id, truck.id));
+  }
+  for (const [truckNumber, trailerNumber] of Object.entries(HOOKED_TRAILERS)) {
+    const truck = byNumber.get(truckNumber);
+    const trailerId = trailerIds.get(trailerNumber);
+    if (!truck || truck.trailerId || !trailerId || hooked.has(trailerId)) continue;
+    await db.update(trucks).set({ trailerId }).where(eq(trucks.id, truck.id));
+  }
+}
+
 async function seedDriverCommunity(db: Database) {
   const all = await db.select().from(drivers);
   const byEmail = new Map(all.map((driver) => [driver.truckDriverEmail, driver]));
-  const truckIds = new Map((await db.select({ id: trucks.id, number: trucks.truckNumber }).from(trucks)).map((t) => [t.number, t.id]));
+  const truckOf = new Map((await db.select({ id: trucks.id, driverId: trucks.driverId }).from(trucks)).map((t) => [t.driverId, t.id]));
   const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000);
 
   const active = await db.$count(roadReports, gt(roadReports.expiresAt, new Date()));
@@ -236,7 +272,7 @@ async function seedDriverCommunity(db: Database) {
           point: report.point,
           note: report.note,
           driverId: driver.id,
-          truckId: truckIds.get(driver.truckNumber) ?? null,
+          truckId: truckOf.get(driver.id) ?? null,
           createdAt: ago(report.minutesAgo),
           expiresAt: new Date(ago(report.minutesAgo).getTime() + REPORT_TYPES[report.type].ttlHours * 3_600_000 + 3_600_000),
         };
@@ -278,7 +314,7 @@ async function seedDriverCommunity(db: Database) {
           delayMinutes: load.delay || null,
           delayReason: load.delay ? (load.delay > 120 ? "Receiver closed, redelivered next morning" : "Heavy traffic") : null,
           driverId: demoDriver.id,
-          truckId: truckIds.get(demoDriver.truckNumber) ?? null,
+          truckId: truckOf.get(demoDriver.id) ?? null,
           status: "delivered" as const,
         };
       }),
@@ -300,7 +336,11 @@ export async function seed(db: Database) {
 
   await db.insert(trucks).values(demoTrucks).onConflictDoNothing();
   await db.insert(trailers).values(demoTrailers).onConflictDoNothing();
-  await db.insert(drivers).values(demoDrivers).onConflictDoNothing();
+  await db
+    .insert(drivers)
+    .values(demoDrivers.map(({ firstName, lastName, truckDriverEmail, phoneNumber }) => ({ firstName, lastName, truckDriverEmail, phoneNumber })))
+    .onConflictDoNothing();
+  await seatDemoCrews(db);
 
   // Driver-app login for one demo driver, linked every run so a demo reset keeps it working.
   await db.insert(users).values({ email: DEMO_DRIVER_EMAIL, passwordHash, role: "driver" }).onConflictDoNothing();
@@ -328,14 +368,14 @@ export async function seed(db: Database) {
 
     // Two trips already under way, so the live map moves as soon as the demo starts.
     for (const trip of DEMO_TRIPS) {
-      const truck = await db.query.trucks.findFirst({ where: eq(trucks.truckNumber, trip.truckNumber) });
-      const driver = await db.query.drivers.findFirst({ where: eq(drivers.truckDriverEmail, trip.driverEmail) });
+      const truck = (await db.query.trucks.findFirst({ where: eq(trucks.truckNumber, trip.truckNumber) }))!;
       await db
         .update(cargos)
-        .set({ truckId: truck!.id, driverId: driver!.id, status: "confirmed" })
+        .set({ truckId: truck.id, driverId: truck.driverId, trailerId: truck.trailerId, status: "confirmed" })
         .where(eq(cargos.shipperName, trip.shipperName));
-      await db.update(trucks).set({ status: "taken" }).where(eq(trucks.id, truck!.id));
-      await db.update(drivers).set({ status: "taken" }).where(eq(drivers.id, driver!.id));
+      await db.update(trucks).set({ status: "taken" }).where(eq(trucks.id, truck.id));
+      if (truck.driverId) await db.update(drivers).set({ status: "taken" }).where(eq(drivers.id, truck.driverId));
+      if (truck.trailerId) await db.update(trailers).set({ status: "taken" }).where(eq(trailers.id, truck.trailerId));
     }
   }
 

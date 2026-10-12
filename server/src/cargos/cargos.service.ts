@@ -1,18 +1,20 @@
 import {
   BadGatewayException,
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
 } from "@nestjs/common";
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, notInArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, notInArray } from "drizzle-orm";
 import { AuthUser } from "../auth/auth-user";
-import { AVAILABLE, nullIfEmpty, ResourceStatus, TAKEN } from "../common/assignable";
+import { nullIfEmpty } from "../common/assignable";
+import { Assignment, emptyAssignment, syncAssignment } from "../common/assignment";
 import { CargoStatus, FINISHED_STATUSES, PLANNING_STATUSES } from "../common/cargo-status";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
-import { cargos, drivers, trailers, trucks } from "../db/schema";
+import { cargos, trucks } from "../db/schema";
 import { AlertsService } from "../live/alerts.service";
 import { LiveGateway } from "../live/live.gateway";
 import { GeocodingService } from "../mapbox/geocoding.service";
@@ -20,7 +22,6 @@ import { LngLat, RoutingService } from "../routing/routing.types";
 import { TrucksService } from "../trucks/trucks.service";
 import { AssignCargoDto, CreateCargoDto, UpdateCargoDto } from "./cargos.dto";
 
-type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 export type Cargo = typeof cargos.$inferSelect;
 
 export interface CargoOrigin {
@@ -29,35 +30,12 @@ export interface CargoOrigin {
   pickupPoint: LngLat;
   deliveryPoint: LngLat;
 }
-type Assignment = Pick<Cargo, "driverId" | "truckId" | "trailerId">;
 type RestrictionCheck = { truck: typeof trucks.$inferSelect; violations: string[] };
 type Acceptance = Pick<Cargo, "restrictionsAcceptedAt" | "restrictionsAcceptedBy" | "restrictionsAcceptedTruckId">;
 type Point = { x: number; y: number };
 
 const toPoint = ([x, y]: LngLat): Point => ({ x, y });
 const toLngLat = ({ x, y }: Point): LngLat => [x, y];
-
-// Drizzle can't update a union of tables generically, so each resource gets its own setter.
-const RESOURCES = [
-  {
-    key: "driverId",
-    column: cargos.driverId,
-    setStatus: (tx: Tx, id: string, status: ResourceStatus) =>
-      tx.update(drivers).set({ status }).where(eq(drivers.id, id)),
-  },
-  {
-    key: "truckId",
-    column: cargos.truckId,
-    setStatus: (tx: Tx, id: string, status: ResourceStatus) =>
-      tx.update(trucks).set({ status }).where(eq(trucks.id, id)),
-  },
-  {
-    key: "trailerId",
-    column: cargos.trailerId,
-    setStatus: (tx: Tx, id: string, status: ResourceStatus) =>
-      tx.update(trailers).set({ status }).where(eq(trailers.id, id)),
-  },
-] as const;
 
 @Injectable()
 export class CargosService {
@@ -102,10 +80,11 @@ export class CargosService {
       ? { pickupPoint: toPoint(origin.pickupPoint), deliveryPoint: toPoint(origin.deliveryPoint) }
       : await this.locate(dto);
     const source = origin ? { source: origin.source, externalId: origin.externalId } : {};
+    const crew = await this.crewFor(dto);
     return this.db.transaction(async (tx) => {
       const [cargo] = await tx
         .insert(cargos)
-        .values({ ...dto, ...normalizeRefs(dto), ...points, ...source, status: "new" })
+        .values({ ...dto, ...crew, ...points, ...source, status: "new" })
         .returning();
       await syncAssignment(tx, emptyAssignment, cargo);
       return cargo;
@@ -116,9 +95,10 @@ export class CargosService {
   // confirmed again; loads already on the road keep their status.
   async update(id: string, dto: UpdateCargoDto) {
     const current = await this.findOne(id);
+    const crew = await this.crewFor(dto, current);
     const points = await this.locate(dto, current);
     const status = PLANNING_STATUSES.includes(current.status) ? "edited" : current.status;
-    return this.save(id, { ...dto, ...points, status });
+    return this.save(id, { ...dto, ...crew, ...points, status });
   }
 
   /**
@@ -128,7 +108,8 @@ export class CargosService {
    */
   async assign(id: string, { acceptRestrictions, ...dto }: AssignCargoDto, user: AuthUser) {
     const current = await this.findOne(id);
-    const truckId = "truckId" in dto ? nullIfEmpty(dto.truckId) : current.truckId;
+    const crew = await this.crewFor(dto, current);
+    const truckId = crew.truckId !== undefined ? crew.truckId : current.truckId;
 
     let acceptance: Partial<Acceptance> = {};
     let check: RestrictionCheck | undefined;
@@ -149,7 +130,7 @@ export class CargosService {
         : noAcceptance;
     }
 
-    const cargo = await this.save(id, { ...dto, ...acceptance });
+    const cargo = await this.save(id, { ...dto, ...crew, ...acceptance });
     if (check?.violations.length) {
       this.alerts.raise({
         kind: "route-restriction",
@@ -178,13 +159,41 @@ export class CargosService {
     }
   }
 
+  /**
+   * The driver, truck and trailer a request leaves on the load; keys it doesn't touch are left out.
+   * A truck brings its seated driver unless the request names another one (a relief driver), and a
+   * newly chosen truck brings its hooked trailer unless the request picks one. A load whose truck
+   * has no driver is refused, except when nothing about its assignment changes.
+   */
+  private async crewFor(dto: UpdateCargoDto, current: Assignment = emptyAssignment): Promise<Partial<Assignment>> {
+    const crew: Partial<Assignment> = {};
+    if ("trailerId" in dto) crew.trailerId = nullIfEmpty(dto.trailerId);
+    if (!("truckId" in dto) && !("driverId" in dto)) return crew;
+
+    const truckId = "truckId" in dto ? nullIfEmpty(dto.truckId) : current.truckId;
+    const truck = truckId ? await this.trucks.findOne(truckId) : null;
+    const driverId = nullIfEmpty(dto.driverId) ?? truck?.driverId ?? null;
+    if (truckId === current.truckId && driverId === current.driverId) return { ...crew, truckId, driverId };
+
+    if (!truck && driverId) throw new BadRequestException("Choose a truck first: the driver comes with the truck");
+    if (truck && !driverId) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: "TRUCK_HAS_NO_DRIVER",
+        message: `${truck.truckNumber} has no driver. Seat one in it on the Drivers page, or pick a driver for this load.`,
+      });
+    }
+    if (truck && truck.id !== current.truckId && !("trailerId" in dto) && truck.trailerId) crew.trailerId = truck.trailerId;
+    return { ...crew, truckId, driverId };
+  }
+
   private save(id: string, changes: UpdateCargoDto & Partial<Pick<Cargo, "status" | "pickupPoint" | "deliveryPoint"> & Acceptance>) {
     return this.db.transaction(async (tx) => {
       const current = await tx.query.cargos.findFirst({ where: eq(cargos.id, id) });
       if (!current) throw new NotFoundException("Cargo not found");
       const [cargo] = await tx
         .update(cargos)
-        .set({ ...changes, ...normalizeRefs(changes) })
+        .set(changes)
         .where(eq(cargos.id, id))
         .returning();
       await syncAssignment(tx, current, cargo);
@@ -327,29 +336,4 @@ export class CargosService {
   }
 }
 
-const emptyAssignment: Assignment = { driverId: null, truckId: null, trailerId: null };
 const noAcceptance: Acceptance = { restrictionsAcceptedAt: null, restrictionsAcceptedBy: null, restrictionsAcceptedTruckId: null };
-
-// Only touch the keys present in the request, so a partial update keeps existing assignments.
-function normalizeRefs(dto: UpdateCargoDto): Partial<Assignment> {
-  const refs: Partial<Assignment> = {};
-  for (const { key } of RESOURCES) {
-    if (key in dto) refs[key] = nullIfEmpty(dto[key]);
-  }
-  return refs;
-}
-
-// A resource is taken while any unfinished cargo references it. Recomputing (instead of
-// toggling) keeps statuses right when one truck has several loads queued.
-async function syncAssignment(tx: Tx, before: Assignment, after: Assignment) {
-  for (const { key, column, setStatus } of RESOURCES) {
-    for (const id of new Set([before[key], after[key]])) {
-      if (!id) continue;
-      const [{ active }] = await tx
-        .select({ active: count() })
-        .from(cargos)
-        .where(and(eq(column, id), notInArray(cargos.status, FINISHED_STATUSES)));
-      await setStatus(tx, id, active > 0 ? TAKEN : AVAILABLE);
-    }
-  }
-}

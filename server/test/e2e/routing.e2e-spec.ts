@@ -1,4 +1,4 @@
-import { newCargo, newTruck } from "../support/actors";
+import { newCargo, newCrewedTruck, newDriver, newTruck } from "../support/actors";
 import { createTestApp, TestApp } from "../support/app";
 import { geocoder, PLACES, router } from "../support/fakes";
 
@@ -23,7 +23,7 @@ describe("routing (e2e)", () => {
   });
 
   it("routes a cargo with the assigned truck's dimensions", async () => {
-    const truck = await newTruck(t, { truckNumber: "R-1", heightM: "4.2", weightT: "40" });
+    const truck = await newCrewedTruck(t, { truckNumber: "R-1", heightM: "4.2", weightT: "40" });
     const cargo = await newCargo(t, "Dallas", "Chicago");
     await t.asDispatcher(t.api().post(`/api/cargos/${cargo.id}/confirm`)).expect(200);
 
@@ -42,9 +42,10 @@ describe("routing (e2e)", () => {
   });
 
   it("asks the dispatcher to accept truck restrictions before assigning", async () => {
-    const heavy = await newTruck(t, { truckNumber: "H-1", weightT: "40" });
-    const other = await newTruck(t, { truckNumber: "H-2", weightT: "26" });
-    const van = await newTruck(t, { truckNumber: "V-1", weightT: "3.5" });
+    const heavy = await newCrewedTruck(t, { truckNumber: "H-1", weightT: "40" });
+    const other = await newCrewedTruck(t, { truckNumber: "H-2", weightT: "26" });
+    const van = await newCrewedTruck(t, { truckNumber: "V-1", weightT: "3.5" });
+    const relief = await newDriver(t, { firstName: "Relief" });
     const cargo = await newCargo(t, "Dallas", "Old Town");
     const assign = (body: object) => t.asDispatcher(t.api().post(`/api/cargos/${cargo.id}/assign`)).send(body);
 
@@ -59,7 +60,8 @@ describe("routing (e2e)", () => {
       restrictionsAcceptedTruckId: heavy.id,
     });
     // Changing only the driver keeps the acceptance for the same truck.
-    await assign({ driverId: "" }).expect(200);
+    const reliefDriven = await assign({ driverId: relief.id }).expect(200);
+    expect(reliefDriven.body).toMatchObject({ driverId: relief.id, restrictionsAcceptedTruckId: heavy.id });
 
     await assign({ truckId: other.id }).expect(409);
     const light = await assign({ truckId: van.id }).expect(200);

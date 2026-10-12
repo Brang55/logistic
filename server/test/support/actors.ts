@@ -15,6 +15,22 @@ export const moveTruck = (t: TestApp, vehicleId: string, [lng, lat]: LngLat) =>
 export const newTruck = async (t: TestApp, body: Body) =>
   (await t.asDispatcher(t.api().post("/api/trucks")).send(body).expect(201)).body;
 
+/** A driver record without a login. */
+export const newDriver = async (t: TestApp, body: { firstName: string; lastName?: string } & Body) =>
+  (
+    await t
+      .asDispatcher(t.api().post("/api/drivers"))
+      .send({ lastName: "Driver", truckDriverEmail: `${String(body.firstName).toLowerCase()}@test.local`, ...body })
+      .expect(201)
+  ).body;
+
+/** A truck with a driver seated in it, so assigning the truck to a load brings that driver. */
+export async function newCrewedTruck(t: TestApp, body: { truckNumber: string } & Body) {
+  const truck = await newTruck(t, body);
+  const driver = await newDriver(t, { firstName: body.truckNumber, truckId: truck.id });
+  return { ...truck, driverId: driver.id, driver };
+}
+
 export const newCargo = async (t: TestApp, pickupLocation: string, deliveryLocation: string, extra: Body = {}) =>
   (await t.asDispatcher(t.api().post("/api/cargos")).send({ pickupLocation, deliveryLocation, ...extra }).expect(201))
     .body;
