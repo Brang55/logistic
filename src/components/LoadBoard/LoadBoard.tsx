@@ -10,6 +10,8 @@ import {
 } from "../../app/api/loadBoards";
 import { Loader } from "../Loader/Loader";
 import { IconButton, PageHeader } from "../ui/ui";
+import { cx } from "../ui/helpers";
+import ui from "../ui/ui.module.css";
 
 import styles from "./LoadBoard.module.css";
 import { formatMiles, formatWeight, kmToMiles } from "../../utils/units";
@@ -157,7 +159,12 @@ const LoadBoard = () => {
         }
         actions={
           <div className={styles.filters}>
-            <select value={equipment} onChange={(e) => setEquipment(e.target.value)}>
+            <select
+              className={cx(ui.input, styles.equipment)}
+              aria-label="Equipment"
+              value={equipment}
+              onChange={(e) => setEquipment(e.target.value)}
+            >
               <option value="">Any equipment</option>
               {EQUIPMENT.map((item) => (
                 <option key={item}>{item}</option>
