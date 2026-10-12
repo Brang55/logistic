@@ -6,6 +6,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import type { RoadReport } from "../../app/api/community";
 import type { MyTrip } from "../../app/api/trips";
 import { theme } from "../../theme";
+import { mapGestures } from "../../utils/map";
 
 import { reportMarkerElement } from "./reportTypes";
 
@@ -32,6 +33,7 @@ const TripMap = ({ trip, reports }: { trip: Trip; reports?: RoadReport[] }) => {
     if (!containerRef.current) return;
     const mapInstance = new mapboxgl.Map({
       container: containerRef.current,
+      ...mapGestures(),
       style: "mapbox://styles/mapbox/streets-v12",
       center: trip.position?.point ?? trip.nextStop.point,
       zoom: 9,

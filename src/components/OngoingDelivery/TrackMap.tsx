@@ -7,6 +7,7 @@ import type { TruckPosition } from "../../app/api/telematics";
 import { PHONE_QUERY, useMediaQuery } from "../../hooks/useMediaQuery";
 import { theme } from "../../theme";
 import { splitLineAt } from "../../utils/geo";
+import { mapGestures } from "../../utils/map";
 import { useFleetLayer } from "../Fleet/useFleetLayer";
 import { FLAT_MAP_OPTIONS, fitPadding, ShowAllControl } from "../ui/mapFit";
 
@@ -73,6 +74,7 @@ const TrackMap = ({
     if (!containerRef.current) return;
     const instance = new mapboxgl.Map({
       container: containerRef.current,
+      ...mapGestures(),
       style: "mapbox://styles/mapbox/light-v11",
       // Continental US until the fleet's own extent is known.
       center: [-98.5, 39.8],

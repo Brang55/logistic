@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import type { RoadReport } from "../../app/api/community";
 import type { LngLat } from "../../app/api/routing";
+import { mapGestures } from "../../utils/map";
 import { reportMarkerElement } from "./reportTypes";
 
 import shared from "./driver.module.css";
@@ -31,6 +32,7 @@ const ReportsMap = ({ reports, position, focusId }: Props) => {
     if (!containerRef.current) return;
     const mapInstance = new mapboxgl.Map({
       container: containerRef.current,
+      ...mapGestures(),
       style: "mapbox://styles/mapbox/streets-v12",
       center: position ?? USA,
       zoom: position ? 8 : 4,

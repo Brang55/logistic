@@ -11,6 +11,7 @@ import { FLAT_MAP_OPTIONS, fitPadding, mapDetailsInset, ShowAllControl } from ".
 
 import page from "../ui/mapPage.module.css";
 import { theme } from "../../theme";
+import { mapGestures } from "../../utils/map";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -110,6 +111,7 @@ const DispatchMap = ({
 
     const mapInstance = new mapboxgl.Map({
       container: containerRef.current,
+      ...mapGestures(),
       style: "mapbox://styles/mapbox/streets-v12",
       // Continental US until the fleet's own extent is known.
       center: [-98.5, 39.8],
