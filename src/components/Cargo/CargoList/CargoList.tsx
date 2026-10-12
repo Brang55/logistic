@@ -23,6 +23,7 @@ import { Loader } from "../../Loader/Loader";
 import { CargoStatus, ConfirmDialog, EmptyState, FilterChips, IconButton, PageHeader, SearchInput } from "../../ui/ui";
 import { cx, matches, shipmentRef } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
+import table from "../../ui/table.module.css";
 import styles from "./CargoList.module.css";
 import { formatCargoWeight } from "../../../utils/units";
 
@@ -81,7 +82,7 @@ export const CargoList = () => {
       />
 
       <div className={ui.card}>
-        <div className={ui.toolbar}>
+        <div className={table.toolbar}>
           <SearchInput value={search} onChange={setSearch} placeholder="Search shipment, company, city or truck" />
           <FilterChips<Filter>
             value={filter}
@@ -105,8 +106,8 @@ export const CargoList = () => {
             text={cargos.length ? "Try a different search or filter." : "Add a load or import one from the load board."}
           />
         ) : (
-          <div className={ui.tableWrap}>
-            <table className={ui.table}>
+          <div className={table.tableWrap}>
+            <table className={table.table}>
               <thead>
                 <tr>
                   <th>Shipment</th>
@@ -115,19 +116,19 @@ export const CargoList = () => {
                   <th>Goods</th>
                   <th>Truck</th>
                   <th>Status</th>
-                  <th className={ui.right}>Actions</th>
+                  <th className={table.right}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((cargo) => (
-                  <tr key={cargo.id} className={ui.clickable} onClick={() => navigate(`/cargoList/${cargo.id}/preview`)}>
+                  <tr key={cargo.id} className={table.clickable} onClick={() => navigate(`/cargoList/${cargo.id}/preview`)}>
                     <td data-label="Shipment">
                       <span>
                         <span className={ui.primaryText}>{shipmentRef(cargo.id)}</span>
                         <span className={ui.secondaryText}>{cargo.source && cargo.source !== "manual" ? "Load board" : "Manual"}</span>
                       </span>
                     </td>
-                    <td data-label="Route">
+                    <td data-label="Route" className={table.cellWide}>
                       <span className={styles.route}>
                         <span>
                           <span className={ui.primaryText}>{cargo.pickupLocation || "–"}</span>
@@ -140,7 +141,7 @@ export const CargoList = () => {
                         </span>
                       </span>
                     </td>
-                    <td data-label="Shipper → receiver">
+                    <td data-label="Shipper → receiver" className={table.cellWide}>
                       <span>
                         <span className={ui.primaryText}>{cargo.shipperName || "–"}</span>
                         <span className={ui.secondaryText}>{cargo.receiverName || "–"}</span>
@@ -155,11 +156,11 @@ export const CargoList = () => {
                     <td data-label="Truck">
                       {cargo.truckId ? truckNumber.get(cargo.truckId) ?? "Assigned" : <span className={ui.muted}>Unassigned</span>}
                     </td>
-                    <td data-label="Status">
+                    <td data-label="Status" className={table.cellStatus}>
                       <CargoStatus status={cargo.status} />
                     </td>
-                    <td data-label="" className={ui.right}>
-                      <div className={ui.rowActions}>
+                    <td data-label="" className={table.right}>
+                      <div className={table.rowActions}>
                         {NEEDS_CONFIRMATION.includes(cargo.status) && (
                           <IconButton icon={faCheck} label="Confirm" onClick={() => setConfirmingCargo(cargo)} />
                         )}

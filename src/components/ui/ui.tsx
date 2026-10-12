@@ -5,6 +5,7 @@ import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 
 import { CARGO_STATUS, cx, type Tone } from "./helpers";
 import mapPage from "./mapPage.module.css";
+import dialog from "./modal.module.css";
 import styles from "./ui.module.css";
 
 export const PageHeader = ({
@@ -153,7 +154,7 @@ export const Modal = ({
   footer?: ReactNode;
   small?: boolean;
 }) => {
-  // Escape closes the styles.
+  // Escape closes the dialog.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -161,16 +162,16 @@ export const Modal = ({
   }, [onClose]);
 
   return (
-    <div className={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className={cx(styles.modal, small && styles.modalSmall)} role="dialog" aria-modal="true" aria-label={title}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>{title}</h2>
+    <div className={dialog.overlay} onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div className={cx(dialog.modal, small && dialog.modalSmall)} role="dialog" aria-modal="true" aria-label={title}>
+        <div className={dialog.modalHeader}>
+          <h2 className={dialog.modalTitle}>{title}</h2>
           <button className={styles.iconBtn} onClick={onClose} aria-label="Close">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
-        <div className={styles.modalBody}>{children}</div>
-        {footer && <div className={styles.modalFooter}>{footer}</div>}
+        <div className={dialog.modalBody}>{children}</div>
+        {footer && <div className={dialog.modalFooter}>{footer}</div>}
       </div>
     </div>
   );

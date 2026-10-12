@@ -14,6 +14,7 @@ import { AttentionSummary } from "../../Vehicles/records";
 import { ConfirmDialog, EmptyState, FilterChips, IconButton, PageHeader, ResourceStatus, SearchInput } from "../../ui/ui";
 import { cx, matches } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
+import table from "../../ui/table.module.css";
 import AddTrailerForm from "../AddTrailer/AddTrailerForm/AddTrailerForm";
 
 type Filter = "all" | "available" | "taken";
@@ -53,7 +54,7 @@ const TrailersList = () => {
       />
 
       <div className={ui.card}>
-        <div className={ui.toolbar}>
+        <div className={table.toolbar}>
           <SearchInput value={search} onChange={setSearch} placeholder="Search number or type" />
           <FilterChips<Filter>
             value={filter}
@@ -75,32 +76,32 @@ const TrailersList = () => {
             text={trailers.length ? "Try a different search or filter." : "Add trailers to assign them to cargo."}
           />
         ) : (
-          <div className={ui.tableWrap}>
-            <table className={ui.table}>
+          <div className={table.tableWrap}>
+            <table className={table.table}>
               <thead>
                 <tr>
                   <th>Trailer</th>
                   <th>Type</th>
                   <th>Status</th>
                   <th>Attention</th>
-                  <th className={ui.right}>Actions</th>
+                  <th className={table.right}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((trailer) => (
-                  <tr key={trailer.id} className={ui.clickable} onClick={() => navigate(`/trailers/${trailer.id}`)}>
+                  <tr key={trailer.id} className={table.clickable} onClick={() => navigate(`/trailers/${trailer.id}`)}>
                     <td data-label="Trailer">
                       <span className={ui.primaryText}>{trailer.trailerNumber}</span>
                     </td>
                     <td data-label="Type">{trailer.trailer || <span className={ui.muted}>Not set</span>}</td>
-                    <td data-label="Status">
+                    <td data-label="Status" className={table.cellStatus}>
                       <ResourceStatus status={trailer.status} />
                     </td>
                     <td data-label="Attention">
                       <AttentionSummary items={attention.filter((item) => item.kind === "trailers" && item.vehicleId === trailer.id)} />
                     </td>
-                    <td data-label="" className={ui.right}>
-                      <div className={ui.rowActions}>
+                    <td data-label="" className={table.right}>
+                      <div className={table.rowActions}>
                         <IconButton icon={faPen} label={`Edit ${trailer.trailerNumber}`} onClick={() => setEditing(trailer)} />
                         <IconButton
                           icon={faTrash}

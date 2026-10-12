@@ -20,6 +20,7 @@ import {
 } from "../../ui/ui";
 import { cx, initials, matches } from "../../ui/helpers";
 import ui from "../../ui/ui.module.css";
+import table from "../../ui/table.module.css";
 import AddDriverForm from "../AddDriver/AddDriverForm/AddDriverForm";
 import DriverLoginForm from "../DriverLogin/DriverLoginForm";
 
@@ -62,7 +63,7 @@ const TruckDriversList = () => {
       />
 
       <div className={ui.card}>
-        <div className={ui.toolbar}>
+        <div className={table.toolbar}>
           <SearchInput value={search} onChange={setSearch} placeholder="Search name, email, phone or truck" />
           <FilterChips<Filter>
             value={filter}
@@ -84,8 +85,8 @@ const TruckDriversList = () => {
             text={drivers.length ? "Try a different search or filter." : "Add your drivers to assign them to loads."}
           />
         ) : (
-          <div className={ui.tableWrap}>
-            <table className={ui.table}>
+          <div className={table.tableWrap}>
+            <table className={table.table}>
               <thead>
                 <tr>
                   <th>Driver</th>
@@ -93,7 +94,7 @@ const TruckDriversList = () => {
                   <th>Truck</th>
                   <th>Driver app</th>
                   <th>Status</th>
-                  <th className={ui.right}>Actions</th>
+                  <th className={table.right}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -114,7 +115,7 @@ const TruckDriversList = () => {
                       {driver.phoneNumber ? <a href={`tel:${driver.phoneNumber}`}>{driver.phoneNumber}</a> : "–"}
                     </td>
                     <td data-label="Truck">{driver.truckNumber || <span className={ui.muted}>–</span>}</td>
-                    <td data-label="Driver app">
+                    <td data-label="Driver app" className={table.cellWide}>
                       {driver.userId ? (
                         <Badge tone="success">Has login</Badge>
                       ) : (
@@ -123,11 +124,11 @@ const TruckDriversList = () => {
                         </button>
                       )}
                     </td>
-                    <td data-label="Status">
+                    <td data-label="Status" className={table.cellStatus}>
                       <ResourceStatus status={driver.status} />
                     </td>
-                    <td data-label="" className={ui.right}>
-                      <div className={ui.rowActions}>
+                    <td data-label="" className={table.right}>
+                      <div className={table.rowActions}>
                         <IconButton icon={faPen} label={`Edit ${driver.firstName}`} onClick={() => setEditing(driver)} />
                         <IconButton
                           icon={faTrash}
