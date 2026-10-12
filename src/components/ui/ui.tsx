@@ -4,6 +4,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 
 import { CARGO_STATUS, cx, type Tone } from "./helpers";
+import mapPage from "./mapPage.module.css";
 import styles from "./ui.module.css";
 
 export const PageHeader = ({
@@ -28,11 +29,16 @@ export const PageHeader = ({
   </div>
 );
 
-/** White heading strip for the side panel of a map page. */
-export const PanelHeader = ({ title, subtitle }: { title: string; subtitle?: ReactNode }) => (
-  <div className={styles.panelHeader}>
+/** White heading strip for the side panel of a map page. Phones show only the subtitle, not the description. */
+export const PanelHeader = ({ title, description, subtitle }: { title: string; description?: string; subtitle?: ReactNode }) => (
+  <div className={mapPage.panelHeader}>
     <h1 className={styles.title}>{title}</h1>
-    {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+    {(description || subtitle) && (
+      <p className={styles.subtitle}>
+        {description && <span className={mapPage.description}>{subtitle ? `${description} · ` : description}</span>}
+        {subtitle}
+      </p>
+    )}
   </div>
 );
 
@@ -147,7 +153,7 @@ export const Modal = ({
   footer?: ReactNode;
   small?: boolean;
 }) => {
-  // Escape closes the dialog.
+  // Escape closes the styles.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -170,10 +176,10 @@ export const Modal = ({
   );
 };
 
-/** Room the map keeps free on its right while a MapDetailsCard is open: card width plus gutters. */
-export const MAP_DETAILS_INSET = 412;
-
-/** Details of the selected item, floating over the right side of a map. The map and list stay usable. */
+/**
+ * Details of the selected item, floating over the right side of a map (see `mapDetailsInset`). On phones it takes
+ * the list's place under the map. The map and list stay usable.
+ */
 export const MapDetailsCard = ({
   title,
   subtitle,
@@ -193,17 +199,17 @@ export const MapDetailsCard = ({
   }, [onClose]);
 
   return (
-    <aside className={styles.mapDetails} role="region" aria-label={title}>
-      <div className={styles.mapDetailsHeader}>
+    <aside className={mapPage.mapDetails} role="region" aria-label={title}>
+      <div className={mapPage.mapDetailsHeader}>
         <div>
-          <h2 className={styles.mapDetailsTitle}>{title}</h2>
-          {subtitle && <p className={styles.mapDetailsSubtitle}>{subtitle}</p>}
+          <h2 className={mapPage.mapDetailsTitle}>{title}</h2>
+          {subtitle && <p className={mapPage.mapDetailsSubtitle}>{subtitle}</p>}
         </div>
         <button className={styles.iconBtn} onClick={onClose} aria-label="Close details">
           <FontAwesomeIcon icon={faXmark} />
         </button>
       </div>
-      <div className={styles.mapDetailsBody}>{children}</div>
+      <div className={mapPage.mapDetailsBody}>{children}</div>
     </aside>
   );
 };

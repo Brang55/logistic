@@ -43,27 +43,6 @@
   gap: 8px;
 }
 
-/* The heading strip at the top of a map page's side panel; stays put while the list scrolls. */
-.panelHeader {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: grid;
-  gap: 2px;
-  padding: 20px 24px 16px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.panelHeader .title {
-  font-size: 20px;
-}
-
-.panelHeader .subtitle {
-  margin: 0;
-  font-size: 13px;
-}
-
 @media (max-width: 600px) {
   .header {
     padding: 16px;
@@ -597,68 +576,6 @@ textarea.input {
   background: var(--color-surface-muted);
   border-top: 1px solid var(--color-border);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-}
-
-/* Details card floating over a map */
-.mapDetails {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  width: min(380px, calc(100% - 32px));
-  max-height: calc(100% - 32px);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  animation: mapDetailsIn 180ms ease-out;
-}
-
-/* Ends above the assistant button in the bottom-right corner of staff pages. */
-:global(body:has([data-assistant-launcher])) .mapDetails {
-  max-height: calc(100% - 112px);
-}
-
-.mapDetailsHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 16px 12px 20px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.mapDetailsTitle {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.mapDetailsSubtitle {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.mapDetailsBody {
-  min-height: 0;
-  padding: 4px 20px 20px;
-  overflow-y: auto;
-}
-
-@keyframes mapDetailsIn {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mapDetails {
-    animation: none;
-  }
 }
 
 /* Avatar */

@@ -15,6 +15,7 @@ import CrewPicker from "./CrewPicker";
 import DispatchMap from "./DispatchMap";
 import { useAssignWithRestrictions } from "./useAssignWithRestrictions";
 
+import page from "../ui/mapPage.module.css";
 import styles from "./Dispatcher.module.css";
 import { formatCargoWeight, formatLength, formatWeight } from "../../utils/units";
 import { errorMessage } from "../../utils/errors";
@@ -159,11 +160,12 @@ const Dispatcher = () => {
   if (isError) return <h1>There is an error</h1>;
 
   return (
-    <div className={styles.dispatcher}>
-      <section className={styles.panel}>
+    <div className={page.layout}>
+      <section className={page.panel}>
         <PanelHeader
           title="Dispatch"
-          subtitle={`Match each load with a truck; it brings its driver and trailer · ${activeCargos.length} active · ${activeCargos.filter((c) => !c.truckId).length} waiting for a truck`}
+          description="Match each load with a truck; it brings its driver and trailer"
+          subtitle={`${activeCargos.length} active · ${activeCargos.filter((c) => !c.truckId).length} waiting for a truck`}
         />
         <ul ref={queueRef} className={styles.queue}>
           {activeCargos.map((item) => (
@@ -192,7 +194,7 @@ const Dispatcher = () => {
           ))}
         </ul>
       </section>
-      <div className={styles.mapHandler}>
+      <div className={page.mapArea}>
         <DispatchMap
           cargos={activeCargos}
           selectedId={selectedId}

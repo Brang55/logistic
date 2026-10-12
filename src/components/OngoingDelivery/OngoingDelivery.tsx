@@ -12,9 +12,11 @@ import { useTrafficReportQuery, type TripTraffic } from "../../app/api/trips";
 import { useFetchTrucksQuery } from "../../app/api/trucks";
 import { formatAge, formatDistance, formatDuration } from "../../utils/format";
 import { distanceKm } from "../../utils/geo";
+import { PHONE_QUERY, useMediaQuery } from "../../hooks/useMediaQuery";
 import { Loader } from "../Loader/Loader";
 import { CargoStatus, EmptyState, FilterChips, SearchInput } from "../ui/ui";
 import { cx, matches, shipmentRef } from "../ui/helpers";
+import page from "../ui/mapPage.module.css";
 import ui from "../ui/ui.module.css";
 import styles from "./OngoingDelivery.module.css";
 import TrackMap from "./TrackMap";
@@ -66,6 +68,8 @@ const OngoingDelivery = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("active");
   const [selectedId, setSelectedId] = useState<string>();
+  // Phones pin the map above the list, so the selected shipment's summary moves off the map, above the list.
+  const phone = useMediaQuery(PHONE_QUERY);
 
   const trucksById = useMemo(() => new Map(trucks.map((t) => [t.id, t])), [trucks]);
   const driversById = useMemo(() => new Map(drivers.map((d) => [d.id, d])), [drivers]);
@@ -156,14 +160,56 @@ const OngoingDelivery = () => {
     }
   };
 
+  // The selected shipment's route: over the map, or on phones at the top of the list.
+  const summary = selected && (
+    <>
+      <span className={ui.secondaryText}>{shipmentRef(selected.id)}</span>
+      <strong>
+        {selected.pickupLocation} → {selected.deliveryLocation}
+      </strong>
+      {routing && !route && <span className={ui.secondaryText}>Calculating route…</span>}
+      {approachLeg && (
+        <span className={styles.overlayLeg}>
+          <span className={styles.legendApproach} />
+          {selectedTruck?.truckNumber} to pickup: {formatDistance(approachLeg.distanceM)} · about{" "}
+          {formatDuration(approachLeg.durationS)}
+        </span>
+      )}
+      {onwardLeg && (
+        <span className={styles.overlayLeg}>
+          <span className={styles.legendRoute} />
+          {fromTruck && route?.pickedUp ? `${selectedTruck?.truckNumber} to delivery` : "Pickup → delivery"}:{" "}
+          {formatDistance(onwardLeg.distanceM)} · about {formatDuration(onwardLeg.durationS)}
+        </span>
+      )}
+      {queuedAfter && (
+        <span className={ui.secondaryText}>
+          {selectedTruck?.truckNumber} picks this up after {shipmentRef(queuedAfter.id)} ({queuedAfter.pickupLocation} →{" "}
+          {queuedAfter.deliveryLocation})
+        </span>
+      )}
+      {selected && unroutableFrom.has(selected.id) && (
+        <span className={ui.secondaryText}>
+          No road route from {selectedTruck?.truckNumber ?? "the truck"}'s position; showing pickup → delivery
+        </span>
+      )}
+      {isError && !from && !routing && <span className={ui.secondaryText}>Route unavailable for this shipment</span>}
+      {selected && !selected.truckId && <span className={ui.secondaryText}>No truck assigned yet</span>}
+      {selectedPosition && (
+        <span className={ui.secondaryText}>Truck position updated {formatAge(selectedPosition.recordedAt)}</span>
+      )}
+    </>
+  );
+
   if (isLoading) return <Loader />;
 
   return (
-    <div className={styles.track}>
+    <div className={page.layout}>
       <section className={styles.panel}>
+        {selected && phone && <div className={styles.strip}>{summary}</div>}
         <div className={styles.panelHeader}>
           <h1 className={ui.title}>Track cargo</h1>
-          <p className={ui.subtitle}>Every load on the road: where its truck is now and where it's heading</p>
+          <p className={cx(ui.subtitle, styles.description)}>Every load on the road: where its truck is now and where it's heading</p>
           <p className={ui.subtitle}>
             {tracked.filter((c) => c.status === "picked_up").length} in transit · {tracked.filter((c) => c.status !== "picked_up").length} scheduled
           </p>
@@ -270,7 +316,7 @@ const OngoingDelivery = () => {
         </ul>
       </section>
 
-      <div className={styles.mapArea}>
+      <div className={page.mapArea}>
         <TrackMap
           cargoId={selected?.id}
           route={route}
@@ -281,45 +327,7 @@ const OngoingDelivery = () => {
           onSelectTruck={selectTruck}
           fleetRoutes={fleetRoutes}
         />
-        {selected && (
-          <div className={styles.overlay}>
-            <span className={ui.secondaryText}>{shipmentRef(selected.id)}</span>
-            <strong>
-              {selected.pickupLocation} → {selected.deliveryLocation}
-            </strong>
-            {routing && !route && <span className={ui.secondaryText}>Calculating route…</span>}
-            {approachLeg && (
-              <span className={styles.overlayLeg}>
-                <span className={styles.legendApproach} />
-                {selectedTruck?.truckNumber} to pickup: {formatDistance(approachLeg.distanceM)} · about{" "}
-                {formatDuration(approachLeg.durationS)}
-              </span>
-            )}
-            {onwardLeg && (
-              <span className={styles.overlayLeg}>
-                <span className={styles.legendRoute} />
-                {fromTruck && route?.pickedUp ? `${selectedTruck?.truckNumber} to delivery` : "Pickup → delivery"}:{" "}
-                {formatDistance(onwardLeg.distanceM)} · about {formatDuration(onwardLeg.durationS)}
-              </span>
-            )}
-            {queuedAfter && (
-              <span className={ui.secondaryText}>
-                {selectedTruck?.truckNumber} picks this up after {shipmentRef(queuedAfter.id)} ({queuedAfter.pickupLocation} →{" "}
-                {queuedAfter.deliveryLocation})
-              </span>
-            )}
-            {selected && unroutableFrom.has(selected.id) && (
-              <span className={ui.secondaryText}>
-                No road route from {selectedTruck?.truckNumber ?? "the truck"}'s position; showing pickup → delivery
-              </span>
-            )}
-            {isError && !from && !routing && <span className={ui.secondaryText}>Route unavailable for this shipment</span>}
-            {selected && !selected.truckId && <span className={ui.secondaryText}>No truck assigned yet</span>}
-            {selectedPosition && (
-              <span className={ui.secondaryText}>Truck position updated {formatAge(selectedPosition.recordedAt)}</span>
-            )}
-          </div>
-        )}
+        {selected && !phone && <div className={styles.overlay}>{summary}</div>}
       </div>
     </div>
   );

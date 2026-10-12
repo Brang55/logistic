@@ -7,9 +7,9 @@ import type Cargo from "../../app/api/cargos";
 import type { CargoRoute } from "../../app/api/routing";
 import type { TruckPosition } from "../../app/api/telematics";
 import { useFleetLayer } from "../Fleet/useFleetLayer";
-import { MAP_DETAILS_INSET } from "../ui/ui";
+import { FLAT_MAP_OPTIONS, fitPadding, mapDetailsInset, ShowAllControl } from "../ui/mapFit";
 
-import styles from "./Dispatcher.module.css";
+import page from "../ui/mapPage.module.css";
 import { theme } from "../../theme";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
@@ -103,6 +103,7 @@ const DispatchMap = ({
   const [map, setMap] = useState<mapboxgl.Map>();
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const showAllRef = useRef(() => {});
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -113,7 +114,10 @@ const DispatchMap = ({
       // Continental US until the fleet's own extent is known.
       center: [-98.5, 39.8],
       zoom: 3,
+      ...FLAT_MAP_OPTIONS,
     });
+    mapInstance.touchZoomRotate.disableRotation();
+    mapInstance.addControl(new ShowAllControl(() => showAllRef.current()), "top-left");
     mapInstance.on("load", () => {
       addLayers(mapInstance);
       mapInstance.on("click", "cargo", (event) => {
@@ -145,17 +149,33 @@ const DispatchMap = ({
     (map.getSource("cargo") as mapboxgl.GeoJSONSource).setData({ type: "FeatureCollection", features });
   }, [map, cargos, selectedId, route]);
 
-  // Fit all cargo once, on first load.
-  const fittedRef = useRef(false);
-  useEffect(() => {
-    if (!map || fittedRef.current) return;
+  // Frame every cargo in the queue: on first load, when a load is deselected, and from the "Show all" button.
+  const showAll = (instant = false) => {
     const points = cargos.filter((cargo) => cargo.pickupPoint);
-    if (!points.length) return;
+    if (!map || !points.length) return false;
     const bounds = new mapboxgl.LngLatBounds();
     points.forEach((cargo) => bounds.extend([cargo.pickupPoint!.x, cargo.pickupPoint!.y]));
-    map.fitBounds(bounds, { padding: 60, maxZoom: 8, duration: 0 });
-    fittedRef.current = true;
+    // An explicit `duration: undefined` would break mapbox's animation, so leave it out to animate.
+    map.fitBounds(bounds, { padding: fitPadding(), maxZoom: 8, ...(instant && { duration: 0 }) });
+    return true;
+  };
+  showAllRef.current = showAll;
+
+  const fittedRef = useRef(false);
+  useEffect(() => {
+    if (!fittedRef.current) fittedRef.current = showAll(true);
+    // Only once the map and the first cargo are in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, cargos]);
+
+  const hadSelection = useRef(false);
+  useEffect(() => {
+    if (selectedId) hadSelection.current = true;
+    else if (hadSelection.current) {
+      hadSelection.current = false;
+      showAllRef.current();
+    }
+  }, [selectedId]);
 
   // Route options, restriction segments and incidents for the selected cargo.
   useEffect(() => {
@@ -203,15 +223,15 @@ const DispatchMap = ({
     const bounds = new mapboxgl.LngLatBounds(route.pickup, route.pickup).extend(route.delivery);
     selected?.geometry.coordinates.forEach((point) => bounds.extend(point));
     // A route only exists for a selected load, so its details card covers the map's right side.
-    const inset = Math.min(MAP_DETAILS_INSET, map.getContainer().clientWidth / 2);
-    map.fitBounds(bounds, { padding: { top: 60, bottom: 60, left: 60, right: 60 + inset } });
+    const padding = fitPadding();
+    map.fitBounds(bounds, { padding: { top: padding, bottom: padding, left: padding, right: padding + mapDetailsInset(map) } });
 
     return () => markers.forEach((marker) => marker.remove());
   }, [map, route, routeIndex]);
 
   useFleetLayer(map, truckPositions, truckLabels, { selectedTruckId });
 
-  return <div ref={containerRef} className={styles.map} />;
+  return <div ref={containerRef} className={page.map} />;
 };
 
 export default DispatchMap;
