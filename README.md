@@ -27,7 +27,7 @@ admin account once (an existing account's password is never changed).
 Demo logins (from the seed), password `demo12345` (override with `SEED_PASSWORD`):
 `admin@demo.logistic`, `dispatcher@demo.logistic`, and a driver app login for each of the 8 demo drivers:
 `j.carter`, `m.gonzalez`, `d.washington`, `e.novak`, `t.brooks`, `r.hernandez`, `s.murphy` and `l.park`
-(all `@demo.logistic`). J. Carter's has assigned loads.
+(all `@demo.logistic`). J. Carter's has assigned loads. Each seed run resets these driver logins to the demo password.
 Staff accounts are created by an admin via `POST /api/auth/register`; driver app logins from the
 Drivers page ("Create app login").
 

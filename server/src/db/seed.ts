@@ -343,12 +343,15 @@ export async function seed(db: Database) {
   await seatDemoCrews(db);
 
   // Driver-app login for every demo driver, linked every run so a demo reset keeps them working.
+  // Their password is reset to the demo password too, so testers can always sign in as any driver.
   const driverEmails = demoDrivers.map((driver) => driver.truckDriverEmail);
   await db
     .insert(users)
     .values(driverEmails.map((email) => ({ email, passwordHash, role: "driver" as const })))
     .onConflictDoNothing();
-  const driverUsers = await db.select().from(users).where(and(inArray(users.email, driverEmails), eq(users.role, "driver")));
+  const isDemoDriver = and(inArray(users.email, driverEmails), eq(users.role, "driver"));
+  await db.update(users).set({ passwordHash }).where(isDemoDriver);
+  const driverUsers = await db.select().from(users).where(isDemoDriver);
   for (const user of driverUsers) {
     await db.update(drivers).set({ userId: user.id }).where(eq(drivers.truckDriverEmail, user.email));
   }
