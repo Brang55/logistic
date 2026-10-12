@@ -2,21 +2,22 @@ import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards 
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { AuthUser, CurrentUser } from "../auth/auth-user";
-import { ManageFleet } from "../auth/roles.decorator";
+import { Roles } from "../auth/roles.decorator";
 import { AssistantMessageDto, ConfirmActionDto } from "./assistant.dto";
 import { AssistantService } from "./assistant.service";
 
 @ApiTags("assistant")
 @ApiBearerAuth()
-@ManageFleet()
+// Each role gets its own tools: staff manage cargo, drivers their own trip.
+@Roles("admin", "dispatcher", "driver")
 @Controller("assistant")
 export class AssistantController {
   constructor(private readonly assistant: AssistantService) {}
 
   /** Whether the assistant is configured, so the app can explain when it isn't. */
   @Get()
-  status() {
-    return this.assistant.status();
+  status(@CurrentUser() user: AuthUser) {
+    return this.assistant.status(user);
   }
 
   /** Answers a request; changes come back as proposed actions and nothing is changed yet. */

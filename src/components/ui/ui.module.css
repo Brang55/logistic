@@ -616,6 +616,11 @@ textarea.input {
   animation: mapDetailsIn 180ms ease-out;
 }
 
+/* Ends above the assistant button in the bottom-right corner of staff pages. */
+:global(body:has([data-assistant-launcher])) .mapDetails {
+  max-height: calc(100% - 112px);
+}
+
 .mapDetailsHeader {
   display: flex;
   align-items: flex-start;

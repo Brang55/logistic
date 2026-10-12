@@ -44,7 +44,8 @@ const assistantApi = api.injectEndpoints({
     sendAssistantMessage: builder.mutation<AssistantReply, AssistantMessage>({
       query: (body) => ({ url: "/assistant/message", method: "POST", body }),
     }),
-    // A confirmed action can create, edit, assign or confirm cargo, so every page showing those refreshes.
+    // A confirmed action can change cargo, assignments, a driver's trip, road reports or a truck's logbook,
+    // so every page showing those refreshes.
     confirmAssistantAction: builder.mutation<ActionResult, { id: string; acceptRestrictions?: boolean }>({
       query: ({ id, ...body }) => ({ url: `/assistant/actions/${id}/confirm`, method: "POST", body }),
       invalidatesTags: [
@@ -57,6 +58,10 @@ const assistantApi = api.injectEndpoints({
         "AvailableTrailers",
         "Traffic",
         "NextPickups",
+        "MyTrip",
+        "DeliveryHistory",
+        "RoadReports",
+        "VehicleLog",
       ],
     }),
     cancelAssistantAction: builder.mutation<{ message: string }, string>({

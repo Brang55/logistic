@@ -1,77 +1,45 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMicrophone, faPaperPlane, faWaveSquare } from "@fortawesome/free-solid-svg-icons";
-import {
-  useExecuteVoiceMutation,
-  useInterpretVoiceMutation,
-  type VoiceExecution,
-  type VoiceProposal,
-} from "../../app/api/trips";
+import { faMicrophone, faPaperPlane, faRotateLeft, faWaveSquare } from "@fortawesome/free-solid-svg-icons";
 
+import { useAssistantStatusQuery } from "../../app/api/assistant";
+import { useSpeech } from "../../hooks/useSpeech";
+import ActionCard from "../Assistant/ActionCard";
+import Reply from "../Assistant/Reply";
+import { useAssistantChat } from "../Assistant/useAssistantChat";
 import { cx } from "../ui/helpers";
 import ui from "../ui/ui.module.css";
 
 import shared from "./driver.module.css";
 import styles from "./VoiceAssistant.module.css";
-import { errorMessage } from "../../utils/errors";
-import { speak, useSpeech } from "../../hooks/useSpeech";
 
-const EXAMPLES = ["I'll be 30 minutes late, heavy traffic", "What's my next stop?", "Set the delivery address to "];
+const EXAMPLES = [
+  "I'll be 30 minutes late, heavy traffic",
+  "What's my next stop?",
+  "Police ahead",
+  "Tell dispatch the dock is closed until 3",
+];
+// Keeps the card short on the trip page; the newest exchange is what matters while driving.
+const VISIBLE_ENTRIES = 6;
 
 /**
- * Hands-free commands: speak (or type) a command, hear what was understood, confirm.
- * Nothing changes until the driver confirms the proposed action.
+ * Hands-free assistant on the driver's trip page: speak (or type), hear the answer, and
+ * confirm any change on its card. Nothing changes until the driver taps Confirm.
  */
 const VoiceAssistant = () => {
-  const [transcript, setTranscript] = useState("");
+  const { data: status } = useAssistantStatusQuery();
+  const chat = useAssistantChat();
   const [typed, setTyped] = useState("");
-  const [proposal, setProposal] = useState<VoiceProposal>();
-  const [minutes, setMinutes] = useState<number>(30);
-  const [location, setLocation] = useState("");
-  const [reply, setReply] = useState("");
-  const [interpret, interpreting] = useInterpretVoiceMutation();
-  const [execute, executing] = useExecuteVoiceMutation();
+  const speech = useSpeech((heard) => void chat.submit(heard, true));
+  const listRef = useRef<HTMLDivElement>(null);
 
-  const handle = async (text: string) => {
-    if (!text.trim()) return;
-    setTranscript(text);
-    setProposal(undefined);
-    setReply("");
-    const result = await interpret(text);
-    if ("error" in result) return setReply(errorMessage(result.error));
-    const next = result.data;
-    setReply(next.reply);
-    speak(next.reply);
-    if (next.needsConfirmation) {
-      setProposal(next);
-      setMinutes(next.intent.delayMinutes ?? 30);
-      setLocation(next.intent.location ?? "");
-    }
-  };
-
-  const confirm = async () => {
-    if (!proposal?.cargoId) return;
-    const { action } = proposal.intent;
-    const body: VoiceExecution = { action: action as VoiceExecution["action"], cargoId: proposal.cargoId };
-    if (action === "report_delay") Object.assign(body, { delayMinutes: minutes, reason: proposal.intent.reason ?? undefined });
-    if (action === "set_pickup_location" || action === "set_delivery_location") body.location = location;
-    const result = await execute(body);
-    const message = "error" in result ? errorMessage(result.error) : result.data.reply;
-    setReply(message);
-    speak(message);
-    setProposal(undefined);
-  };
-
-  const speech = useSpeech((text) => void handle(text));
-  const listening = speech.listening;
-  // Microphone problems show where replies do.
   useEffect(() => {
-    if (speech.error) setReply(speech.error);
-  }, [speech.error]);
+    listRef.current?.lastElementChild?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [chat.entries]);
 
-  const action = proposal?.intent.action;
-
-  const busy = listening || interpreting.isLoading;
+  const visible = chat.entries.slice(-VISIBLE_ENTRIES);
+  const busy = speech.listening || chat.sending;
+  const keywordsOnly = status?.model === "keywords";
 
   return (
     <section className={shared.card}>
@@ -79,25 +47,32 @@ const VoiceAssistant = () => {
         <h2>
           <FontAwesomeIcon icon={faWaveSquare} /> Voice assistant
         </h2>
+        {chat.entries.length > 0 && (
+          <button className={styles.restart} onClick={chat.restart} aria-label="Start over" title="Start over">
+            <FontAwesomeIcon icon={faRotateLeft} />
+          </button>
+        )}
       </div>
       <div className={styles.voice}>
         {speech.supported && (
           <button
-            className={cx(styles.micButton, listening && styles.listening)}
-            onClick={speech.listen}
-            disabled={busy}
-            aria-label="Speak a command"
+            className={cx(styles.micButton, speech.listening && styles.listening)}
+            onClick={speech.listening ? speech.stop : speech.listen}
+            disabled={chat.sending}
+            aria-label={speech.listening ? "Stop listening" : "Speak a command"}
           >
             <FontAwesomeIcon icon={faMicrophone} />
           </button>
         )}
         <div className={styles.voiceText}>
-          <strong>{listening ? "Listening..." : interpreting.isLoading ? "Thinking..." : "Hands-free commands"}</strong>
+          <strong>{speech.listening ? "Listening..." : chat.sending ? "Thinking..." : "Hands-free commands"}</strong>
           <span className={shared.muted}>
-            {speech.supported
-              ? "Tap the microphone and speak. Nothing changes until you confirm."
-              : "Voice input isn't supported in this browser. Type your command instead."}
+            {speech.error ||
+              (speech.supported
+                ? "Tap the microphone and speak. Nothing changes until you confirm."
+                : "Voice input isn't supported in this browser. Type your command instead.")}
           </span>
+          {keywordsOnly && <span className={shared.muted}>Basic English commands only right now.</span>}
         </div>
       </div>
 
@@ -105,7 +80,7 @@ const VoiceAssistant = () => {
         className={styles.commandRow}
         onSubmit={(event) => {
           event.preventDefault();
-          void handle(typed);
+          void chat.submit(typed);
           setTyped("");
         }}
       >
@@ -116,50 +91,58 @@ const VoiceAssistant = () => {
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
         />
-        <button className={shared.sendButton} type="submit" disabled={!typed.trim() || interpreting.isLoading} aria-label="Send command">
+        <button className={shared.sendButton} type="submit" disabled={!typed.trim() || busy} aria-label="Send command">
           <FontAwesomeIcon icon={faPaperPlane} />
         </button>
       </form>
-      {!transcript && (
+
+      {!chat.entries.length && (
         <div className={shared.examples}>
           {EXAMPLES.map((example) => (
-            <button key={example} type="button" className={shared.chip} onClick={() => setTyped(example)}>
-              “{example.trim()}{example.endsWith(" ") ? " …" : ""}”
+            <button key={example} type="button" className={shared.chip} onClick={() => void chat.submit(example)}>
+              “{example}”
             </button>
           ))}
         </div>
       )}
 
-      {transcript && (
-        <div className={styles.conversation}>
-          <p className={styles.bubbleUser}>{transcript}</p>
-          {reply && <p className={styles.bubbleReply}>{reply}</p>}
-        </div>
-      )}
-      {!transcript && reply && <p className={styles.bubbleReply}>{reply}</p>}
-
-      {proposal && (
-        <div className={styles.proposal}>
-          {action === "report_delay" && (
-            <label className={ui.field}>
-              <span className={ui.label}>Delay (minutes)</span>
-              <input className={ui.input} type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
-            </label>
-          )}
-          {(action === "set_pickup_location" || action === "set_delivery_location") && (
-            <label className={ui.field}>
-              <span className={ui.label}>New address</span>
-              <input className={ui.input} value={location} onChange={(e) => setLocation(e.target.value)} />
-            </label>
-          )}
-          <div className={shared.dialogButtons}>
-            <button className={cx(ui.btn, ui.secondary)} onClick={() => setProposal(undefined)}>
-              Cancel
-            </button>
-            <button className={cx(ui.btn, ui.primary)} onClick={confirm} disabled={executing.isLoading}>
-              {executing.isLoading ? "Saving..." : "Confirm"}
-            </button>
-          </div>
+      {visible.length > 0 && (
+        <div className={styles.conversation} ref={listRef} aria-live="polite">
+          {visible.map((entry, i) => {
+            switch (entry.kind) {
+              case "user":
+                return (
+                  <p key={i} className={styles.bubbleUser}>
+                    {entry.text}
+                  </p>
+                );
+              case "reply":
+                return entry.error ? (
+                  <p key={i} className={cx(styles.bubbleReply, styles.bubbleError)}>
+                    {entry.text}
+                  </p>
+                ) : (
+                  <div key={i} className={styles.bubbleReply}>
+                    <Reply text={entry.text} />
+                  </div>
+                );
+              case "event":
+                return null;
+              case "action":
+                return (
+                  <ActionCard
+                    key={entry.action.id}
+                    large
+                    action={entry.action}
+                    state={entry.state}
+                    busy={chat.confirming}
+                    onConfirm={() => void chat.confirm(entry.action)}
+                    onCancel={() => void chat.cancel(entry.action)}
+                    onOpen={chat.open}
+                  />
+                );
+            }
+          })}
         </div>
       )}
     </section>

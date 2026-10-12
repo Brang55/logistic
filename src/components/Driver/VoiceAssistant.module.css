@@ -73,12 +73,31 @@
   margin-top: 0;
 }
 
-.proposal {
+.bubbleReply:has(table) {
+  justify-self: stretch;
+  max-width: 100%;
+}
+
+.bubbleError {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.restart {
   display: grid;
-  gap: 12px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--color-border);
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.restart:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
 }
 
 @keyframes pulse {

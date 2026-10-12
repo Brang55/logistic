@@ -24,7 +24,7 @@ import {
 import { FleetDirectory } from "./fleet-directory";
 
 const STAFF = ["admin", "dispatcher"] as const;
-const MAX_RESULTS = 10;
+const MAX_RESULTS = 30;
 
 // Cargo fields the assistant may set, with how each is described to Claude and to the user.
 const CARGO_FIELDS = {
@@ -95,8 +95,22 @@ const route = (cargo: Pick<Cargo, "pickupLocation" | "deliveryLocation">) =>
 const preview = (cargo: Cargo) => ({
   type: "navigate" as const,
   path: `/cargoList/${cargo.id}/preview`,
-  label: `Open ${shipmentRef(cargo.id)}`,
+  label: shipmentRef(cargo.id),
 });
+
+/** The local calendar day of a timestamp, comparable with the YYYY-MM-DD planned dates. */
+const dayOf = (date: Date | null) =>
+  date
+    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+    : null;
+
+// The day `find_cargo` filters and sorts on: planned pickup or delivery, or the actual delivery.
+const DATE_FIELDS = {
+  pickup: (c: Cargo) => orNull(c.pickupDate),
+  delivery: (c: Cargo) => orNull(c.deliveryDate),
+  delivered: (c: Cargo) => dayOf(c.deliveredAt),
+};
+type DateField = keyof typeof DATE_FIELDS;
 
 const schema = (properties: Record<string, unknown>, required: string[] = []): InputSchema => ({
   type: "object",
@@ -127,23 +141,41 @@ export class CargoTools {
       roles: [...STAFF],
       description:
         "Search loads (cargo). `text` matches the reference (SH-...), pickup and delivery places, shipper, receiver, " +
-        "goods, and the assigned truck number, driver or trailer; every word must match. Returns at most 10 loads, newest first.",
+        "goods, and the assigned truck number, driver or trailer; every word must match. For questions about a period " +
+        '("deliveries in October", "pickups this week") set `dateField` with `from`/`to`; `dateField: "delivered"` is when ' +
+        "loads were actually delivered, pickup and delivery are the planned dates. `delayedOnly` keeps loads whose driver " +
+        "reported a delay. Returns up to 30 loads (`truncated` when there are more): by date when a period is given, else newest first.",
       input_schema: schema({
         text: { type: "string" },
         status: {
           type: "string",
           enum: ["active", "any", ...CARGO_STATUSES],
-          description: '"active" (default) is everything not delivered or cancelled',
+          description: '"active" is everything not delivered or cancelled. Default: "any" with a period, else "active"',
         },
+        dateField: { type: "string", enum: Object.keys(DATE_FIELDS) },
+        from: { type: "string", description: "YYYY-MM-DD, inclusive" },
+        to: { type: "string", description: "YYYY-MM-DD, inclusive" },
+        delayedOnly: { type: "boolean" },
       }),
       run: async (input) => {
-        const status = optionalText(input, "status") ?? "active";
         const text = optionalText(input, "text");
+        const from = optionalDay(input, "from");
+        const to = optionalDay(input, "to");
+        const dateField = optionalText(input, "dateField") as DateField | undefined;
+        if (dateField && !DATE_FIELDS[dateField]) throw new BadRequestException("dateField must be pickup, delivery or delivered");
+        if ((from || to) && !dateField) throw new BadRequestException("Set dateField to say which date from/to apply to");
+        const dayOfLoad = dateField ? DATE_FIELDS[dateField] : undefined;
+        const status = optionalText(input, "status") ?? (dateField ? "any" : "active");
+        const delayedOnly = input.delayedOnly === true;
+
         const [all, names] = await Promise.all([this.cargos.findAll(), this.directory.load()]);
-        const found = all.filter(
-          (c) =>
+        const found = all.filter((c) => {
+          const day = dayOfLoad?.(c);
+          return (
             (status === "any" ||
               (status === "active" ? !FINISHED_STATUSES.includes(c.status) : c.status === (status as CargoStatus))) &&
+            (!dayOfLoad || (!!day && (!from || day >= from) && (!to || day <= to))) &&
+            (!delayedOnly || (c.delayMinutes ?? 0) > 0) &&
             matchesAll(
               text,
               shipmentRef(c.id),
@@ -155,10 +187,14 @@ export class CargoTools {
               names.truck(c.truckId),
               names.driver(c.driverId),
               names.trailer(c.trailerId),
-            ),
-        );
+            )
+          );
+        });
+        // Chronological reads best for a period; findAll is already newest first otherwise.
+        if (dayOfLoad) found.sort((a, b) => dayOfLoad(a)!.localeCompare(dayOfLoad(b)!));
         return {
           total: found.length,
+          truncated: found.length > MAX_RESULTS,
           loads: found.slice(0, MAX_RESULTS).map((c) => ({
             id: c.id,
             ref: shipmentRef(c.id),
@@ -176,6 +212,7 @@ export class CargoTools {
             driver: names.driver(c.driverId),
             trailer: names.trailer(c.trailerId),
             pickedUp: !!c.pickedUpAt,
+            deliveredOn: dayOf(c.deliveredAt),
             delay: c.delayMinutes ? { minutes: c.delayMinutes, reason: c.delayReason } : null,
           })),
         };

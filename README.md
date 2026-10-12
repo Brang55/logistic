@@ -109,13 +109,14 @@ export default {
 - Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
 - Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
 
-## Voice commands and load boards
+## Assistant and load boards
 
-- **Voice** (driver app): tap the mic (Chrome, Edge, Safari) or type. Commands are interpreted first
-  (report a delay, confirm pickup/delivery, change the pickup/delivery address, "what's my next stop?"),
-  then executed only after the driver confirms. With `ANTHROPIC_API_KEY` set, Claude (`VOICE_MODEL`, default
-  `claude-opus-5-5`) parses commands in any language; without it a built-in English keyword parser is used,
-  and it is also the fallback if the Claude call fails.
+- **Assistant** (`server/src/assistant`): type or speak (mic in Chrome, Edge, Safari). Staff open it with ⌘K;
+  drivers have it on their trip page. Claude (`ASSISTANT_MODEL`, default `claude-opus-5-5`) answers with
+  lookups and proposes changes as cards; a change runs only when the user taps Confirm. Drivers can ask about
+  their trip and road reports, report delays and road problems, confirm pickup/delivery, change an address,
+  message dispatch or the drivers' chat, and add logbook entries. Without `ANTHROPIC_API_KEY` (or if the
+  Claude call fails), drivers get a built-in English keyword parser for the common commands.
 - **Load Board** (staff): search the boards, see the nearest free truck per load, and import a load as cargo
   (importing twice returns the same cargo). Loads your company booked on a board are imported automatically
   every `LOADBOARD_SYNC_INTERVAL_MS`. The board is a mock US exchange behind a `LoadBoardProvider`

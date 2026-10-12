@@ -118,7 +118,6 @@ const Navigation = () => {
       </div>
 
       <div className={styles.menu}>
-        {user.role !== "driver" && <AssistantLauncher onOpen={() => setOpen(false)} />}
         {sections.map((section) => (
           <div key={section.title} className={styles.section}>
             <span className={styles.sectionTitle}>{section.title}</span>
@@ -139,6 +138,9 @@ const Navigation = () => {
             </ul>
           </div>
         ))}
+
+        {/* Floats in the bottom-right corner of every staff page. */}
+        {user.role !== "driver" && <AssistantLauncher />}
 
         <div className={styles.user}>
           <span className={styles.avatar}>{initials}</span>

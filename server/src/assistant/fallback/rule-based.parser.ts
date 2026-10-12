@@ -1,19 +1,50 @@
-import { Injectable } from "@nestjs/common";
-import { IntentParser, VoiceIntent } from "./voice.types";
+import { ReportType } from "../../community/report-types";
+
+/** One driver command, as the keyword rules understand it. */
+export interface DriverIntent {
+  action:
+    | "report_delay"
+    | "confirm_pickup"
+    | "confirm_delivery"
+    | "set_pickup_location"
+    | "set_delivery_location"
+    | "road_report"
+    | "next_stop"
+    | "unknown";
+  delayMinutes: number | null;
+  reason: string | null;
+  /** Place as spoken, for the set_*_location actions. */
+  location: string | null;
+  reportType: ReportType | null;
+  /** For "unknown": a short question back to the driver. */
+  clarification: string | null;
+}
 
 const NUMBER_WORDS: Record<string, number> = {
   one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   fifteen: 15, twenty: 20, "twenty five": 25, thirty: 30, forty: 40, "forty five": 45, fifty: 50, sixty: 60, ninety: 90,
 };
 
-const intent = (action: VoiceIntent["action"], fields: Partial<VoiceIntent> = {}): VoiceIntent => ({
+const intent = (action: DriverIntent["action"], fields: Partial<DriverIntent> = {}): DriverIntent => ({
   action,
   delayMinutes: null,
   reason: null,
   location: null,
+  reportType: null,
   clarification: null,
   ...fields,
 });
+
+// Spoken road hazards, checked after delays so "late because of an accident" stays a delay.
+const ROAD_REPORTS: [RegExp, ReportType][] = [
+  [/\b(police|cops?|speed trap|state trooper)\b/, "police"],
+  [/\b(accident|crash|collision|wreck)\b/, "accident"],
+  [/\broad (is )?closed\b|\bclosure\b/, "closure"],
+  [/\b(road ?works?|construction|work zone)\b/, "roadworks"],
+  [/\b(debris|hazard|pothole|something on the road)\b/, "hazard"],
+  [/\b(black ice|icy|fog|snow|flood(ing|ed)?|storm)\b/, "weather"],
+  [/\b(heavy traffic|congestion|backed up)\b/, "traffic"],
+];
 
 /** Minutes mentioned in a sentence: "45 minutes", "an hour and a half", "2 hours", "half an hour". */
 export function parseMinutes(text: string): number | null {
@@ -44,15 +75,11 @@ const cleanPlace = (text: string) =>
     .trim();
 
 /**
- * Keyword parser for English driver commands. Used when no Anthropic API key is configured,
- * and as the fallback when the Claude parser fails.
+ * Keyword parser for English driver commands: the driver assistant's fallback when no
+ * Anthropic API key is configured or Claude can't be reached, so voice commands keep working.
  */
-@Injectable()
-export class RuleBasedIntentParser extends IntentParser {
-  readonly name = "rules";
-
-  // The keyword rules don't need the trip context.
-  async parse(transcript: string): Promise<VoiceIntent> {
+export class RuleBasedIntentParser {
+  parse(transcript: string): DriverIntent {
     const text = transcript.trim();
     const t = text.toLowerCase();
 
@@ -76,12 +103,15 @@ export class RuleBasedIntentParser extends IntentParser {
     if (/\b(picked (it )?up|loaded|got the (load|cargo|goods)|pick ?up (is )?(done|complete|finished))\b/.test(t)) {
       return intent("confirm_pickup");
     }
+    const road = ROAD_REPORTS.find(([pattern]) => pattern.test(t));
+    if (road) return intent("road_report", { reportType: road[1] });
+
     if (/\b(next stop|where (am i|do i) go|where to|eta|how (long|far)|when will i (arrive|get there))\b/.test(t)) {
       return intent("next_stop");
     }
 
     return intent("unknown", {
-      clarification: "Sorry, I didn't get that. You can report a delay, confirm pickup or delivery, or change an address.",
+      clarification: "Sorry, I didn't get that. You can report a delay or a road problem, confirm pickup or delivery, or change an address.",
     });
   }
 }

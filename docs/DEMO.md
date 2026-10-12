@@ -49,6 +49,8 @@ voice, and traffic alerts. Times assume `SIMULATOR_SPEEDUP=30`.
 - Voice (tap the mic, or type): *"I'll be 20 minutes late, the loading dock is busy"* → the app reads back
   the delay → **Confirm**. In the dispatcher window the alert appears immediately (Dashboard / Traffic).
 - *"Set the delivery destination to Walmart DC Joliet"* → **Confirm** → dispatch gets an *address changed* alert.
+- *"Police ahead"* or *"Tell dispatch the dock is closed until 3"* → **Confirm** → the report shows on the map, or the
+  message appears in the dispatcher's alerts.
 - **Confirm pickup**, then confirm in the dialog.
 
 ## 6. Traffic (1 min, dispatcher window)

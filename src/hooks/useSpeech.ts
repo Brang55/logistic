@@ -30,6 +30,19 @@ export const speak = (text: string) => {
 };
 
 /**
+ * What to read aloud from a markdown reply: its opening answer (up to the first blank line,
+ * heading, list or table), without markdown symbols.
+ */
+export const spokenPart = (markdown: string) =>
+  markdown
+    .trim()
+    .split(/\n\s*\n|\n(?=\s*(?:#|[-*+] |\d+\. |\|))/)[0]
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`#|>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
  * Speech input through the browser (Chrome, Edge, Safari; not Firefox).
  * `listen` hands one recognised sentence to `onText`; `error` explains why nothing was heard.
  */

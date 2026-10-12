@@ -46,8 +46,11 @@ export interface ReadTool extends BaseTool {
 /** Changes data; only runs after the user confirms the proposal. */
 export interface WriteTool extends BaseTool {
   kind: "write";
-  /** Checks the input and describes the change; throws an HttpException when it can't be done. */
-  prepare(input: ToolInput, user: AuthUser): Promise<Proposal>;
+  /**
+   * Checks the input and describes the change; throws an HttpException when it can't be done.
+   * `input`, when returned, replaces what Claude sent (e.g. pinned to the load it was proposed for).
+   */
+  prepare(input: ToolInput, user: AuthUser): Promise<Proposal & { input?: ToolInput }>;
   execute(input: ToolInput, user: AuthUser, options: ExecuteOptions): Promise<ExecuteResult>;
 }
 

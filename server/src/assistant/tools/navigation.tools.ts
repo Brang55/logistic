@@ -3,7 +3,7 @@ import { AssistantTool } from "../assistant.types";
 import { optionalText, requiredId } from "./format";
 
 // Staff pages of the web app. `id` pages need the id of the cargo, truck or trailer.
-const PAGES: Record<string, { path: string; label: string; needsId?: true }> = {
+export const PAGES: Record<string, { path: string; label: string; needsId?: true }> = {
   dashboard: { path: "/", label: "Dashboard" },
   dispatch: { path: "/dispatcher", label: "Dispatch" },
   live_fleet: { path: "/fleet", label: "Live fleet" },

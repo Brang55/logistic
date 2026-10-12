@@ -10,5 +10,6 @@ import { CommunityService } from "./community.service";
   imports: [DriversModule, LiveModule, PositionsModule, TripsModule],
   controllers: [CommunityController],
   providers: [CommunityService],
+  exports: [CommunityService],
 })
 export class CommunityModule {}

@@ -13,7 +13,7 @@ const DRIVERS_ROOM = "drivers";
 /** Something dispatchers should look at: a reported delay, heavy traffic or a closure. */
 export interface LiveAlert {
   id: string;
-  kind: "delay-reported" | "traffic-delay" | "incident" | "address-changed" | "loads-imported" | "compliance" | "road-report" | "route-restriction";
+  kind: "delay-reported" | "traffic-delay" | "incident" | "address-changed" | "loads-imported" | "compliance" | "road-report" | "route-restriction" | "driver-message";
   severity: "info" | "warning" | "critical";
   message: string;
   cargoId?: string;

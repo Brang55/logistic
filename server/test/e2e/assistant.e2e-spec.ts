@@ -1,4 +1,5 @@
-import { newCargo, newDriverWithLogin, newTruck } from "../support/actors";
+import { CargosService } from "../../src/cargos/cargos.service";
+import { newCargo, newTruck } from "../support/actors";
 import { createTestApp, TestApp } from "../support/app";
 import { callTool, lastResult, lastToolResults, lastUserText, say, ScriptedModel } from "../support/assistant";
 
@@ -38,9 +39,7 @@ describe("dispatcher assistant (e2e)", () => {
   });
   afterAll(() => t.close());
 
-  it("is for staff only", async () => {
-    const vic = await newDriverWithLogin(t, { firstName: "Ann", lastName: "Driver", email: "ann@test.local" });
-    await t.as(vic.token)(t.api().post("/api/assistant/message")).send({ text: "hi" }).expect(403);
+  it("reports which model it uses", async () => {
     const status = await t.asDispatcher(t.api().get("/api/assistant")).expect(200);
     expect(status.body).toEqual({ enabled: true, model: "scripted" });
   });
@@ -60,7 +59,7 @@ describe("dispatcher assistant (e2e)", () => {
 
     const done = await confirm(res.body.actions[0].id).expect(200);
     expect(done.body.message).toMatch(/^Assignment saved for SH-/);
-    expect(done.body.link).toEqual({ type: "navigate", path: `/cargoList/${dallasLoad.id}/preview`, label: expect.any(String) });
+    expect(done.body.link).toEqual({ type: "navigate", path: `/cargoList/${dallasLoad.id}/preview`, label: expect.stringMatching(/^SH-\w{6}$/) });
     expect((await loadCargo(dallasLoad.id)).truckId).toBe(truck.id);
 
     // Done once only.
@@ -133,6 +132,57 @@ describe("dispatcher assistant (e2e)", () => {
     await message("actually, something else", { conversationId: first.body.conversationId });
     expect(lastUserText(model.requests[0])).toContain("it was withdrawn and not done");
     await confirm(first.body.actions[0].id).expect(404);
+  });
+
+  it("finds loads by period, actual delivery and delay", async () => {
+    const cargos = t.app.get(CargosService);
+    const plan = (to: string, deliveryDate: string) =>
+      newCargo(t, "Memphis", to, { deliveryDate, truckId: truck.id }) as Promise<{ id: string }>;
+    const late = await plan("Chicago", "2026-10-20");
+    const early = await plan("Dallas", "2026-10-02");
+    await plan("Old Town", "2026-11-03");
+    // One load delivered today, after a reported delay.
+    await cargos.markPickedUp(early.id);
+    await cargos.reportDelay(early.id, 25, "heavy traffic");
+    await cargos.markDelivered(early.id);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    type Result = { total: number; truncated: boolean; loads: { id: string; deliveryDate: string; deliveredOn: string | null }[] };
+    const find = async (input: Record<string, unknown>) => {
+      model.script(callTool("find_cargo", input), say("ok"));
+      await message("find");
+      return lastToolResults(model.requests[1])[0];
+    };
+
+    // Planned deliveries in October, oldest first, including the delivered one.
+    const october = JSON.parse((await find({ dateField: "delivery", from: "2026-10-01", to: "2026-10-31" })).content) as Result;
+    expect(october.loads.map((l) => l.id)).toEqual([early.id, late.id]);
+    expect(october).toMatchObject({ total: 2, truncated: false });
+
+    // Actually delivered today, and delayed loads.
+    const delivered = JSON.parse((await find({ dateField: "delivered", from: today, to: today })).content) as Result;
+    expect(delivered.loads).toEqual([expect.objectContaining({ id: early.id, deliveredOn: today, delay: { minutes: 25, reason: "heavy traffic" } })]);
+    const delayed = JSON.parse((await find({ delayedOnly: true, status: "any" })).content) as Result;
+    expect(delayed.loads.map((l) => l.id)).toEqual([early.id]);
+
+    // A period needs to say which date it is about.
+    expect(await find({ from: "2026-10-01" })).toMatchObject({ isError: true, content: expect.stringMatching(/dateField/) });
+  });
+
+  it("links loads, trucks and pages in replies, but keeps the history plain", async () => {
+    const ref = `SH-${dallasLoad.id.slice(0, 6).toUpperCase()}`;
+    const plain = `**${ref}** is on AST-1. See [Traffic](/traffic) or [this](/nope).`;
+    model.script(say(plain));
+    const { body } = await message("where is the Dallas load");
+    expect(body.reply).toBe(
+      `**[${ref}](/cargoList/${dallasLoad.id}/preview)** is on [AST-1](/trucks/${truck.id}). See [Traffic](/traffic) or this.`,
+    );
+
+    model.script(say("ok"));
+    await message("thanks", { conversationId: body.conversationId });
+    const history = model.requests[0].messages;
+    expect(history[history.length - 2]).toMatchObject({ role: "assistant", content: [{ type: "text", text: plain }] });
   });
 
   it("sends tool errors back to the model instead of failing", async () => {

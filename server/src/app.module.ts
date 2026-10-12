@@ -16,7 +16,6 @@ import { TelematicsModule } from "./telematics/telematics.module";
 import { TomTomModule } from "./tomtom/tomtom.module";
 import { TripsModule } from "./trips/trips.module";
 import { VehiclesModule } from "./vehicles/vehicles.module";
-import { VoiceModule } from "./voice/voice.module";
 import { TrailersModule } from "./trailers/trailers.module";
 import { TrucksModule } from "./trucks/trucks.module";
 
@@ -34,7 +33,6 @@ import { TrucksModule } from "./trucks/trucks.module";
     RoutingModule,
     TelematicsModule,
     TripsModule,
-    VoiceModule,
     AssistantModule,
     LoadBoardsModule,
     VehiclesModule,

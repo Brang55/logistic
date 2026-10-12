@@ -16,9 +16,13 @@ describe("RuleBasedIntentParser", () => {
     ["Picked up the load", { action: "confirm_pickup" }],
     ["delivered", { action: "confirm_delivery" }],
     ["what's my next stop", { action: "next_stop" }],
+    ["police ahead at mile 42", { action: "road_report", reportType: "police" }],
+    ["there's an accident on I-35", { action: "road_report", reportType: "accident" }],
+    ["late because of an accident, 20 minutes", { action: "report_delay", delayMinutes: 20 }],
+    ["the road is closed", { action: "road_report", reportType: "closure" }],
     ["sing me a song", { action: "unknown" }],
-  ])("understands %p", async (text, expected) => {
-    expect(await parse(text)).toMatchObject(expected);
+  ])("understands %p", (text, expected) => {
+    expect(parse(text)).toMatchObject(expected);
   });
 
   it("parses durations in words and digits", () => {

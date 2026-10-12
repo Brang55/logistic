@@ -67,18 +67,21 @@ Already set in `.env`. Before going live, lock it to your domain, because it's v
 
 ## 5. Anthropic API key (`ANTHROPIC_API_KEY`), optional
 
-Lets drivers give voice commands in Spanish and other languages. Without it, a built-in English command parser handles them.
+Turns on the assistant: dispatchers can type or speak requests (⌘K), and drivers get a voice assistant that
+understands any language and more commands. Without it, staff have no assistant and drivers get a built-in
+English keyword parser for the common commands.
 
 1. Sign in at <https://console.anthropic.com>. Under **Settings → Billing**, add credit.
-2. Open **API keys** → **Create key**. Name it `logistic-voice` and copy the key (`sk-ant-...`).
+2. Open **API keys** → **Create key**. Name it `logistic-assistant` and copy the key (`sk-ant-...`).
 3. Put it in `server/.env`:
    ```sh
    ANTHROPIC_API_KEY=<the key>
    # Optional; defaults to claude-opus-5-5. A smaller model is cheaper, e.g. claude-haiku-5-5
-   VOICE_MODEL=
+   ASSISTANT_MODEL=
    ```
-4. Restart the API. Check it: log in as a driver, tap the microphone and say a command in another language, such as
-   "Voy 20 minutos tarde por el tráfico" ("I'm 20 minutes late because of traffic").
+4. Restart the API. Check it: log in as a dispatcher, press ⌘K and ask "Which trucks are on the road?". As a driver,
+   tap the microphone and say a command in another language, such as "Voy 20 minutos tarde por el tráfico"
+   ("I'm 20 minutes late because of traffic").
 
 ## 6. Telematics webhook secret (`TELEMATICS_WEBHOOK_SECRET`), set
 
