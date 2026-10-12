@@ -1,6 +1,7 @@
 import { PartialType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { RESOURCE_STATUSES, ResourceStatus } from "../common/assignable";
 
 export class CreateDriverDto {
   @IsString()
@@ -29,8 +30,8 @@ export class CreateDriverDto {
   content?: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsIn(RESOURCE_STATUSES)
+  status?: ResourceStatus;
 }
 
 export class UpdateDriverDto extends PartialType(CreateDriverDto) {}

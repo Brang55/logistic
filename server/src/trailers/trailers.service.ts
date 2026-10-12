@@ -1,5 +1,6 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
+import { ResourceStatus } from "../common/assignable";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
 import { trailers } from "../db/schema";
@@ -9,7 +10,7 @@ import { CreateTrailerDto, UpdateTrailerDto } from "./trailers.dto";
 export class TrailersService {
   constructor(@Inject(DB) private readonly db: Database) {}
 
-  findAll(status?: string) {
+  findAll(status?: ResourceStatus) {
     return this.db
       .select()
       .from(trailers)

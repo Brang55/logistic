@@ -1,7 +1,7 @@
 import {
   useAddNewTrailerMutation,
   useEditTrailerMutation,
-} from "../../../../app/features/driver/trailerSlice";
+} from "../../../../app/api/trailers";
 
 import * as Yup from "yup";
 
@@ -18,15 +18,13 @@ interface AddTrailerFormProps {
 }
 
 interface TrailerFormValues {
-  id?: string;
-  trailer?: string;
-  status?: string;
-  trailerNumber?: string;
+  trailer: string;
+  trailerNumber: string;
 }
 
 const trailerValidationSchema = Yup.object().shape({
-  trailer: Yup.string().required("Truck is required"),
-  trailerNumber: Yup.string().required("Truck Number is required"),
+  trailer: Yup.string().required("Trailer type is required"),
+  trailerNumber: Yup.string().required("Trailer number is required"),
 });
 
 const AddTrailerForm: React.FC<AddTrailerFormProps> = ({
@@ -42,7 +40,6 @@ const AddTrailerForm: React.FC<AddTrailerFormProps> = ({
   const [editTrailer] = useEditTrailerMutation();
 
   const initialValues: TrailerFormValues = {
-    id: id || "",
     trailer: trailer || "",
     trailerNumber: trailerNumber || "",
   };
@@ -53,15 +50,13 @@ const AddTrailerForm: React.FC<AddTrailerFormProps> = ({
         id={id}
         open={open}
         onClose={onClose}
-        // @ts-expect-error not a final version
         initialValues={initialValues}
         validationSchema={trailerValidationSchema}
         editEntityForm={editTrailerForm}
-        // @ts-expect-error not a final version
         addEntity={addNewTrailer}
-        // @ts-expect-error not a final version
         editEntity={editTrailer}
-        entityLabel="truck"
+        entityLabel="trailer"
+        fieldLabels={{ trailer: "Trailer type", trailerNumber: "Trailer number" }}
       />
     </>
   );

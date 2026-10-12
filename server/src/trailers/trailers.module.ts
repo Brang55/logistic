@@ -5,5 +5,6 @@ import { TrailersService } from "./trailers.service";
 @Module({
   controllers: [TrailersController],
   providers: [TrailersService],
+  exports: [TrailersService],
 })
 export class TrailersModule {}

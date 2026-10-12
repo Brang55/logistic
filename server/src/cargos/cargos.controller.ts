@@ -1,7 +1,8 @@
 import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { AuthUser, CurrentUser } from "../auth/auth-user";
 import { ManageFleet } from "../auth/roles.decorator";
-import { StatusQueryDto } from "../common/status-query.dto";
+import { CargoStatusQueryDto } from "../common/status-query.dto";
 import { parseLngLat } from "../common/lnglat";
 import { AssignCargoDto, CargoRouteQueryDto, CreateCargoDto, UpdateCargoDto } from "./cargos.dto";
 import { CargosService } from "./cargos.service";
@@ -13,7 +14,7 @@ export class CargosController {
   constructor(private readonly cargos: CargosService) {}
 
   @Get()
-  findAll(@Query() query: StatusQueryDto) {
+  findAll(@Query() query: CargoStatusQueryDto) {
     return this.cargos.findAll(query.status);
   }
 
@@ -44,8 +45,8 @@ export class CargosController {
   @ManageFleet()
   @Post(":id/assign")
   @HttpCode(200)
-  assign(@Param("id", ParseUUIDPipe) id: string, @Body() dto: AssignCargoDto) {
-    return this.cargos.assign(id, dto);
+  assign(@Param("id", ParseUUIDPipe) id: string, @Body() dto: AssignCargoDto, @CurrentUser() user: AuthUser) {
+    return this.cargos.assign(id, dto, user);
   }
 
   @ManageFleet()

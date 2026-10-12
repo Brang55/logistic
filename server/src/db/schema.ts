@@ -1,7 +1,10 @@
+import { sql } from "drizzle-orm";
 import { parseEWKB } from "drizzle-orm/pg-core/columns/postgis_extension/utils";
 import {
   bigserial,
+  check,
   customType,
+  date,
   doublePrecision,
   index,
   integer,
@@ -12,6 +15,8 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { RESOURCE_STATUSES } from "../common/assignable";
+import { CARGO_STATUSES } from "../common/cargo-status";
 
 // WGS84 point. Drizzle's built-in geometry column drops the SRID, which would store
 // SRID 0 and break distance functions, so this writes EWKT with SRID 4326 explicitly.
@@ -25,6 +30,11 @@ const point4326 = customType<{ data: { x: number; y: number }; driverData: strin
 });
 
 export const userRole = pgEnum("user_role", ["admin", "dispatcher", "driver"]);
+
+// Status columns stay text (simple to extend) but only accept the known values.
+const resourceStatus = () => text("status", { enum: RESOURCE_STATUSES }).notNull().default("available");
+const statusCheck = (name: string, column: unknown, values: readonly string[]) =>
+  check(name, sql`${column} in (${sql.join(values.map((v) => sql.raw(`'${v}'`)), sql`, `)})`);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -59,19 +69,20 @@ export const trucks = pgTable("trucks", {
   truckNumber: text("truck_number").notNull().unique(),
   truckModel: text("truck_model").notNull().default(""),
   engineVariation: text("engine_variation").notNull().default(""),
-  status: text("status").notNull().default("available"),
+  status: resourceStatus(),
   plate: text("plate"),
   vin: text("vin"),
-  // Dimensions are passed to Mapbox Directions as max_height / max_width / max_weight.
+  // Metric, as the routing engines expect; the web app shows them in imperial units.
   heightM: doublePrecision("height_m"),
   widthM: doublePrecision("width_m"),
   lengthM: doublePrecision("length_m"),
   weightT: doublePrecision("weight_t"),
   axles: integer("axles"),
+  odometerKm: integer("odometer_km"),
   // The vehicle's id in the telematics provider (Samsara, Geotab, ...); falls back to truck number.
   telematicsId: text("telematics_id").unique(),
   ...timestamps,
-});
+}, (table) => [statusCheck("trucks_status_check", table.status, RESOURCE_STATUSES)]);
 
 // GPS fixes from telematics (or the simulator). Append-only.
 export const positions = pgTable(
@@ -95,9 +106,9 @@ export const trailers = pgTable("trailers", {
   id: uuid("id").primaryKey().defaultRandom(),
   trailer: text("trailer").notNull().default(""),
   trailerNumber: text("trailer_number").notNull().unique(),
-  status: text("status").notNull().default("available"),
+  status: resourceStatus(),
   ...timestamps,
-});
+}, (table) => [statusCheck("trailers_status_check", table.status, RESOURCE_STATUSES)]);
 
 export const drivers = pgTable("drivers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -108,15 +119,15 @@ export const drivers = pgTable("drivers", {
   truckDriverEmail: text("truck_driver_email").notNull().unique(),
   truckNumber: text("truck_number").notNull().default(""),
   content: text("content").notNull().default(""),
-  status: text("status").notNull().default("available"),
+  status: resourceStatus(),
   ...timestamps,
-});
+}, (table) => [statusCheck("drivers_status_check", table.status, RESOURCE_STATUSES)]);
 
 const cargoText = (name: string) => text(name).notNull().default("");
 
 export const cargos = pgTable("cargos", {
   id: uuid("id").primaryKey().defaultRandom(),
-  status: text("status").notNull().default("new"),
+  status: text("status", { enum: CARGO_STATUSES }).notNull().default("new"),
   shipperName: cargoText("shipper_name"),
   shipperAddress: cargoText("shipper_address"),
   contactPerson: cargoText("contact_person"),
@@ -155,11 +166,118 @@ export const cargos = pgTable("cargos", {
   delayMinutes: integer("delay_minutes"),
   delayReason: text("delay_reason"),
   delayReportedAt: timestamp("delay_reported_at", { withTimezone: true }),
+  // A dispatcher assigned this truck although its route breaks height/weight limits.
+  // The acceptance only covers that truck; another truck has to be accepted again.
+  restrictionsAcceptedAt: timestamp("restrictions_accepted_at", { withTimezone: true }),
+  restrictionsAcceptedBy: text("restrictions_accepted_by"),
+  restrictionsAcceptedTruckId: uuid("restrictions_accepted_truck_id").references(() => trucks.id, { onDelete: "set null" }),
   // Where the load came from: "manual", or a load board's id; externalId is the board's load id.
   source: text("source").notNull().default("manual"),
   externalId: text("external_id"),
   ...timestamps,
-}, (table) => [uniqueIndex("cargos_source_external_idx").on(table.source, table.externalId)]);
+}, (table) => [
+  uniqueIndex("cargos_source_external_idx").on(table.source, table.externalId),
+  statusCheck("cargos_status_check", table.status, CARGO_STATUSES),
+]);
 
 export type User = typeof users.$inferSelect;
 export type UserRole = (typeof userRole.enumValues)[number];
+
+// ---- Vehicle records: the "notepad" for each truck and trailer ----
+
+// Each record belongs to exactly one truck or one trailer.
+const vehicleRefs = {
+  truckId: uuid("truck_id").references(() => trucks.id, { onDelete: "cascade" }),
+  trailerId: uuid("trailer_id").references(() => trailers.id, { onDelete: "cascade" }),
+};
+const oneVehicle = (name: string, table: { truckId: unknown; trailerId: unknown }) =>
+  check(name, sql`(${table.truckId} is null) <> (${table.trailerId} is null)`);
+
+export const vehicleDocuments = pgTable(
+  "vehicle_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ...vehicleRefs,
+    type: text("type").notNull(),
+    title: text("title").notNull().default(""),
+    number: text("number").notNull().default(""),
+    issuedOn: date("issued_on", { mode: "string" }),
+    expiresOn: date("expires_on", { mode: "string" }),
+    notes: text("notes").notNull().default(""),
+    // Uploaded scan: stored under a random key, never the uploaded file name.
+    fileKey: text("file_key"),
+    fileName: text("file_name"),
+    fileMime: text("file_mime"),
+    fileSize: integer("file_size"),
+    ...timestamps,
+  },
+  (table) => [oneVehicle("vehicle_documents_one_vehicle", table)],
+);
+
+export const maintenanceItems = pgTable(
+  "maintenance_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ...vehicleRefs,
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    intervalDays: integer("interval_days"),
+    intervalKm: integer("interval_km"),
+    lastDoneOn: date("last_done_on", { mode: "string" }),
+    lastDoneKm: integer("last_done_km"),
+    notes: text("notes").notNull().default(""),
+    ...timestamps,
+  },
+  (table) => [oneVehicle("maintenance_items_one_vehicle", table)],
+);
+
+export const vehicleLog = pgTable(
+  "vehicle_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ...vehicleRefs,
+    entryDate: date("entry_date", { mode: "string" }).notNull(),
+    kind: text("kind").notNull().default("note"),
+    title: text("title").notNull(),
+    odometerKm: integer("odometer_km"),
+    cost: doublePrecision("cost"),
+    currency: text("currency"),
+    notes: text("notes").notNull().default(""),
+    maintenanceItemId: uuid("maintenance_item_id").references(() => maintenanceItems.id, { onDelete: "set null" }),
+    authorEmail: text("author_email"),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [oneVehicle("vehicle_log_one_vehicle", table)],
+);
+
+// Driver community: road reports (police, traffic, road works…) pinned where the reporting
+// driver's truck was, and the drivers' group chat.
+export const roadReports = pgTable(
+  "road_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: text("type").notNull(),
+    point: point4326("point").notNull(),
+    note: text("note").notNull().default(""),
+    driverId: uuid("driver_id")
+      .notNull()
+      .references(() => drivers.id, { onDelete: "cascade" }),
+    truckId: uuid("truck_id").references(() => trucks.id, { onDelete: "set null" }),
+    createdAt: timestamps.createdAt,
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("road_reports_expires_idx").on(table.expiresAt)],
+);
+
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    driverId: uuid("driver_id")
+      .notNull()
+      .references(() => drivers.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("chat_messages_created_idx").on(table.createdAt.desc())],
+);

@@ -1,47 +1,36 @@
-.traffic {
-  display: flex;
+.page {
+  display: grid;
   gap: 24px;
-  height: 100%;
+  align-content: start;
   padding: 24px;
 }
 
+.traffic {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .trips {
-  flex: 2;
-  overflow-y: auto;
+  min-width: 0;
 }
 
 .alerts {
-  flex: 1;
-  min-width: 280px;
-  padding: 0 20px;
+  max-height: 560px;
+  padding: 16px 20px;
   overflow-y: auto;
   background: var(--color-surface-muted);
   border-radius: 12px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header h3,
-.alerts h3 {
-  font-size: 20px;
-}
-
-.refresh {
-  padding: 8px 16px;
-  color: #fff;
-  font-weight: 600;
-  background: var(--color-primary);
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-}
-
-.refresh:disabled {
-  opacity: 0.6;
 }
 
 .trip {
@@ -136,4 +125,111 @@
 
 .critical {
   border-left-color: var(--color-danger);
+}
+
+.reportsSummary {
+  color: var(--color-warning);
+}
+
+.trip .routeReport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.routeReportIcon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  color: #fff;
+  border-radius: 50%;
+}
+
+/* Driver road reports */
+.reports {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.reportsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.reportsHeader .sectionTitle {
+  margin-bottom: 4px;
+}
+
+.reportsHeader p {
+  margin: 0;
+}
+
+.liveCount {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-success);
+  border-radius: 50%;
+}
+
+.reportsBody {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 16px;
+  height: 520px;
+}
+
+.reportsList {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.reportItems {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reportsMap {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+@media (max-width: 1100px) {
+  .traffic {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reportsBody {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .reportsList {
+    max-height: 360px;
+  }
+
+  .reportsMap {
+    height: 360px;
+  }
 }

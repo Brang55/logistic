@@ -1,12 +1,15 @@
 import { PartialType, PickType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsOptional, IsString, IsUUID, ValidateIf } from "class-validator";
+import { IsBoolean, IsOptional, IsString, IsUUID, Matches, ValidateIf } from "class-validator";
 
 // The cargo form sends numeric inputs (quantity, weight) as numbers or strings.
 const AsString = () => (target: object, key: string) => {
   Transform(({ value }) => (value == null ? value : String(value)))(target, key);
   IsString()(target, key);
 };
+
+// Pickup/delivery dates are calendar days ("" when not planned yet), so they sort and compare as text.
+const OptionalDay = () => Matches(/^(\d{4}-\d{2}-\d{2})?$/, { message: "$property must be a YYYY-MM-DD date" });
 
 // "" means "unassigned" in the existing form; anything else must be a UUID.
 const OptionalRef = () => (target: object, key: string) => {
@@ -66,6 +69,7 @@ export class CreateCargoDto {
 
   @IsOptional()
   @AsString()
+  @Matches(/^(\d+(\.\d+)?)?$/, { message: "weight must be a number of kilograms" })
   weight?: string;
 
   @IsOptional()
@@ -74,10 +78,12 @@ export class CreateCargoDto {
 
   @IsOptional()
   @AsString()
+  @OptionalDay()
   pickupDate?: string;
 
   @IsOptional()
   @AsString()
+  @OptionalDay()
   deliveryDate?: string;
 
   @IsOptional()
@@ -132,7 +138,12 @@ export class CreateCargoDto {
 
 export class UpdateCargoDto extends PartialType(CreateCargoDto) {}
 
-export class AssignCargoDto extends PickType(UpdateCargoDto, ["driverId", "truckId", "trailerId"] as const) {}
+export class AssignCargoDto extends PickType(UpdateCargoDto, ["driverId", "truckId", "trailerId"] as const) {
+  /** Assign even though the truck's route breaks height/weight limits; recorded on the cargo. */
+  @IsOptional()
+  @IsBoolean()
+  acceptRestrictions?: boolean;
+}
 
 export class CargoRouteQueryDto {
   /** Route with this truck instead of the assigned one. */

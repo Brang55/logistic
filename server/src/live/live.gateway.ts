@@ -8,11 +8,12 @@ import { TruckPosition } from "../telematics/telematics.types";
 
 const FLEET_ROOM = "fleet";
 const FLEET_ROLES: UserRole[] = ["admin", "dispatcher"];
+const DRIVERS_ROOM = "drivers";
 
 /** Something dispatchers should look at: a reported delay, heavy traffic or a closure. */
 export interface LiveAlert {
   id: string;
-  kind: "delay-reported" | "traffic-delay" | "incident" | "address-changed" | "loads-imported";
+  kind: "delay-reported" | "traffic-delay" | "incident" | "address-changed" | "loads-imported" | "compliance" | "road-report" | "route-restriction" | "driver-message";
   severity: "info" | "warning" | "critical";
   message: string;
   cargoId?: string;
@@ -21,10 +22,12 @@ export interface LiveAlert {
 }
 
 /**
- * Live fleet feed. Clients connect to the "/live" namespace with
- * `auth: { token: <access token> }` and receive "position", "cargo" and "alert" events.
+ * Live feed. Clients connect to the "/live" namespace with `auth: { token: <access token> }`.
+ * Dispatchers receive "position", "cargo" and "alert" events; drivers and dispatchers both
+ * receive "road-report" and drivers receive "chat-message".
  */
-@WebSocketGateway({ namespace: "live", cors: { origin: true } })
+// Allowed origins come from CORS_ORIGIN through LiveIoAdapter (main.ts).
+@WebSocketGateway({ namespace: "live" })
 export class LiveGateway implements OnGatewayInit {
   private readonly logger = new Logger(LiveGateway.name);
 
@@ -42,6 +45,7 @@ export class LiveGateway implements OnGatewayInit {
         const user: AuthUser = { id: payload.sub, email: payload.email, role: payload.role };
         socket.data.user = user;
         if (FLEET_ROLES.includes(user.role)) await socket.join(FLEET_ROOM);
+        if (user.role === "driver") await socket.join(DRIVERS_ROOM);
         next();
       } catch {
         next(new Error("unauthorized"));
@@ -63,5 +67,14 @@ export class LiveGateway implements OnGatewayInit {
 
   alert(alert: LiveAlert) {
     this.server?.to(FLEET_ROOM).emit("alert", alert);
+  }
+
+  /** A road report was added or removed; `payload` is the report, or `{ id, removed: true }`. */
+  roadReport(payload: object) {
+    this.server?.to([DRIVERS_ROOM, FLEET_ROOM]).emit("road-report", payload);
+  }
+
+  chatMessage(message: object) {
+    this.server?.to(DRIVERS_ROOM).emit("chat-message", message);
   }
 }

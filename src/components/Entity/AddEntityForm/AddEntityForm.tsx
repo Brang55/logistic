@@ -1,38 +1,45 @@
-import styles from "./AddEntityForm.module.css";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
-
 import { useState } from "react";
-import { Loader } from "../../Loader/Loader";
-import { Backdrop } from "../../Backdrop/Backdrop";
+
+import { errorMessage } from "../../../utils/errors";
+import { Modal } from "../../ui/ui";
+import { cx } from "../../ui/helpers";
+import ui from "../../ui/ui.module.css";
+
+/** An RTK Query mutation call: `unwrap()` rejects when the API refuses the save. */
+type SaveRequest = { unwrap: () => Promise<unknown> };
 
 interface AddEntityFormProps<T> {
   id?: string;
   open: boolean;
   onClose: () => void;
   initialValues: T;
-  // @ts-expect-error not a final version
-  validationSchema: Yup.ObjectSchema;
+  validationSchema: Yup.AnyObjectSchema;
   editEntityForm: boolean;
-  collectionName: string;
   entityLabel: string;
-  editEntity: (values: T) => void;
-  addEntity: (values: T) => void;
-  truckDriverEmail?: string;
+  editEntity: (values: T & { id: string }) => SaveRequest;
+  addEntity: (values: T) => SaveRequest;
   checkEmailExists?: (email: string) => Promise<boolean>;
   engineVariations?: string[];
   truckModels?: string[];
   fieldLabels?: Record<string, string>;
 }
 
-const AddEntityForm = <T extends { values?: object }>({
+const HIDDEN_FIELDS = ["id", "status"];
+
+const humanize = (key: string) => {
+  const words = key.replace(/([A-Z])/g, " $1").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1).toLowerCase();
+};
+
+const AddEntityForm = <T extends object>({
   id,
   open,
   onClose,
   initialValues,
   validationSchema,
   editEntityForm,
-  //   collectionName,
   entityLabel,
   editEntity,
   addEntity,
@@ -41,114 +48,86 @@ const AddEntityForm = <T extends { values?: object }>({
   truckModels,
   fieldLabels,
 }: AddEntityFormProps<T>) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [emailExistsMessage, setEmailExistsMessage] = useState<string>("");
+  const [formError, setFormError] = useState<string>("");
 
   if (!open) return null;
 
-  const onSubmit = async (values: T) => {
-    setIsLoading(true);
-
+  const onSubmit = async (values: T, { setSubmitting }: { setSubmitting: (busy: boolean) => void }) => {
+    setFormError("");
     try {
       if (checkEmailExists && "truckDriverEmail" in values && !editEntityForm) {
-        const emailExists = await checkEmailExists(
-          values["truckDriverEmail"] as string
-        );
+        const emailExists = await checkEmailExists(String(values.truckDriverEmail));
         if (emailExists) {
-          setEmailExistsMessage("Email address is already registered");
+          setFormError("This email address is already registered.");
           return;
         }
       }
-
       if (editEntityForm && id) {
-        await editEntity({ ...values, id });
+        await editEntity({ ...values, id }).unwrap();
       } else {
-        await addEntity(values);
+        await addEntity(values).unwrap();
       }
       onClose();
     } catch (err) {
-      console.error(`Failed to save the ${entityLabel}:`, err);
-      setEmailExistsMessage(
-        `Failed to save the ${entityLabel}. Please try again.`
-      );
+      setFormError(errorMessage(err, `Could not save the ${entityLabel}. Please try again.`));
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
+  const selectOptions: Record<string, string[] | undefined> = {
+    truckModel: truckModels,
+    engineVariation: engineVariations,
+  };
+  const keys = Object.keys(initialValues).filter((key) => !HIDDEN_FIELDS.includes(key));
+  const formId = `entity-form-${entityLabel}`;
+
   return (
-    <>
-      <Backdrop show={open} onClick={onClose} />
-      <Formik
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={onSubmit}
-        enableReinitialize
-      >
-        {() => (
-          <Form className={styles.addEntityForm} noValidate>
-            <button onClick={onClose} className={styles.closeForm}>
-              X
-            </button>
-            {Object.keys(initialValues)
-              .filter((key) => key !== "id")
-              .filter((status) => status !== "status")
-              .map((key) => (
-                <div key={key} className={styles.addEntityFormRow}>
-                  <label htmlFor={key}>
-                    {fieldLabels?.[key] ??
-                      key.charAt(0).toUpperCase() + key.slice(1)}
-                    :
+    <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={onSubmit} enableReinitialize>
+      {({ isSubmitting }) => (
+        <Modal
+          title={`${editEntityForm ? "Edit" : "Add"} ${entityLabel}`}
+          onClose={onClose}
+          footer={
+            <>
+              <button type="button" className={cx(ui.btn, ui.secondary)} onClick={onClose}>
+                Cancel
+              </button>
+              <button type="submit" form={formId} className={cx(ui.btn, ui.primary)} disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : editEntityForm ? "Save changes" : `Add ${entityLabel}`}
+              </button>
+            </>
+          }
+        >
+          <Form id={formId} noValidate className={ui.formGrid}>
+            {keys.map((key) => {
+              const options = selectOptions[key];
+              return (
+                <div key={key} className={ui.field}>
+                  <label htmlFor={key} className={ui.label}>
+                    {fieldLabels?.[key] ?? humanize(key)}
                   </label>
-                  {key === "truckModel" && truckModels ? (
-                    <Field
-                      as="select"
-                      className={styles.options}
-                      id={key}
-                      name={key}
-                    >
-                      <option value="">Select a model</option>
-                      {truckModels.map((model) => (
-                        <option key={model} value={model}>
-                          {model}
-                        </option>
-                      ))}
-                    </Field>
-                  ) : key === "engineVariation" && engineVariations ? (
-                    <Field
-                      as="select"
-                      className={styles.options}
-                      id={key}
-                      name={key}
-                    >
-                      <option value="">Select an engine variation</option>
-                      {engineVariations.map((variation) => (
-                        <option key={variation} value={variation}>
-                          {variation}
+                  {options ? (
+                    <Field as="select" id={key} name={key} className={ui.input}>
+                      <option value="">Select…</option>
+                      {options.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
                         </option>
                       ))}
                     </Field>
                   ) : (
-                    <Field type="text" id={key} name={key} />
+                    <Field type="text" id={key} name={key} className={ui.input} />
                   )}
-                  <ErrorMessage
-                    name={key}
-                    component="div"
-                    className={styles.error}
-                  />
+                  <ErrorMessage name={key} component="span" className={ui.fieldError} />
                 </div>
-              ))}
-            {emailExistsMessage && (
-              <div className={styles.error}>{emailExistsMessage}</div>
-            )}
-            <button type="submit" className={styles.submitEntity}>
-              {editEntityForm ? "Apply" : "Add"}
-            </button>
+              );
+            })}
+            {formError && <div className={cx(ui.alert, ui.alertError, ui.fieldWide)}>{formError}</div>}
           </Form>
-        )}
-      </Formik>
-      {isLoading && <Loader />}
-    </>
+        </Modal>
+      )}
+    </Formik>
   );
 };
 

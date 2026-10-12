@@ -1,10 +1,10 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
+  plugins: [react()],
   server: {
     // NestJS API (server/) during development
     proxy: {
@@ -16,5 +16,11 @@ export default defineConfig({
     modules: {
       localsConvention: "camelCase", // optional, changes the exported class names convention
     },
+  },
+  test: {
+    // The API (server/) has its own Jest suites.
+    include: ["src/**/*.test.{ts,tsx}"],
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
   },
 });

@@ -1,5 +1,6 @@
 import { PartialType } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { RESOURCE_STATUSES, ResourceStatus } from "../common/assignable";
 
 export class CreateTrailerDto {
   @IsString()
@@ -11,8 +12,8 @@ export class CreateTrailerDto {
   trailer?: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsIn(RESOURCE_STATUSES)
+  status?: ResourceStatus;
 }
 
 export class UpdateTrailerDto extends PartialType(CreateTrailerDto) {}

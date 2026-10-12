@@ -48,10 +48,13 @@ export class TripsController {
     const driver = await this.drivers.findByUserId(user.id);
     const [trip] = await this.trips.activeTrips({ driverId: driver.id });
     if (!trip) return { driver, trip: null };
-    const route = await this.trips.routeFor(trip).catch(() => null);
+    const [route, trailer] = await Promise.all([
+      this.trips.routeFor(trip).catch(() => null),
+      this.trips.trailerFor(trip.cargo),
+    ]);
     return {
       driver,
-      trip: { ...trip, stops: stopsOf(trip.cargo), route },
+      trip: { ...trip, trailer, stops: stopsOf(trip.cargo), route },
     };
   }
 

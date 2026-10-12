@@ -1,4 +1,4 @@
-export const formatDistance = (meters: number) => `${(meters / 1000).toFixed(1)} km`;
+export { formatDistance } from "./units";
 
 export const formatDuration = (seconds: number) => {
   const totalMinutes = Math.round(seconds / 60);

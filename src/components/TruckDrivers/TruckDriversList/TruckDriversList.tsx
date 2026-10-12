@@ -1,150 +1,179 @@
-import AddDriver from "../AddDriver/AddDriver";
+import { useMemo, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faKey, faPen, faPlus, faTrash, faTriangleExclamation, faUsers } from "@fortawesome/free-solid-svg-icons";
 
 import {
   useDeleteDriverMutation,
   useFetchDriversQuery,
-  useLoadDriverQuery,
-} from "../../../app/features/driver/driverSlice";
+  type Driver,
+} from "../../../app/api/drivers";
 import { Loader } from "../../Loader/Loader";
-import { useState } from "react";
-import { Confirm } from "../../Confirm/Confirm";
+import {
+  Badge,
+  ConfirmDialog,
+  EmptyState,
+  FilterChips,
+  IconButton,
+  PageHeader,
+  ResourceStatus,
+  SearchInput,
+} from "../../ui/ui";
+import { cx, initials, matches } from "../../ui/helpers";
+import ui from "../../ui/ui.module.css";
 import AddDriverForm from "../AddDriver/AddDriverForm/AddDriverForm";
 import DriverLoginForm from "../DriverLogin/DriverLoginForm";
-import styles from "./TruckDriversList.module.css";
 
-import { EntityItem } from "../../Entity/EntityItem/EntityItem";
-import { EntityList } from "../../Entity/EntityList/EntityList";
-
-interface Driver {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string | number;
-  truckDriverEmail: string;
-  truckNumber: string;
-  status: string;
-  userId?: string | null;
-}
+type Filter = "all" | "available" | "taken";
 
 const TruckDriversList = () => {
-  const { data: drivers, isError, isLoading } = useFetchDriversQuery();
-  const [deleteDriver] = useDeleteDriverMutation();
-  const [editDriverForm, setEditDriverForm] = useState<boolean>(false);
-  const [confirm, setConfirm] = useState<boolean>(false);
-  const [clickedDriver, setClickedDriver] = useState<string>("");
-  const [clickedDriverName, setClickedDriverName] = useState<string>("");
-  const [clickedDriverLastName, setClickedDriverLastName] =
-    useState<string>("");
+  const { data: drivers = [], isError, isLoading } = useFetchDriversQuery();
+  const [deleteDriver, deleting] = useDeleteDriverMutation();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Driver>();
+  const [removing, setRemoving] = useState<Driver>();
   const [loginFor, setLoginFor] = useState<Driver>();
 
-  console.log(clickedDriver);
-
-  const { data: driver, isLoading: isDriverLoading } = useLoadDriverQuery(
-    clickedDriver,
-    { skip: !clickedDriver }
+  const available = drivers.filter((d) => d.status === "available").length;
+  const withLogin = drivers.filter((d) => d.userId).length;
+  const visible = useMemo(
+    () =>
+      drivers.filter(
+        (d) =>
+          (filter === "all" || d.status === filter) &&
+          matches(search, d.firstName, d.lastName, d.truckDriverEmail, d.truckNumber, d.phoneNumber)
+      ),
+    [drivers, filter, search]
   );
 
-  console.log(driver);
-
-  const headings = [
-    "First Name",
-    "Last Name",
-    "Phone No.",
-    "Email",
-    "Truck No",
-    "Options",
-  ];
-  const entityFields: Array<keyof Driver> = [
-    "firstName",
-    "lastName",
-    "phoneNumber",
-    "truckDriverEmail",
-    "truckNumber",
-  ];
-
-  if (isError) {
-    return <h1>There is an error</h1>;
-  }
-
-  if (isLoading) {
-    return <Loader />;
-  }
-
-  const onDeleteClick = (id: string, firstName: string, lastName: string) => {
-    setConfirm(true);
-    setClickedDriver(id);
-    setClickedDriverName(firstName);
-    setClickedDriverLastName(lastName);
-  };
-
-  const onEditClick = (id: string) => {
-    setClickedDriver(id);
-    setEditDriverForm(true);
-  };
-
-  const handleDeleteDriver = async (clickedDriver: string) => {
-    try {
-      await deleteDriver(clickedDriver);
-      setConfirm(false);
-    } catch (err) {
-      return { error: err };
-    }
-  };
+  if (isLoading) return <Loader />;
 
   return (
     <>
-      <AddDriver />
-      {drivers && (
-        <EntityList<Driver>
-          data={drivers}
-          renderItem={(item: Driver) => (
-            <EntityItem<Driver>
-              key={item.id}
-              entityFields={entityFields}
-              item={item}
-              onDeleteClick={onDeleteClick}
-              onEditClick={onEditClick}
-              extraActions={
-                item.userId ? (
-                  <span className={styles.hasLogin}>Has app login</span>
-                ) : (
-                  <button className={styles.loginLink} onClick={() => setLoginFor(item)}>
-                    Create app login
-                  </button>
-                )
-              }
-            />
-          )}
-          headings={headings}
+      <PageHeader
+        title="Drivers"
+        subtitle={`${drivers.length} drivers · ${available} available · ${withLogin} using the driver app`}
+        actions={
+          <button className={cx(ui.btn, ui.primary)} onClick={() => setAdding(true)}>
+            <FontAwesomeIcon icon={faPlus} /> Add driver
+          </button>
+        }
+      />
+
+      <div className={ui.card}>
+        <div className={ui.toolbar}>
+          <SearchInput value={search} onChange={setSearch} placeholder="Search name, email, phone or truck" />
+          <FilterChips<Filter>
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All", count: drivers.length },
+              { value: "available", label: "Available", count: available },
+              { value: "taken", label: "On a trip", count: drivers.length - available },
+            ]}
+          />
+        </div>
+
+        {isError ? (
+          <EmptyState icon={faTriangleExclamation} title="Could not load drivers" text="Check your connection and try again." />
+        ) : visible.length === 0 ? (
+          <EmptyState
+            icon={faUsers}
+            title={drivers.length ? "No drivers match" : "No drivers yet"}
+            text={drivers.length ? "Try a different search or filter." : "Add your drivers to assign them to loads."}
+          />
+        ) : (
+          <div className={ui.tableWrap}>
+            <table className={ui.table}>
+              <thead>
+                <tr>
+                  <th>Driver</th>
+                  <th>Phone</th>
+                  <th>Truck</th>
+                  <th>Driver app</th>
+                  <th>Status</th>
+                  <th className={ui.right}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((driver) => (
+                  <tr key={driver.id}>
+                    <td data-label="Driver">
+                      <span className={ui.person}>
+                        <span className={ui.avatar}>{initials(driver.firstName, driver.lastName)}</span>
+                        <span>
+                          <span className={ui.primaryText}>
+                            {driver.firstName} {driver.lastName}
+                          </span>
+                          <span className={ui.secondaryText}>{driver.truckDriverEmail}</span>
+                        </span>
+                      </span>
+                    </td>
+                    <td data-label="Phone">
+                      {driver.phoneNumber ? <a href={`tel:${driver.phoneNumber}`}>{driver.phoneNumber}</a> : "–"}
+                    </td>
+                    <td data-label="Truck">{driver.truckNumber || <span className={ui.muted}>–</span>}</td>
+                    <td data-label="Driver app">
+                      {driver.userId ? (
+                        <Badge tone="success">Has login</Badge>
+                      ) : (
+                        <button className={cx(ui.btn, ui.secondary, ui.small)} onClick={() => setLoginFor(driver)}>
+                          <FontAwesomeIcon icon={faKey} /> Create login
+                        </button>
+                      )}
+                    </td>
+                    <td data-label="Status">
+                      <ResourceStatus status={driver.status} />
+                    </td>
+                    <td data-label="" className={ui.right}>
+                      <div className={ui.rowActions}>
+                        <IconButton icon={faPen} label={`Edit ${driver.firstName}`} onClick={() => setEditing(driver)} />
+                        <IconButton
+                          icon={faTrash}
+                          label={`Delete ${driver.firstName}`}
+                          danger
+                          onClick={() => setRemoving(driver)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {adding && <AddDriverForm open onClose={() => setAdding(false)} editDriverForm={false} />}
+      {editing && (
+        <AddDriverForm
+          open
+          editDriverForm
+          onClose={() => setEditing(undefined)}
+          id={editing.id}
+          firstName={editing.firstName}
+          lastName={editing.lastName}
+          truckNumber={editing.truckNumber}
+          truckDriverEmail={editing.truckDriverEmail}
+          phoneNumber={editing.phoneNumber}
         />
       )}
       {loginFor && (
-        <DriverLoginForm
-          driverId={loginFor.id}
-          email={loginFor.truckDriverEmail}
-          onClose={() => setLoginFor(undefined)}
-        />
+        <DriverLoginForm driverId={loginFor.id} email={loginFor.truckDriverEmail} onClose={() => setLoginFor(undefined)} />
       )}
-      {editDriverForm && driver && !isDriverLoading && (
-        <AddDriverForm
-          id={driver?.id}
-          open={editDriverForm}
-          onClose={() => setEditDriverForm(false)}
-          firstName={driver?.firstName}
-          lastName={driver?.lastName}
-          truckNumber={driver?.truckNumber}
-          truckDriverEmail={driver?.truckDriverEmail}
-          phoneNumber={driver?.phoneNumber}
-          editDriverForm={editDriverForm}
-        />
-      )}
-      {confirm && (
-        <Confirm
-          show={confirm}
-          onConfirm={() => handleDeleteDriver(clickedDriver)}
-          onCancel={() => setConfirm(false)}
-          driverName={clickedDriverName}
-          driverLastName={clickedDriverLastName}
+      {removing && (
+        <ConfirmDialog
+          danger
+          title={`Delete ${removing.firstName} ${removing.lastName}?`}
+          message="The driver is removed and unassigned from any cargo, and can no longer use the driver app. This can't be undone."
+          confirmLabel="Delete driver"
+          busy={deleting.isLoading}
+          onCancel={() => setRemoving(undefined)}
+          onConfirm={async () => {
+            await deleteDriver(removing.id);
+            setRemoving(undefined);
+          }}
         />
       )}
     </>

@@ -1,0 +1,54 @@
+/* Quick reports */
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+.reportButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 92px;
+  padding: 12px 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    border-color 0.15s;
+}
+
+.reportButton:hover:not(:disabled) {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.reportButton:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.reportButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.reportButtonBusy,
+.reportButtonBusy:disabled {
+  opacity: 1;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 12px rgba(220, 38, 38, 0.15);
+  }
+}

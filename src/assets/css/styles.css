@@ -126,6 +126,16 @@ table * {
   padding: 24px;
 }
 
+/* Staff pages have the assistant button in the bottom-right corner: content can scroll clear
+   of it, and map controls in that corner move up above it. */
+body:has([data-assistant-launcher]) .page {
+  padding-bottom: 96px;
+}
+
+body:has([data-assistant-launcher]) .mapboxgl-ctrl-bottom-right {
+  margin-bottom: 80px;
+}
+
 @media (max-width: 900px) {
   .page {
     padding: 16px 12px;

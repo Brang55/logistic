@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import mapboxgl from "mapbox-gl";
+import type { GeoJSONFeature, GeoJSONSource, Map as MapboxMap, MapMouseEvent } from "mapbox-gl";
 
-import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
-import type { LngLat } from "../../app/features/driver/routingSlice";
+import type { TruckPosition } from "../../app/api/telematics";
+import type { LngLat } from "../../app/api/routing";
 import { theme } from "../../theme";
 
 const SOURCE = "fleet";
@@ -27,7 +27,7 @@ function arrowImage(size = 48) {
   return ctx.getImageData(0, 0, size, size);
 }
 
-function addFleetLayer(map: mapboxgl.Map) {
+function addFleetLayer(map: MapboxMap) {
   if (map.getSource(SOURCE)) return;
   map.addImage(ICON, arrowImage(), { sdf: true, pixelRatio: 2 });
   map.addSource(SOURCE, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -80,7 +80,7 @@ const lerp = (from: LngLat, to: LngLat, t: number): LngLat => [
  * `labels` maps truck id to the text shown under the arrow.
  */
 export function useFleetLayer(
-  map: mapboxgl.Map | undefined,
+  map: MapboxMap | undefined,
   positions: TruckPosition[] | undefined,
   labels: Map<string, string>,
   options: { selectedTruckId?: string; onSelect?: (truckId: string) => void } = {}
@@ -97,7 +97,7 @@ export function useFleetLayer(
   useEffect(() => {
     if (!map) return;
     addFleetLayer(map);
-    const handleClick = (event: mapboxgl.MapMouseEvent & { features?: mapboxgl.GeoJSONFeature[] }) => {
+    const handleClick = (event: MapMouseEvent & { features?: GeoJSONFeature[] }) => {
       const id = event.features?.[0]?.properties?.id;
       if (id) onSelectRef.current?.(id);
     };
@@ -127,7 +127,7 @@ export function useFleetLayer(
       }
 
       const { positions: current = [], labels: names, selectedTruckId: selected } = latest.current;
-      (map.getSource(SOURCE) as mapboxgl.GeoJSONSource | undefined)?.setData({
+      (map.getSource(SOURCE) as GeoJSONSource | undefined)?.setData({
         type: "FeatureCollection",
         features: current.map((position) => ({
           type: "Feature",

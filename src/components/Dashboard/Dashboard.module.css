@@ -2,11 +2,6 @@
   padding: 24px 24px 40px;
 }
 
-.title {
-  margin: 0 0 16px;
-  font-size: 20px;
-}
-
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -89,6 +84,15 @@
 
 .load {
   border-left-color: var(--color-border);
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover {
+  background: var(--color-primary-soft);
 }
 
 .muted {

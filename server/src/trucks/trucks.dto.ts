@@ -1,6 +1,7 @@
 import { PartialType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
+import { RESOURCE_STATUSES, ResourceStatus } from "../common/assignable";
 
 // Form inputs arrive as strings; an empty input clears the value instead of becoming 0.
 // Reads the raw input because implicit conversion has already turned "" into 0.
@@ -24,8 +25,8 @@ export class CreateTruckDto {
   engineVariation?: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsIn(RESOURCE_STATUSES)
+  status?: ResourceStatus;
 
   @IsOptional()
   @IsString()
@@ -76,6 +77,12 @@ export class CreateTruckDto {
   @IsInt()
   @Min(1)
   axles?: number | null;
+
+  @ToOptionalNumber()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  odometerKm?: number | null;
 }
 
 export class UpdateTruckDto extends PartialType(CreateTruckDto) {}

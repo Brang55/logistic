@@ -1,0 +1,565 @@
+/* Round button in the bottom-right corner; the panel opens above it. */
+.fab {
+  position: fixed;
+  z-index: 1500;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, var(--color-primary));
+  border: none;
+  border-radius: 50%;
+  box-shadow:
+    0 10px 24px rgba(79, 70, 229, 0.35),
+    0 2px 6px rgba(15, 23, 42, 0.15);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.fab:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 28px rgba(79, 70, 229, 0.4),
+    0 2px 6px rgba(15, 23, 42, 0.15);
+}
+
+.fab:focus-visible {
+  outline: 3px solid var(--color-primary-disabled);
+  outline-offset: 3px;
+}
+
+.fabOpen {
+  font-size: 18px;
+}
+
+/* Thinking while minimized: a soft pulse. */
+.fabBusy {
+  animation: fabPulse 1.4s ease-in-out infinite;
+}
+
+.fabCount,
+.fabDot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+}
+
+/* Changes waiting for confirmation. */
+.fabCount {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-warning);
+}
+
+/* A reply arrived while minimized. */
+.fabDot {
+  width: 14px;
+  height: 14px;
+  background: var(--color-danger);
+}
+
+.panel {
+  position: fixed;
+  z-index: 1500;
+  right: 24px;
+  bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  width: 460px;
+  height: min(680px, calc(100vh - 120px));
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transform-origin: bottom right;
+  animation: panelIn 0.16s ease-out;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.headerMark {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, var(--color-primary));
+  border-radius: var(--radius);
+}
+
+.headerText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.headerText strong {
+  font-size: 15px;
+}
+
+.headerText span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.headerButton {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.headerButton:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.intro {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.examples {
+  display: grid;
+  gap: 6px;
+}
+
+.example {
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text);
+  text-align: left;
+  background: var(--color-surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.example:hover {
+  border-color: var(--color-primary-disabled);
+  background: var(--color-primary-soft);
+}
+
+.notice {
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #92400e;
+  background: var(--color-warning-soft);
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+}
+
+/* Conversation */
+.bubbleUser,
+.bubbleReply {
+  max-width: 88%;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  border-radius: 14px;
+}
+
+.bubbleUser {
+  align-self: flex-end;
+  color: #fff;
+  background: var(--color-primary);
+  border-bottom-right-radius: 4px;
+}
+
+.bubbleReply {
+  align-self: flex-start;
+  background: var(--color-surface-muted);
+  border-bottom-left-radius: 4px;
+}
+
+/* Replies with a table use the panel's full width. */
+.bubbleReply:has(table) {
+  align-self: stretch;
+  max-width: 100%;
+}
+
+.bubbleError {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+/* Reply text (markdown): a short answer, then compact sections, lists and tables. */
+.reply > :first-child {
+  margin-top: 0;
+}
+
+.reply > :last-child {
+  margin-bottom: 0;
+}
+
+.reply p {
+  margin: 0 0 8px;
+}
+
+.reply h1,
+.reply h2,
+.reply h3,
+.reply h4 {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.reply ul,
+.reply ol {
+  display: grid;
+  gap: 3px;
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.reply strong {
+  font-weight: 650;
+  color: var(--color-text);
+}
+
+.reply a {
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.reply a:hover {
+  text-decoration: underline;
+}
+
+.reply code {
+  padding: 1px 4px;
+  font-size: 12px;
+  background: var(--color-surface);
+  border-radius: 4px;
+}
+
+.tableWrap {
+  margin: 0 0 8px;
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.reply table {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+
+.reply th,
+.reply td {
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Cells wrap so tables fit the panel; headers and the first column (usually the load) stay on one line. */
+.reply th,
+.reply td:first-child {
+  white-space: nowrap;
+}
+
+.reply th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--color-surface-muted);
+}
+
+.reply tr:last-child td {
+  border-bottom: none;
+}
+
+.reply tbody tr:nth-child(even) td {
+  background: #fafbfd;
+}
+
+.event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.thinking {
+  display: inline-flex;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 14px 16px;
+  background: var(--color-surface-muted);
+  border-radius: 14px;
+  border-bottom-left-radius: 4px;
+}
+
+.thinking span {
+  width: 6px;
+  height: 6px;
+  background: var(--color-text-subtle);
+  border-radius: 50%;
+  animation: blink 1.2s infinite ease-in-out;
+}
+
+.thinking span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.thinking span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Proposed action */
+.action {
+  padding: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary-disabled);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.actionDone {
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+.actionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.actionSummary {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.actionDetails {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  list-style: none;
+}
+
+.actionWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #92400e;
+  background: var(--color-warning-soft);
+  border-radius: var(--radius-sm);
+}
+
+.actionWarning svg {
+  margin-top: 2px;
+}
+
+.actionError {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Big, evenly split targets for drivers in the cab. */
+.actionButtonsLarge > button {
+  flex: 1;
+  min-height: 48px;
+  font-size: 15px;
+}
+
+.actionOutcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.outcomeDone {
+  color: var(--color-success);
+}
+
+.linkButton {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+/* Composer */
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.composer input {
+  flex: 1;
+}
+
+.roundButton {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.roundButton:disabled {
+  background: var(--color-primary-disabled);
+  cursor: default;
+}
+
+.micIdle {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.listening {
+  color: #fff;
+  background: var(--color-danger);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.hint {
+  margin: -8px 16px 12px;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+/* Phones: the panel fills the screen and the button hides while it is open. */
+@media (max-width: 900px) {
+  .panel {
+    inset: 0;
+    width: auto;
+    height: auto;
+    border: none;
+    border-radius: 0;
+  }
+
+  .fab {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .fabOpen {
+    display: none;
+  }
+}
+
+@keyframes panelIn {
+  from {
+    transform: translateY(12px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+@keyframes fabPulse {
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(99, 102, 241, 0.18),
+      0 10px 24px rgba(79, 70, 229, 0.35);
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0.15);
+  }
+}

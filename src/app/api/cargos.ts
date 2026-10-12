@@ -1,0 +1,133 @@
+import { api } from "./base";
+import type { CargoStatus } from "../../utils/status";
+
+export default interface Cargo {
+  id: string;
+  contactPerson: string;
+  deliveryDate: string;
+  deliveryLocation: string;
+  descriptionOfGoods: string;
+  dimensions: string;
+  emailAddress: string;
+  freightCost: string;
+  hazardousMaterial: string;
+  notes: string;
+  paymentTerms: string;
+  phoneNumber: string;
+  pickupDate: string;
+  pickupLocation: string;
+  quantity: string;
+  receiverAddress: string;
+  receiverContact: string;
+  receiverEmail: string;
+  receiverName: string;
+  receiverPhone: string;
+  serviceType: string;
+  shipperAddress: string;
+  shipperName: string;
+  specialHandlingInstructions: string;
+  temperatureControl: string;
+  truckType: string;
+  weight: string;
+  driverId?: string | null;
+  truckId?: string | null;
+  trailerId?: string | null;
+  status: CargoStatus;
+  source?: string;
+  externalId?: string | null;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
+  delayMinutes?: number | null;
+  delayReason?: string | null;
+  /** Set when a dispatcher assigned the truck despite restrictions on its route. */
+  restrictionsAcceptedAt?: string | null;
+  restrictionsAcceptedBy?: string | null;
+  restrictionsAcceptedTruckId?: string | null;
+  pickupPoint?: { x: number; y: number } | null;
+  deliveryPoint?: { x: number; y: number } | null;
+}
+
+export type CargoAssignment = Pick<Cargo, "driverId" | "truckId" | "trailerId"> & {
+  /** Assign even though the truck's route breaks height or weight limits. */
+  acceptRestrictions?: boolean;
+};
+
+/** Cargo fields the dispatcher edits; the API sets status, coordinates, timestamps and delays. */
+export type CargoInput = Partial<
+  Omit<
+    Cargo,
+    | "id"
+    | "status"
+    | "source"
+    | "externalId"
+    | "pickupPoint"
+    | "deliveryPoint"
+    | "pickedUpAt"
+    | "deliveredAt"
+    | "delayMinutes"
+    | "delayReason"
+    | "restrictionsAcceptedAt"
+    | "restrictionsAcceptedBy"
+    | "restrictionsAcceptedTruckId"
+  >
+>;
+
+// Assigning or releasing a driver, truck or trailer changes its availability.
+const ASSIGNMENT_TAGS = [
+  "Cargo",
+  "Driver",
+  "AvailableDrivers",
+  "Truck",
+  "AvailableTrucks",
+  "Trailer",
+  "AvailableTrailers",
+] as const;
+
+export const cargosApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    fetchCargos: builder.query<Cargo[], void>({
+      query: () => "/cargos",
+      providesTags: ["Cargo"],
+    }),
+    addNewCargo: builder.mutation<Cargo, CargoInput>({
+      query: (body) => ({ url: "/cargos", method: "POST", body }),
+      invalidatesTags: [...ASSIGNMENT_TAGS],
+    }),
+    deleteCargo: builder.mutation<void, string>({
+      query: (id) => ({ url: `/cargos/${id}`, method: "DELETE" }),
+      invalidatesTags: [...ASSIGNMENT_TAGS],
+    }),
+    loadCargo: builder.query<Cargo, string>({
+      query: (id) => `/cargos/${id}`,
+      providesTags: ["Cargo"],
+    }),
+    editCargo: builder.mutation<Cargo, { id: string } & CargoInput>({
+      query: ({ id, ...body }) => ({ url: `/cargos/${id}`, method: "PATCH", body }),
+      invalidatesTags: [...ASSIGNMENT_TAGS],
+    }),
+    // Assigns driver/truck/trailer without changing the cargo's status.
+    assignCargo: builder.mutation<Cargo, { id: string } & CargoAssignment>({
+      query: ({ id, ...body }) => ({ url: `/cargos/${id}/assign`, method: "POST", body }),
+      invalidatesTags: [...ASSIGNMENT_TAGS],
+    }),
+    confirmCargo: builder.mutation<void, string>({
+      query: (id) => ({ url: `/cargos/${id}/confirm`, method: "POST" }),
+      invalidatesTags: ["Cargo"],
+    }),
+    fetchConfirmedCargos: builder.query<Cargo[], void>({
+      query: () => "/cargos?status=confirmed",
+      providesTags: ["Cargo"],
+    }),
+  }),
+});
+
+export const {
+  useFetchCargosQuery,
+  useAddNewCargoMutation,
+  useDeleteCargoMutation,
+  useLoadCargoQuery,
+  useEditCargoMutation,
+  useAssignCargoMutation,
+  useConfirmCargoMutation,
+  useFetchConfirmedCargosQuery,
+} = cargosApi;

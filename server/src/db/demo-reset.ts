@@ -1,17 +1,22 @@
 import "dotenv/config";
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { createDb } from "./client";
+import { users } from "./schema";
 import { seed } from "./seed";
 
+// Driver-app logins of the European demo drivers, from before the demo became US-only.
+const RETIRED_DEMO_LOGINS = ["g.petrov@demo.logistic", "a.mueller@demo.logistic", "j.devries@demo.logistic", "m.rossi@demo.logistic"];
+
 /**
- * Puts the demo back to its starting state: removes all cargo, trucks, trailers, drivers
- * and positions, then re-seeds them. Logins (including the owner account) are kept.
+ * Puts the demo back to its starting state: removes all cargo, trucks, trailers, drivers,
+ * positions, road reports and driver chat, then re-seeds them. Logins (including the owner
+ * account) are kept, apart from retired demo driver logins.
  * Run with `npm run demo:reset -- --yes`; restart the API afterwards so the simulator
  * and traffic monitor start from the fresh data.
  */
 async function main() {
   if (!process.argv.includes("--yes")) {
-    console.error("This deletes all cargo, trucks, trailers, drivers and positions. Re-run with --yes to continue.");
+    console.error("This deletes all cargo, trucks, trailers, drivers, positions, road reports and driver chat. Re-run with --yes to continue.");
     process.exit(1);
   }
   if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_RESET !== "true") {
@@ -20,7 +25,8 @@ async function main() {
   }
 
   const { db, pool } = createDb(process.env.DATABASE_URL!);
-  await db.execute(sql`TRUNCATE cargos, positions, drivers, trucks, trailers CASCADE`);
+  await db.execute(sql`TRUNCATE cargos, positions, drivers, trucks, trailers, road_reports, chat_messages CASCADE`);
+  await db.delete(users).where(inArray(users.email, RETIRED_DEMO_LOGINS));
   await seed(db);
   await pool.end();
   console.log("Demo data reset.");

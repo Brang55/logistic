@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { AuthService } from "../auth/auth.service";
 import { asc, eq } from "drizzle-orm";
+import { ResourceStatus } from "../common/assignable";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
 import { drivers } from "../db/schema";
@@ -29,7 +30,7 @@ export class DriversService {
     return user;
   }
 
-  findAll(status?: string) {
+  findAll(status?: ResourceStatus) {
     return this.db
       .select()
       .from(drivers)

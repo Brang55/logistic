@@ -34,6 +34,9 @@ services:
       TRUST_PROXY: "true"
       SWAGGER: ${SWAGGER:-false}
       CORS_ORIGIN: ${PUBLIC_URL:?set PUBLIC_URL}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -62,6 +65,7 @@ services:
 
 volumes:
   pgdata:
+  uploads:
   redisdata:
   caddy_data:
   caddy_config:

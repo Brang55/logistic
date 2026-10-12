@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import type Cargo from "../../app/features/driver/cargoSlice";
-import type { CargoRoute } from "../../app/features/driver/routingSlice";
-import type { TruckPosition } from "../../app/features/driver/telematicsSlice";
+import type Cargo from "../../app/api/cargos";
+import type { CargoRoute } from "../../app/api/routing";
+import type { TruckPosition } from "../../app/api/telematics";
 import { useFleetLayer } from "../Fleet/useFleetLayer";
+import { MAP_DETAILS_INSET } from "../ui/ui";
 
 import styles from "./Dispatcher.module.css";
 import { theme } from "../../theme";
@@ -109,8 +110,9 @@ const DispatchMap = ({
     const mapInstance = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [10, 45],
-      zoom: 2,
+      // Continental US until the fleet's own extent is known.
+      center: [-98.5, 39.8],
+      zoom: 3,
     });
     mapInstance.on("load", () => {
       addLayers(mapInstance);
@@ -200,7 +202,9 @@ const DispatchMap = ({
     ];
     const bounds = new mapboxgl.LngLatBounds(route.pickup, route.pickup).extend(route.delivery);
     selected?.geometry.coordinates.forEach((point) => bounds.extend(point));
-    map.fitBounds(bounds, { padding: 60 });
+    // A route only exists for a selected load, so its details card covers the map's right side.
+    const inset = Math.min(MAP_DETAILS_INSET, map.getContainer().clientWidth / 2);
+    map.fitBounds(bounds, { padding: { top: 60, bottom: 60, left: 60, right: 60 + inset } });
 
     return () => markers.forEach((marker) => marker.remove());
   }, [map, route, routeIndex]);

@@ -2,7 +2,7 @@ import {
   useAddNewDriverMutation,
   useEditDriverMutation,
   useLazyCheckDriverEmailQuery,
-} from "../../../../app/features/driver/driverSlice";
+} from "../../../../app/api/drivers";
 
 import * as Yup from "yup";
 
@@ -21,7 +21,6 @@ interface AddDriverFormProps {
 }
 
 interface DriverFormValues {
-  id?: string;
   firstName: string;
   lastName: string;
   truckDriverEmail: string;
@@ -30,12 +29,12 @@ interface DriverFormValues {
 }
 
 const driverValidationSchema = Yup.object().shape({
-  firstName: Yup.string().required("First Name is required"),
-  lastName: Yup.string().required("Last Name is required"),
+  firstName: Yup.string().required("First name is required"),
+  lastName: Yup.string().required("Last name is required"),
   truckDriverEmail: Yup.string()
     .email("Invalid email")
     .required("Email is required"),
-  truckNumber: Yup.string().required("Truck Number is required"),
+  truckNumber: Yup.string().required("Truck number is required"),
   phoneNumber: Yup.string().required("Phone number is required"),
 });
 
@@ -57,7 +56,6 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({
   const [checkDriverEmail] = useLazyCheckDriverEmailQuery();
 
   const initialValues: DriverFormValues = {
-    id: id || "",
     firstName: firstName || "",
     lastName: lastName || "",
     truckNumber: truckNumber || "",
@@ -76,16 +74,20 @@ const AddDriverForm: React.FC<AddDriverFormProps> = ({
         id={id}
         open={open}
         onClose={onClose}
-        // @ts-expect-error not a final version
         initialValues={initialValues}
         validationSchema={driverValidationSchema}
         editEntityForm={editDriverForm}
-        // @ts-expect-error not a final version
         addEntity={addNewDriver}
-        // @ts-expect-error not a final version
         editEntity={editDriver}
         entityLabel="driver"
         checkEmailExists={checkEmailExistsInDB}
+        fieldLabels={{
+          firstName: "First name",
+          lastName: "Last name",
+          truckNumber: "Usual truck number",
+          truckDriverEmail: "Email",
+          phoneNumber: "Phone",
+        }}
       />
     </>
   );

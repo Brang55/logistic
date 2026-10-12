@@ -61,7 +61,16 @@ export class AuthService {
       throw new UnauthorizedException("Refresh token expired");
     }
 
-    await this.db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.id, stored.id));
+    // Checked again in the update itself, so two refreshes racing with one token can't both win.
+    const [rotated] = await this.db
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(refreshTokens.id, stored.id), isNull(refreshTokens.revokedAt)))
+      .returning({ id: refreshTokens.id });
+    if (!rotated) {
+      await this.revokeAll(stored.userId);
+      throw new UnauthorizedException("Invalid refresh token");
+    }
     const user = await this.db.query.users.findFirst({ where: eq(users.id, stored.userId) });
     if (!user) throw new UnauthorizedException("Invalid refresh token");
     return this.issueTokens(user);
