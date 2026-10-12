@@ -7,10 +7,11 @@ import { useAssignWithRestrictions } from "./useAssignWithRestrictions";
 const DIALOG = "Truck restrictions on this route";
 
 const Harness = ({ knownViolations }: { knownViolations?: string[] }) => {
-  const { assign, dialog } = useAssignWithRestrictions();
+  const { assign, dialog, error } = useAssignWithRestrictions();
   return (
     <>
       <button onClick={() => assign({ id: "cargo-1", truckId: "truck-1" }, knownViolations)}>Assign truck</button>
+      {error && <p role="alert">{error}</p>}
       {dialog}
     </>
   );
@@ -101,12 +102,15 @@ describe("useAssignWithRestrictions", () => {
     expect(screen.getByRole("dialog", { name: DIALOG })).toBeInTheDocument();
   });
 
-  it("doesn't ask about restrictions for other failures", async () => {
-    const calls = mockApi(() => json(404, { statusCode: 404, message: "Cargo not found" }));
+  it("shows other failures instead of asking about restrictions", async () => {
+    const calls = mockApi(() =>
+      json(409, { statusCode: 409, code: "TRUCK_HAS_NO_DRIVER", message: "US-209 has no driver. Seat one in it on the Drivers page, or pick a driver for this load." })
+    );
     renderHarness();
     fireEvent.click(screen.getByText("Assign truck"));
 
-    await waitFor(() => expect(assignCalls(calls)).toHaveLength(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent("US-209 has no driver.");
+    expect(assignCalls(calls)).toHaveLength(1);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
