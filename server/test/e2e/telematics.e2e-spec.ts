@@ -2,7 +2,7 @@ import { io } from "socket.io-client";
 import { LngLat } from "../../src/routing/routing.types";
 import { SimulatedTelematicsProvider } from "../../src/telematics/simulated-telematics.provider";
 import { PositionFix } from "../../src/telematics/telematics.types";
-import { connectLive, newCargo, newTruck, webhook } from "../support/actors";
+import { connectLive, newCargo, newCrewedTruck, newTruck, webhook } from "../support/actors";
 import { createTestApp, TestApp } from "../support/app";
 import { PLACES, router } from "../support/fakes";
 
@@ -13,7 +13,7 @@ describe("telematics (e2e)", () => {
 
   beforeAll(async () => {
     t = await createTestApp();
-    truckA = await newTruck(t, { truckNumber: "GPS-A" });
+    truckA = await newCrewedTruck(t, { truckNumber: "GPS-A" });
     truckB = await newTruck(t, { truckNumber: "GPS-B", telematicsId: "samsara-42" });
   });
   afterAll(() => t.close());

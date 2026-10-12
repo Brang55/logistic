@@ -29,8 +29,8 @@ describe("load boards (e2e)", () => {
       cargo: {
         source: load.board,
         externalId: load.id,
-        pickupLocation: load.origin.city,
-        deliveryLocation: load.destination.city,
+        pickupLocation: load.origin.address,
+        deliveryLocation: load.destination.address,
         pickupPoint: { x: load.origin.point[0], y: load.origin.point[1] },
         status: "new",
       },

@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { skipToken } from "@reduxjs/toolkit/query/react";
 
-import type Cargo from "../../app/api/cargos";
 import { useFetchCargosQuery } from "../../app/api/cargos";
-import { useFetchDriversQuery } from "../../app/api/drivers";
-import { useFetchTrailersQuery } from "../../app/api/trailers";
 import { useFetchTrucksQuery, type Truck } from "../../app/api/trucks";
 import { useCargoRouteQuery, type RoutePlan } from "../../app/api/routing";
 import { useLatestPositionsQuery } from "../../app/api/telematics";
+import { useTruckOriginsQuery } from "../../app/api/trips";
+import { crewOf, rankTrucks, type Crew } from "../../utils/crew";
 import { formatDistance, formatDuration } from "../../utils/format";
-import { distanceKm } from "../../utils/geo";
 import { groupMessages } from "../../utils/notices";
 import { Loader } from "../Loader/Loader";
 import { MapDetailsCard, PanelHeader } from "../ui/ui";
+import CrewPicker from "./CrewPicker";
 import DispatchMap from "./DispatchMap";
 import { useAssignWithRestrictions } from "./useAssignWithRestrictions";
 
@@ -20,18 +19,6 @@ import styles from "./Dispatcher.module.css";
 import { formatCargoWeight, formatLength, formatWeight } from "../../utils/units";
 import { errorMessage } from "../../utils/errors";
 import { isFinished } from "../../utils/status";
-
-interface Draft {
-  driverId: string;
-  truckId: string;
-  trailerId: string;
-}
-
-const draftFrom = (cargo?: Cargo): Draft => ({
-  driverId: cargo?.driverId ?? "",
-  truckId: cargo?.truckId ?? "",
-  trailerId: cargo?.trailerId ?? "",
-});
 
 const ALERT_LABELS: Record<string, string> = {
   tunnel: "tunnels",
@@ -48,10 +35,6 @@ const truckLimits = (truck: Truck) =>
   ]
     .filter(Boolean)
     .join(" · ");
-
-// Only resources that are free, plus whatever this cargo already holds, can be picked.
-const selectable = <T extends { id: string; status: string }>(items: T[] | undefined, currentId?: string | null) =>
-  (items ?? []).filter((item) => item.status === "available" || item.id === currentId);
 
 const RouteSummary = ({ plan }: { plan: RoutePlan }) => {
   const violations = plan.notices.filter((notice) => notice.type === "violation");
@@ -106,31 +89,25 @@ const RouteSummary = ({ plan }: { plan: RoutePlan }) => {
 const Dispatcher = () => {
   const { data: cargos, isLoading, isError } = useFetchCargosQuery();
   const { data: trucks } = useFetchTrucksQuery();
-  const { data: drivers } = useFetchDriversQuery();
-  const { data: trailers } = useFetchTrailersQuery();
   const { data: positions } = useLatestPositionsQuery();
-  const { assign, dialog: restrictionsDialog, isLoading: isAssigning } = useAssignWithRestrictions();
+  const { assign, dialog: restrictionsDialog, error: assignError, isLoading: isAssigning } = useAssignWithRestrictions();
 
   const [selectedId, setSelectedId] = useState<string>();
-  const [draft, setDraft] = useState<Draft>(draftFrom());
+  const [draft, setDraft] = useState<Crew>(crewOf(undefined));
   const [routeIndex, setRouteIndex] = useState(0);
+  const { data: origins } = useTruckOriginsQuery(selectedId ?? skipToken);
 
   const cargo = cargos?.find((item) => item.id === selectedId);
   const truck = trucks?.find((item) => item.id === draft.truckId);
   const trucksById = useMemo(() => new Map((trucks ?? []).map((t) => [t.id, t])), [trucks]);
   const truckLabels = useMemo(() => new Map((trucks ?? []).map((t) => [t.id, t.truckNumber])), [trucks]);
 
-  // Selectable trucks, closest to the pickup first, with their straight-line distance.
-  const truckOptions = useMemo(() => {
+  // Every truck, closest to the pickup first, measured from where it will be free. A busy truck
+  // can still take the load: it is queued behind the truck's current ones.
+  const truckChoices = useMemo(() => {
     const pickup = cargo?.pickupPoint;
-    const where = new Map((positions ?? []).map((p) => [p.truckId, p.point]));
-    return selectable(trucks, cargo?.truckId)
-      .map((item) => {
-        const at = where.get(item.id);
-        return { truck: item, km: pickup && at ? distanceKm(at, [pickup.x, pickup.y]) : undefined };
-      })
-      .sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
-  }, [trucks, positions, cargo]);
+    return rankTrucks(trucks ?? [], pickup ? [pickup.x, pickup.y] : undefined, positions, origins);
+  }, [trucks, positions, origins, cargo]);
 
   const {
     data: route,
@@ -140,13 +117,13 @@ const Dispatcher = () => {
 
   const selectCargo = (id: string) => {
     setSelectedId(id);
-    setDraft(draftFrom(cargos?.find((item) => item.id === id)));
+    setDraft(crewOf(cargos?.find((item) => item.id === id), trucks));
     setRouteIndex(0);
   };
 
   const clearSelection = () => {
     setSelectedId(undefined);
-    setDraft(draftFrom());
+    setDraft(crewOf(undefined));
     setRouteIndex(0);
   };
 
@@ -159,12 +136,14 @@ const Dispatcher = () => {
       ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedId]);
 
-  const updateDraft = (changes: Partial<Draft>) => {
-    setDraft((current) => ({ ...current, ...changes }));
+  const updateDraft = (crew: Crew) => {
+    setDraft(crew);
     setRouteIndex(0);
   };
 
-  const changed = !!cargo && JSON.stringify(draftFrom(cargo)) !== JSON.stringify(draft);
+  const changed = !!cargo && JSON.stringify(crewOf(cargo, trucks)) !== JSON.stringify(draft);
+  // A truck with no driver seated needs a driver picked for the load.
+  const needsDriver = !!truck && !truck.driverId && !draft.driverId;
   // Delivered loads drop out of the dispatch queue.
   const activeCargos = (cargos ?? []).filter((item) => !isFinished(item.status));
   const plans = route?.routes ?? [];
@@ -184,7 +163,7 @@ const Dispatcher = () => {
       <section className={styles.panel}>
         <PanelHeader
           title="Dispatch"
-          subtitle={`Match each load with a truck, driver and trailer · ${activeCargos.length} active · ${activeCargos.filter((c) => !c.truckId).length} waiting for a truck`}
+          subtitle={`Match each load with a truck; it brings its driver and trailer · ${activeCargos.length} active · ${activeCargos.filter((c) => !c.truckId).length} waiting for a truck`}
         />
         <ul ref={queueRef} className={styles.queue}>
           {activeCargos.map((item) => (
@@ -234,18 +213,7 @@ const Dispatcher = () => {
             onClose={clearSelection}
           >
             <div className={styles.details}>
-              <label>
-                Truck
-                <select value={draft.truckId} onChange={(e) => updateDraft({ truckId: e.target.value })}>
-                  <option value="">No truck</option>
-                  {truckOptions.map(({ truck: item, km }) => (
-                    <option key={item.id} value={item.id}>
-                      {item.truckNumber} – {item.truckModel}
-                      {km !== undefined && ` · ${formatDistance(km * 1000)} from pickup`}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <CrewPicker value={draft} onChange={updateDraft} current={cargo} choices={truckChoices} idPrefix="dispatch" />
               {truck ? (
                 <p className={styles.note}>{truckLimits(truck) || "No dimensions set for this truck."}</p>
               ) : (
@@ -258,37 +226,14 @@ const Dispatcher = () => {
                 </p>
               )}
 
-              <label>
-                Driver
-                <select value={draft.driverId} onChange={(e) => updateDraft({ driverId: e.target.value })}>
-                  <option value="">No driver</option>
-                  {selectable(drivers, cargo.driverId).map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.firstName} {item.lastName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Trailer
-                <select value={draft.trailerId} onChange={(e) => updateDraft({ trailerId: e.target.value })}>
-                  <option value="">No trailer</option>
-                  {selectable(trailers, cargo.trailerId).map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.trailerNumber} – {item.trailer}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
               <button
                 className={styles.assign}
-                disabled={!changed || isAssigning}
+                disabled={!changed || needsDriver || isAssigning}
                 onClick={() => assign({ id: cargo.id, ...draft }, knownViolations)}
               >
                 {isAssigning ? "Saving..." : "Assign"}
               </button>
+              {assignError && <p className={styles.error}>{assignError}</p>}
 
               <h4>Route</h4>
               {isRouting && <p className={styles.note}>Calculating route...</p>}

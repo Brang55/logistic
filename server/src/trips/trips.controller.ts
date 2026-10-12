@@ -27,6 +27,13 @@ export class TripsController {
     return this.trips.nextPickups(id);
   }
 
+  /** For ranking trucks by distance to a load's pickup: where the busy ones will be free. */
+  @ManageFleet()
+  @Get("cargos/:id/truck-origins")
+  truckOrigins(@Param("id", ParseUUIDPipe) id: string) {
+    return this.trips.busyTruckOrigins(id);
+  }
+
   @ManageFleet()
   @Get("traffic/report")
   trafficReport() {

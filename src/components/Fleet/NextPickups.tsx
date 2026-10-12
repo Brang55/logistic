@@ -10,11 +10,12 @@ const SHOWN = 5;
 
 /**
  * Unassigned loads ranked by drive time from where the truck will be free.
- * Assigning queues the load behind the truck's current ones, with the same driver.
+ * Assigning queues the load behind the truck's current ones, with the driver of its current load
+ * (else the truck's own driver).
  */
 const NextPickups = ({ truckId, driverId }: { truckId: string; driverId?: string | null }) => {
   const { data, isFetching, error } = useNextPickupsQuery(truckId);
-  const { assign, dialog, isLoading: isAssigning } = useAssignWithRestrictions();
+  const { assign, dialog, error: assignError, isLoading: isAssigning } = useAssignWithRestrictions();
 
   return (
     <div className={styles.nextPickups}>
@@ -55,6 +56,7 @@ const NextPickups = ({ truckId, driverId }: { truckId: string; driverId?: string
           </ul>
         </>
       )}
+      {assignError && <p className={styles.late}>{assignError}</p>}
       {dialog}
     </div>
   );

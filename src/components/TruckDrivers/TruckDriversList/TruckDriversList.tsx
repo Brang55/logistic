@@ -154,7 +154,7 @@ const TruckDriversList = () => {
           id={editing.id}
           firstName={editing.firstName}
           lastName={editing.lastName}
-          truckNumber={editing.truckNumber}
+          truckId={editing.truckId}
           truckDriverEmail={editing.truckDriverEmail}
           phoneNumber={editing.phoneNumber}
         />

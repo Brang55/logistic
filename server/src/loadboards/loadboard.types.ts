@@ -2,6 +2,8 @@ import { LngLat } from "../routing/routing.types";
 
 export interface LoadStop {
   city: string;
+  /** Street address of the dock. */
+  address: string;
   point: LngLat;
 }
 

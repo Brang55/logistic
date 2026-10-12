@@ -49,15 +49,16 @@ const demoTrailers = [
   { trailerNumber: "UT-06", trailer: "Fontaine Velocity step deck" },
 ];
 
+// `seat` is the truck each driver drives; US-209 and US-210 have no driver.
 const demoDrivers = [
-  { firstName: "James", lastName: "Carter", truckDriverEmail: "j.carter@demo.logistic", phoneNumber: "+1 214 555 0101", truckNumber: "US-201" },
-  { firstName: "Maria", lastName: "Gonzalez", truckDriverEmail: "m.gonzalez@demo.logistic", phoneNumber: "+1 312 555 0144", truckNumber: "US-202" },
-  { firstName: "Darnell", lastName: "Washington", truckDriverEmail: "d.washington@demo.logistic", phoneNumber: "+1 323 555 0123", truckNumber: "US-203" },
-  { firstName: "Emily", lastName: "Novak", truckDriverEmail: "e.novak@demo.logistic", phoneNumber: "+1 614 555 0156", truckNumber: "US-204" },
-  { firstName: "Tyler", lastName: "Brooks", truckDriverEmail: "t.brooks@demo.logistic", phoneNumber: "+1 404 555 0188", truckNumber: "US-205" },
-  { firstName: "Ray", lastName: "Hernandez", truckDriverEmail: "r.hernandez@demo.logistic", phoneNumber: "+1 713 555 0199", truckNumber: "US-206" },
-  { firstName: "Sean", lastName: "Murphy", truckDriverEmail: "s.murphy@demo.logistic", phoneNumber: "+1 615 555 0147", truckNumber: "US-207" },
-  { firstName: "Linda", lastName: "Park", truckDriverEmail: "l.park@demo.logistic", phoneNumber: "+1 602 555 0110", truckNumber: "US-208" },
+  { firstName: "James", lastName: "Carter", truckDriverEmail: "j.carter@demo.logistic", phoneNumber: "+1 214 555 0101", seat: "US-201" },
+  { firstName: "Maria", lastName: "Gonzalez", truckDriverEmail: "m.gonzalez@demo.logistic", phoneNumber: "+1 312 555 0144", seat: "US-202" },
+  { firstName: "Darnell", lastName: "Washington", truckDriverEmail: "d.washington@demo.logistic", phoneNumber: "+1 323 555 0123", seat: "US-203" },
+  { firstName: "Emily", lastName: "Novak", truckDriverEmail: "e.novak@demo.logistic", phoneNumber: "+1 614 555 0156", seat: "US-204" },
+  { firstName: "Tyler", lastName: "Brooks", truckDriverEmail: "t.brooks@demo.logistic", phoneNumber: "+1 404 555 0188", seat: "US-205" },
+  { firstName: "Ray", lastName: "Hernandez", truckDriverEmail: "r.hernandez@demo.logistic", phoneNumber: "+1 713 555 0199", seat: "US-206" },
+  { firstName: "Sean", lastName: "Murphy", truckDriverEmail: "s.murphy@demo.logistic", phoneNumber: "+1 615 555 0147", seat: "US-207" },
+  { firstName: "Linda", lastName: "Park", truckDriverEmail: "l.park@demo.logistic", phoneNumber: "+1 602 555 0110", seat: "US-208" },
 ];
 
 // Where each demo truck is parked before the simulator moves it.
@@ -77,38 +78,52 @@ const DEPOTS: Record<string, { x: number; y: number }> = {
 // Trips already under way when the demo starts. The demo driver (US-201) is left free, so the
 // dispatcher can assign Dallas → Chicago live.
 const DEMO_TRIPS = [
-  { shipperName: "Peach State Foods", truckNumber: "US-205", driverEmail: "t.brooks@demo.logistic" },
-  { shipperName: "Pacific Furniture", truckNumber: "US-203", driverEmail: "d.washington@demo.logistic" },
+  { shipperName: "Peach State Foods", truckNumber: "US-205" },
+  { shipperName: "Pacific Furniture", truckNumber: "US-203" },
 ];
 
-// Fixed coordinates so the demo needs no geocoding calls.
-const CITY_POINTS: Record<string, { x: number; y: number }> = {
-  "Dallas, TX, USA": { x: -96.797, y: 32.7767 },
-  "Chicago, IL, USA": { x: -87.6298, y: 41.8781 },
-  "Atlanta, GA, USA": { x: -84.388, y: 33.749 },
-  "Orlando, FL, USA": { x: -81.3792, y: 28.5383 },
-  "Los Angeles, CA, USA": { x: -118.2437, y: 34.0522 },
-  "Phoenix, AZ, USA": { x: -112.074, y: 33.4484 },
-  "Columbus, OH, USA": { x: -82.9988, y: 39.9612 },
-  "Detroit, MI, USA": { x: -83.0458, y: 42.3314 },
-  "Houston, TX, USA": { x: -95.3698, y: 29.7604 },
-  "Memphis, TN, USA": { x: -90.049, y: 35.1495 },
-  "Denver, CO, USA": { x: -104.9903, y: 39.7392 },
-  "Kansas City, MO, USA": { x: -94.5786, y: 39.0997 },
-  "Nashville, TN, USA": { x: -86.7816, y: 36.1627 },
-  "Charlotte, NC, USA": { x: -80.8431, y: 35.2271 },
+// The trailer hooked to each truck at the start; the other trucks run without one.
+const HOOKED_TRAILERS: Record<string, string> = {
+  "US-201": "UT-01",
+  "US-202": "UT-02",
+  "US-203": "UT-04",
+  "US-205": "UT-05",
+  "US-206": "UT-03",
+};
+
+// Docks as real street addresses with fixed coordinates, so the demo needs no geocoding calls.
+// Checked with TomTom truck routing (US-201's size): every demo route is permitted for a 53' rig,
+// except Midwest Packaging, which is on purpose: its street in Chicago isn't a truck route, so
+// Dispatch shows the restriction warning and asks for confirmation when a truck is assigned.
+const SITE_POINTS: Record<string, { x: number; y: number }> = {
+  "4500 S Westmoreland Rd, Dallas, TX 75237": { x: -96.88197, y: 32.68871 },
+  "4500 W 47th St, Chicago, IL 60632": { x: -87.73487, y: 41.80778 },
+  "4300 Fulton Industrial Blvd SW, Atlanta, GA 30336": { x: -84.52807, y: 33.76597 },
+  "8000 Presidents Dr, Orlando, FL 32809": { x: -81.41654, y: 28.44895 },
+  "5600 S Alameda St, Los Angeles, CA 90058": { x: -118.23783, y: 33.99204 },
+  "4500 W Buckeye Rd, Phoenix, AZ 85043": { x: -112.156, y: 33.43692 },
+  "2200 Westbelt Dr, Columbus, OH 43228": { x: -83.12361, y: 39.9991 },
+  "12900 Mt Elliott St, Detroit, MI 48212": { x: -83.03808, y: 42.41307 },
+  "1500 Mayo Shell Rd, Galena Park, TX 77547": { x: -95.24443, y: 29.72108 },
+  "5000 Tchulahoma Rd, Memphis, TN 38118": { x: -89.95449, y: 35.01209 },
+  "4501 Holly St, Denver, CO 80216": { x: -104.92237, y: 39.77878 },
+  "1800 N Topping Ave, Kansas City, MO 64120": { x: -94.51375, y: 39.1409 },
+  "500 Allied Dr, Nashville, TN 37211": { x: -86.74664, y: 36.09643 },
+  "301 S Tryon St, Charlotte, NC 28202": { x: -80.84531, y: 35.22557 },
+  "2300 S 51st Ave, Phoenix, AZ 85043": { x: -112.16933, y: 33.42953 },
+  "2000 Empire Central, Dallas, TX 75235": { x: -96.85482, y: 32.82613 },
 };
 
 // Every field the cargo form marks as required is filled, so seeded loads can be edited in the demo.
 const demoCargo = [
-  { shipperName: "Lone Star Plastics", pickupLocation: "Dallas, TX, USA", contactPerson: "Mike Turner", phoneNumber: "+1 214 555 0170", emailAddress: "dispatch@lonestarplastics.demo", receiverName: "Midwest Packaging", deliveryLocation: "Chicago, IL, USA", receiverContact: "Sarah Kowalski", receiverPhone: "+1 312 555 0190", receiverEmail: "receiving@midwestpack.demo", descriptionOfGoods: "Plastic resin, 20 totes", quantity: "20", weight: lb(40000), dimensions: "48x40x48 in", truckType: "Box", freightCost: "2650" },
-  { shipperName: "Peach State Foods", pickupLocation: "Atlanta, GA, USA", contactPerson: "Denise Howard", phoneNumber: "+1 404 555 0133", emailAddress: "shipping@peachstatefoods.demo", receiverName: "Publix DC", deliveryLocation: "Orlando, FL, USA", receiverContact: "Carlos Rivera", receiverPhone: "+1 407 555 0122", receiverEmail: "dc-inbound@publix.demo", descriptionOfGoods: "Frozen goods, 26 pallets", quantity: "26", weight: lb(43000), dimensions: "48x40x64 in", truckType: "Refrigerated", freightCost: "1350", temperatureControl: "0 °F" },
-  { shipperName: "Pacific Furniture", pickupLocation: "Los Angeles, CA, USA", contactPerson: "Kevin Nguyen", phoneNumber: "+1 213 555 0111", emailAddress: "orders@pacificfurniture.demo", receiverName: "Desert Home", deliveryLocation: "Phoenix, AZ, USA", receiverContact: "Laura Mitchell", receiverPhone: "+1 602 555 0155", receiverEmail: "warehouse@deserthome.demo", descriptionOfGoods: "Flat-pack furniture", quantity: "40", weight: lb(25000), dimensions: "80x40x24 in", truckType: "Box", freightCost: "1240" },
-  { shipperName: "Ohio Auto Parts", pickupLocation: "Columbus, OH, USA", contactPerson: "Brian Foster", phoneNumber: "+1 614 555 0166", emailAddress: "logistics@ohioautoparts.demo", receiverName: "Detroit Assembly", deliveryLocation: "Detroit, MI, USA", receiverContact: "Angela Price", receiverPhone: "+1 313 555 0177", receiverEmail: "jit-receiving@detroitassembly.demo", descriptionOfGoods: "Brake assemblies", quantity: "30", weight: lb(31000), dimensions: "48x40x40 in", truckType: "Box", freightCost: "980", hazardousMaterial: "No" },
-  { shipperName: "Gulf Coast Pipe & Steel", pickupLocation: "Houston, TX, USA", contactPerson: "Luis Ramirez", phoneNumber: "+1 713 555 0181", emailAddress: "shipping@gulfcoastpipe.demo", receiverName: "Delta Builders Supply", deliveryLocation: "Memphis, TN, USA", receiverContact: "Grace Thompson", receiverPhone: "+1 901 555 0164", receiverEmail: "yard@deltabuilders.demo", descriptionOfGoods: "Steel pipe", quantity: "16 bundles", weight: lb(44000), dimensions: "480x12x12 in", truckType: "Flatbed", freightCost: "1890", specialHandlingInstructions: "Strap every bundle, tarp required" },
-  { shipperName: "Front Range Brewing", pickupLocation: "Denver, CO, USA", contactPerson: "Jake Sullivan", phoneNumber: "+1 303 555 0129", emailAddress: "logistics@frontrangebrewing.demo", receiverName: "Heartland Beverage", deliveryLocation: "Kansas City, MO, USA", receiverContact: "Olivia Grant", receiverPhone: "+1 816 555 0142", receiverEmail: "receiving@heartlandbev.demo", descriptionOfGoods: "Canned beverages, 22 pallets", quantity: "22", weight: lb(42000), dimensions: "48x40x52 in", truckType: "Box", freightCost: "1560" },
-  { shipperName: "Music City Paper", pickupLocation: "Nashville, TN, USA", contactPerson: "Holly Bennett", phoneNumber: "+1 615 555 0175", emailAddress: "orders@musiccitypaper.demo", receiverName: "Queen City Office Supply", deliveryLocation: "Charlotte, NC, USA", receiverContact: "Marcus Hill", receiverPhone: "+1 704 555 0138", receiverEmail: "dock@queencityoffice.demo", descriptionOfGoods: "Paper products, 24 pallets", quantity: "24", weight: lb(30000), dimensions: "48x40x60 in", truckType: "Box", freightCost: "1180" },
-  { shipperName: "Sonoran Produce", pickupLocation: "Phoenix, AZ, USA", contactPerson: "Rosa Delgado", phoneNumber: "+1 602 555 0168", emailAddress: "dispatch@sonoranproduce.demo", receiverName: "Metroplex Grocers DC", deliveryLocation: "Dallas, TX, USA", receiverContact: "Brandon Lee", receiverPhone: "+1 214 555 0119", receiverEmail: "dc@metroplexgrocers.demo", descriptionOfGoods: "Fresh produce, 24 pallets", quantity: "24", weight: lb(38000), dimensions: "48x40x60 in", truckType: "Refrigerated", freightCost: "2980", temperatureControl: "34 to 38 °F" },
+  { shipperName: "Lone Star Plastics", pickupLocation: "4500 S Westmoreland Rd, Dallas, TX 75237", contactPerson: "Mike Turner", phoneNumber: "+1 214 555 0170", emailAddress: "dispatch@lonestarplastics.demo", receiverName: "Midwest Packaging", deliveryLocation: "4500 W 47th St, Chicago, IL 60632", receiverContact: "Sarah Kowalski", receiverPhone: "+1 312 555 0190", receiverEmail: "receiving@midwestpack.demo", descriptionOfGoods: "Plastic resin, 20 totes", quantity: "20", weight: lb(40000), dimensions: "48x40x48 in", truckType: "Box", freightCost: "2650" },
+  { shipperName: "Peach State Foods", pickupLocation: "4300 Fulton Industrial Blvd SW, Atlanta, GA 30336", contactPerson: "Denise Howard", phoneNumber: "+1 404 555 0133", emailAddress: "shipping@peachstatefoods.demo", receiverName: "Publix DC", deliveryLocation: "8000 Presidents Dr, Orlando, FL 32809", receiverContact: "Carlos Rivera", receiverPhone: "+1 407 555 0122", receiverEmail: "dc-inbound@publix.demo", descriptionOfGoods: "Frozen goods, 26 pallets", quantity: "26", weight: lb(43000), dimensions: "48x40x64 in", truckType: "Refrigerated", freightCost: "1350", temperatureControl: "0 °F" },
+  { shipperName: "Pacific Furniture", pickupLocation: "5600 S Alameda St, Los Angeles, CA 90058", contactPerson: "Kevin Nguyen", phoneNumber: "+1 213 555 0111", emailAddress: "orders@pacificfurniture.demo", receiverName: "Desert Home", deliveryLocation: "4500 W Buckeye Rd, Phoenix, AZ 85043", receiverContact: "Laura Mitchell", receiverPhone: "+1 602 555 0155", receiverEmail: "warehouse@deserthome.demo", descriptionOfGoods: "Flat-pack furniture", quantity: "40", weight: lb(25000), dimensions: "80x40x24 in", truckType: "Box", freightCost: "1240" },
+  { shipperName: "Ohio Auto Parts", pickupLocation: "2200 Westbelt Dr, Columbus, OH 43228", contactPerson: "Brian Foster", phoneNumber: "+1 614 555 0166", emailAddress: "logistics@ohioautoparts.demo", receiverName: "Detroit Assembly", deliveryLocation: "12900 Mt Elliott St, Detroit, MI 48212", receiverContact: "Angela Price", receiverPhone: "+1 313 555 0177", receiverEmail: "jit-receiving@detroitassembly.demo", descriptionOfGoods: "Brake assemblies", quantity: "30", weight: lb(31000), dimensions: "48x40x40 in", truckType: "Box", freightCost: "980", hazardousMaterial: "No" },
+  { shipperName: "Gulf Coast Pipe & Steel", pickupLocation: "1500 Mayo Shell Rd, Galena Park, TX 77547", contactPerson: "Luis Ramirez", phoneNumber: "+1 713 555 0181", emailAddress: "shipping@gulfcoastpipe.demo", receiverName: "Delta Builders Supply", deliveryLocation: "5000 Tchulahoma Rd, Memphis, TN 38118", receiverContact: "Grace Thompson", receiverPhone: "+1 901 555 0164", receiverEmail: "yard@deltabuilders.demo", descriptionOfGoods: "Steel pipe", quantity: "16 bundles", weight: lb(44000), dimensions: "480x12x12 in", truckType: "Flatbed", freightCost: "1890", specialHandlingInstructions: "Strap every bundle, tarp required" },
+  { shipperName: "Front Range Brewing", pickupLocation: "4501 Holly St, Denver, CO 80216", contactPerson: "Jake Sullivan", phoneNumber: "+1 303 555 0129", emailAddress: "logistics@frontrangebrewing.demo", receiverName: "Heartland Beverage", deliveryLocation: "1800 N Topping Ave, Kansas City, MO 64120", receiverContact: "Olivia Grant", receiverPhone: "+1 816 555 0142", receiverEmail: "receiving@heartlandbev.demo", descriptionOfGoods: "Canned beverages, 22 pallets", quantity: "22", weight: lb(42000), dimensions: "48x40x52 in", truckType: "Box", freightCost: "1560" },
+  { shipperName: "Music City Paper", pickupLocation: "500 Allied Dr, Nashville, TN 37211", contactPerson: "Holly Bennett", phoneNumber: "+1 615 555 0175", emailAddress: "orders@musiccitypaper.demo", receiverName: "Queen City Office Supply", deliveryLocation: "301 S Tryon St, Charlotte, NC 28202", receiverContact: "Marcus Hill", receiverPhone: "+1 704 555 0138", receiverEmail: "dock@queencityoffice.demo", descriptionOfGoods: "Paper products, 24 pallets", quantity: "24", weight: lb(30000), dimensions: "48x40x60 in", truckType: "Box", freightCost: "1180" },
+  { shipperName: "Sonoran Produce", pickupLocation: "2300 S 51st Ave, Phoenix, AZ 85043", contactPerson: "Rosa Delgado", phoneNumber: "+1 602 555 0168", emailAddress: "dispatch@sonoranproduce.demo", receiverName: "Metroplex Grocers DC", deliveryLocation: "2000 Empire Central, Dallas, TX 75235", receiverContact: "Brandon Lee", receiverPhone: "+1 214 555 0119", receiverEmail: "dc@metroplexgrocers.demo", descriptionOfGoods: "Fresh produce, 24 pallets", quantity: "24", weight: lb(38000), dimensions: "48x40x60 in", truckType: "Refrigerated", freightCost: "2980", temperatureControl: "34 to 38 °F" },
 ];
 
 const isoDay = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
@@ -205,20 +220,46 @@ const DEMO_CHAT: { driverEmail: string; body: string; minutesAgo: number }[] = [
 
 // Past loads for the demo driver, so the driver app's history has something to show.
 const DEMO_HISTORY = [
-  { from: "Dallas, TX, USA", to: "Houston, TX, USA", goods: "Bottled water", weight: lb(44000), quantity: "22 pallets", shipper: "Lone Star Springs", receiver: "Bayou Grocers DC", daysAgo: 2, hours: 4, delay: 0 },
-  { from: "Fort Worth, TX, USA", to: "Oklahoma City, OK, USA", goods: "Packaged dairy products", weight: lb(32000), quantity: "26 pallets", shipper: "Trinity Dairy", receiver: "Sooner Foods", daysAgo: 5, hours: 4, delay: 25 },
-  { from: "Dallas, TX, USA", to: "San Antonio, TX, USA", goods: "Auto parts", weight: lb(21500), quantity: "18 pallets", shipper: "Metroplex Auto Supply", receiver: "Alamo Assembly", daysAgo: 8, hours: 5, delay: 0 },
-  { from: "Houston, TX, USA", to: "Dallas, TX, USA", goods: "Steel profiles", weight: lb(45000), quantity: "12 bundles", shipper: "Ship Channel Metals", receiver: "North Texas Builders", daysAgo: 12, hours: 4, delay: 0 },
-  { from: "Dallas, TX, USA", to: "Little Rock, AR, USA", goods: "Pharmaceutical products", weight: lb(13500), quantity: "14 pallets", shipper: "Southwest Pharma Distribution", receiver: "Natural State Health", daysAgo: 16, hours: 5, delay: 45 },
-  { from: "Austin, TX, USA", to: "Dallas, TX, USA", goods: "Frozen foods", weight: lb(40000), quantity: "30 pallets", shipper: "Hill Country Foods", receiver: "Metroplex Grocers DC", daysAgo: 21, hours: 3, delay: 0 },
-  { from: "Dallas, TX, USA", to: "Memphis, TN, USA", goods: "Household appliances", weight: lb(26000), quantity: "40 pallets", shipper: "Texas Home Distribution", receiver: "Bluff City Appliances", daysAgo: 27, hours: 7, delay: 900 },
-  { from: "El Paso, TX, USA", to: "Dallas, TX, USA", goods: "Building materials", weight: lb(46000), quantity: "22 pallets", shipper: "Sun City Materials", receiver: "North Texas Builders", daysAgo: 34, hours: 10, delay: 0 },
+  { from: "2500 Irving Blvd, Dallas, TX 75207", to: "10000 Wallisville Rd, Houston, TX 77013", goods: "Bottled water", weight: lb(44000), quantity: "22 pallets", shipper: "Lone Star Springs", receiver: "Bayou Grocers DC", daysAgo: 2, hours: 4, delay: 0 },
+  { from: "2600 NE 28th St, Fort Worth, TX 76111", to: "3800 S Purdue Ave, Oklahoma City, OK 73179", goods: "Packaged dairy products", weight: lb(32000), quantity: "26 pallets", shipper: "Trinity Dairy", receiver: "Sooner Foods", daysAgo: 5, hours: 4, delay: 25 },
+  { from: "1100 N Westmoreland Rd, Dallas, TX 75211", to: "5000 Rigsby Ave, San Antonio, TX 78222", goods: "Auto parts", weight: lb(21500), quantity: "18 pallets", shipper: "Metroplex Auto Supply", receiver: "Alamo Assembly", daysAgo: 8, hours: 5, delay: 0 },
+  { from: "1600 Lockwood Dr, Houston, TX 77020", to: "4100 Platinum Way, Dallas, TX 75237", goods: "Steel profiles", weight: lb(45000), quantity: "12 bundles", shipper: "Ship Channel Metals", receiver: "North Texas Builders", daysAgo: 12, hours: 4, delay: 0 },
+  { from: "11200 Goodnight Ln, Dallas, TX 75229", to: "7000 Frazier Pike, Little Rock, AR 72206", goods: "Pharmaceutical products", weight: lb(13500), quantity: "14 pallets", shipper: "Southwest Pharma Distribution", receiver: "Natural State Health", daysAgo: 16, hours: 5, delay: 45 },
+  { from: "8300 Burleson Rd, Austin, TX 78744", to: "2000 Empire Central, Dallas, TX 75235", goods: "Frozen foods", weight: lb(40000), quantity: "30 pallets", shipper: "Hill Country Foods", receiver: "Metroplex Grocers DC", daysAgo: 21, hours: 3, delay: 0 },
+  { from: "4400 Singleton Blvd, Dallas, TX 75212", to: "5100 Tulane Rd, Memphis, TN 38109", goods: "Household appliances", weight: lb(26000), quantity: "40 pallets", shipper: "Texas Home Distribution", receiver: "Bluff City Appliances", daysAgo: 27, hours: 7, delay: 900 },
+  { from: "12000 Rojas Dr, El Paso, TX 79936", to: "4100 Platinum Way, Dallas, TX 75237", goods: "Building materials", weight: lb(46000), quantity: "22 pallets", shipper: "Sun City Materials", receiver: "North Texas Builders", daysAgo: 34, hours: 10, delay: 0 },
 ];
+
+/**
+ * Seats each demo driver in their truck and hooks the demo trailers. Trucks, drivers and trailers
+ * the dispatcher has already paired differently are left alone.
+ */
+async function seatDemoCrews(db: Database) {
+  const fleet = await db.select().from(trucks);
+  const byNumber = new Map(fleet.map((truck) => [truck.truckNumber, truck]));
+  const seated = new Set(fleet.map((truck) => truck.driverId));
+  const hooked = new Set(fleet.map((truck) => truck.trailerId));
+  const driverIds = new Map((await db.select().from(drivers)).map((d) => [d.truckDriverEmail, d.id]));
+  const trailerIds = new Map((await db.select().from(trailers)).map((t) => [t.trailerNumber, t.id]));
+
+  for (const { truckDriverEmail, seat } of demoDrivers) {
+    const truck = byNumber.get(seat);
+    const driverId = driverIds.get(truckDriverEmail);
+    if (!truck || truck.driverId || !driverId || seated.has(driverId)) continue;
+    await db.update(trucks).set({ driverId }).where(eq(trucks.id, truck.id));
+  }
+  for (const [truckNumber, trailerNumber] of Object.entries(HOOKED_TRAILERS)) {
+    const truck = byNumber.get(truckNumber);
+    const trailerId = trailerIds.get(trailerNumber);
+    if (!truck || truck.trailerId || !trailerId || hooked.has(trailerId)) continue;
+    await db.update(trucks).set({ trailerId }).where(eq(trucks.id, truck.id));
+  }
+}
 
 async function seedDriverCommunity(db: Database) {
   const all = await db.select().from(drivers);
   const byEmail = new Map(all.map((driver) => [driver.truckDriverEmail, driver]));
-  const truckIds = new Map((await db.select({ id: trucks.id, number: trucks.truckNumber }).from(trucks)).map((t) => [t.number, t.id]));
+  const truckOf = new Map((await db.select({ id: trucks.id, driverId: trucks.driverId }).from(trucks)).map((t) => [t.driverId, t.id]));
   const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000);
 
   const active = await db.$count(roadReports, gt(roadReports.expiresAt, new Date()));
@@ -231,7 +272,7 @@ async function seedDriverCommunity(db: Database) {
           point: report.point,
           note: report.note,
           driverId: driver.id,
-          truckId: truckIds.get(driver.truckNumber) ?? null,
+          truckId: truckOf.get(driver.id) ?? null,
           createdAt: ago(report.minutesAgo),
           expiresAt: new Date(ago(report.minutesAgo).getTime() + REPORT_TYPES[report.type].ttlHours * 3_600_000 + 3_600_000),
         };
@@ -273,7 +314,7 @@ async function seedDriverCommunity(db: Database) {
           delayMinutes: load.delay || null,
           delayReason: load.delay ? (load.delay > 120 ? "Receiver closed, redelivered next morning" : "Heavy traffic") : null,
           driverId: demoDriver.id,
-          truckId: truckIds.get(demoDriver.truckNumber) ?? null,
+          truckId: truckOf.get(demoDriver.id) ?? null,
           status: "delivered" as const,
         };
       }),
@@ -295,7 +336,11 @@ export async function seed(db: Database) {
 
   await db.insert(trucks).values(demoTrucks).onConflictDoNothing();
   await db.insert(trailers).values(demoTrailers).onConflictDoNothing();
-  await db.insert(drivers).values(demoDrivers).onConflictDoNothing();
+  await db
+    .insert(drivers)
+    .values(demoDrivers.map(({ firstName, lastName, truckDriverEmail, phoneNumber }) => ({ firstName, lastName, truckDriverEmail, phoneNumber })))
+    .onConflictDoNothing();
+  await seatDemoCrews(db);
 
   // Driver-app login for one demo driver, linked every run so a demo reset keeps it working.
   await db.insert(users).values({ email: DEMO_DRIVER_EMAIL, passwordHash, role: "driver" }).onConflictDoNothing();
@@ -310,8 +355,8 @@ export async function seed(db: Database) {
       demoCargo.map((cargo, i) => ({
         ...cargo,
         shipperAddress: cargo.pickupLocation,
-        pickupPoint: CITY_POINTS[cargo.pickupLocation],
-        deliveryPoint: CITY_POINTS[cargo.deliveryLocation],
+        pickupPoint: SITE_POINTS[cargo.pickupLocation],
+        deliveryPoint: SITE_POINTS[cargo.deliveryLocation],
         receiverAddress: cargo.deliveryLocation,
         serviceType: "Door-to-Door",
         paymentTerms: i % 3 ? "Prepaid" : "Collect",
@@ -323,14 +368,14 @@ export async function seed(db: Database) {
 
     // Two trips already under way, so the live map moves as soon as the demo starts.
     for (const trip of DEMO_TRIPS) {
-      const truck = await db.query.trucks.findFirst({ where: eq(trucks.truckNumber, trip.truckNumber) });
-      const driver = await db.query.drivers.findFirst({ where: eq(drivers.truckDriverEmail, trip.driverEmail) });
+      const truck = (await db.query.trucks.findFirst({ where: eq(trucks.truckNumber, trip.truckNumber) }))!;
       await db
         .update(cargos)
-        .set({ truckId: truck!.id, driverId: driver!.id, status: "confirmed" })
+        .set({ truckId: truck.id, driverId: truck.driverId, trailerId: truck.trailerId, status: "confirmed" })
         .where(eq(cargos.shipperName, trip.shipperName));
-      await db.update(trucks).set({ status: "taken" }).where(eq(trucks.id, truck!.id));
-      await db.update(drivers).set({ status: "taken" }).where(eq(drivers.id, driver!.id));
+      await db.update(trucks).set({ status: "taken" }).where(eq(trucks.id, truck.id));
+      if (truck.driverId) await db.update(drivers).set({ status: "taken" }).where(eq(drivers.id, truck.driverId));
+      if (truck.trailerId) await db.update(trailers).set({ status: "taken" }).where(eq(trailers.id, truck.trailerId));
     }
   }
 
@@ -355,7 +400,7 @@ export async function seed(db: Database) {
   await seedDriverCommunity(db);
 
   // Backfill points for demo cargo seeded before coordinates were added.
-  for (const [location, point] of Object.entries(CITY_POINTS)) {
+  for (const [location, point] of Object.entries(SITE_POINTS)) {
     await db.update(cargos).set({ pickupPoint: point }).where(and(eq(cargos.pickupLocation, location), isNull(cargos.pickupPoint)));
     await db.update(cargos).set({ deliveryPoint: point }).where(and(eq(cargos.deliveryLocation, location), isNull(cargos.deliveryPoint)));
   }

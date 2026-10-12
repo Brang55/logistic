@@ -1,6 +1,7 @@
 import { PartialType, PickType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsBoolean, IsOptional, IsString, IsUUID, Matches, ValidateIf } from "class-validator";
+import { IsBoolean, IsOptional, IsString, IsUUID, Matches } from "class-validator";
+import { OptionalRef } from "../common/assignable";
 
 // The cargo form sends numeric inputs (quantity, weight) as numbers or strings.
 const AsString = () => (target: object, key: string) => {
@@ -10,13 +11,6 @@ const AsString = () => (target: object, key: string) => {
 
 // Pickup/delivery dates are calendar days ("" when not planned yet), so they sort and compare as text.
 const OptionalDay = () => Matches(/^(\d{4}-\d{2}-\d{2})?$/, { message: "$property must be a YYYY-MM-DD date" });
-
-// "" means "unassigned" in the existing form; anything else must be a UUID.
-const OptionalRef = () => (target: object, key: string) => {
-  IsOptional()(target, key);
-  ValidateIf((_, value) => value !== "")(target, key);
-  IsUUID()(target, key);
-};
 
 export class CreateCargoDto {
   @IsOptional()
@@ -126,12 +120,14 @@ export class CreateCargoDto {
   @AsString()
   notes?: string;
 
+  /** The truck brings its seated driver; set this only for a different (relief) driver on this load. */
   @OptionalRef()
   driverId?: string | null;
 
   @OptionalRef()
   truckId?: string | null;
 
+  /** Defaults to the trailer hooked to a newly chosen truck. */
   @OptionalRef()
   trailerId?: string | null;
 }

@@ -25,6 +25,13 @@ export interface NextPickups {
   }[];
 }
 
+/** Where a truck with other unfinished loads will be free: the delivery of its last other load. */
+export interface TruckOrigin {
+  truckId: string;
+  point: LngLat;
+  afterCargoId: string;
+}
+
 export interface TripTraffic {
   truckId: string;
   truckNumber: string;
@@ -87,6 +94,10 @@ export const tripsApi = api.injectEndpoints({
       query: (truckId) => `/trucks/${truckId}/next-pickups`,
       providesTags: ["NextPickups"],
     }),
+    truckOrigins: builder.query<TruckOrigin[], string>({
+      query: (cargoId) => `/cargos/${cargoId}/truck-origins`,
+      providesTags: ["Cargo"],
+    }),
     trafficReport: builder.query<{ checkedAt: string; trips: TripTraffic[] }, void>({
       query: () => "/traffic/report",
       providesTags: ["Traffic"],
@@ -138,6 +149,7 @@ export const tripsApi = api.injectEndpoints({
 
 export const {
   useNextPickupsQuery,
+  useTruckOriginsQuery,
   useTrafficReportQuery,
   useAlertsQuery,
   useMyTripQuery,

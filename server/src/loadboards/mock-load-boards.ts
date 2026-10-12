@@ -1,31 +1,49 @@
 import { distanceM as distanceMeters } from "../telematics/geo";
 import { ExternalLoad, LoadBoardProvider, LoadContact, LoadStop } from "./loadboard.types";
 
-// City centres, or the freight area where a 40 t truck can't reach the centre legally.
-const CITIES: Record<string, LoadStop["point"]> = {
-  "Dallas, TX": [-96.797, 32.7767],
-  "Houston, TX": [-95.3698, 29.7604],
-  "Laredo, TX": [-99.5075, 27.5306],
-  "Oklahoma City, OK": [-97.5164, 35.4676],
-  "Chicago, IL": [-87.6298, 41.8781],
-  "Indianapolis, IN": [-86.1581, 39.7684],
-  "Louisville, KY": [-85.7585, 38.2527],
-  "St. Louis, MO": [-90.1994, 38.627],
-  "Atlanta, GA": [-84.388, 33.749],
-  "Savannah, GA": [-81.0912, 32.0809],
-  "Charlotte, NC": [-80.8431, 35.2271],
-  "Columbus, OH": [-82.9988, 39.9612],
-  "Detroit, MI": [-83.0458, 42.3314],
-  "Memphis, TN": [-90.049, 35.1495],
-  "Nashville, TN": [-86.7816, 36.1627],
-  "Los Angeles, CA": [-118.2437, 34.0522],
-  "Phoenix, AZ": [-112.074, 33.4484],
-  "Salt Lake City, UT": [-111.891, 40.7608],
-  "Denver, CO": [-104.9903, 39.7392],
-  "Kansas City, MO": [-94.5786, 39.0997],
-  "Omaha, NE": [-95.9345, 41.2565],
-  "Minneapolis, MN": [-93.265, 44.9778],
-  "Jacksonville, FL": [-81.6557, 30.3322],
+// Each company's dock, as a real street address with its coordinates. Checked with TomTom truck
+// routing (US-201's size): every load's route is permitted for a 53' rig, except Mile High Foods,
+// which is on purpose: a downtown Denver store whose last half mile is closed to trucks.
+const SITES: Record<string, Omit<LoadStop, "city">> = {
+  "Lone Star Distribution": { address: "10501 Harry Hines Blvd, Dallas, TX 75220", point: [-96.88232, 32.86764] },
+  "Lakeshore Retail": { address: "12600 S Torrence Ave, Chicago, IL 60633", point: [-87.55895, 41.66612] },
+  "Gulf Coast Lubes": { address: "8800 Market Street Rd, Houston, TX 77029", point: [-95.26741, 29.76984] },
+  "Peachtree Industrial": { address: "1400 Marietta Blvd NW, Atlanta, GA 30318", point: [-84.43614, 33.80182] },
+  "Windy City Foods": { address: "13000 S Torrence Ave, Chicago, IL 60633", point: [-87.55936, 41.65913] },
+  "Buckeye Grocers": { address: "4300 Alum Creek Dr, Columbus, OH 43207", point: [-82.93084, 39.88051] },
+  "Hoosier Packaging": { address: "5600 W Raymond St, Indianapolis, IN 46241", point: [-86.25494, 39.7358] },
+  "Queen City Supply": { address: "3700 Westinghouse Blvd, Charlotte, NC 28273", point: [-80.96814, 35.13296] },
+  "Georgia Growers": { address: "5000 Kennedy Rd, Forest Park, GA 30297", point: [-84.39128, 33.61841] },
+  "First Coast Markets": { address: "1700 Talleyrand Ave, Jacksonville, FL 32206", point: [-81.62819, 30.34385] },
+  "Bluff City Logistics": { address: "3600 E Shelby Dr, Memphis, TN 38118", point: [-89.94609, 35.02082] },
+  "Metroplex Stores": { address: "4001 Irving Blvd, Dallas, TX 75247", point: [-96.88395, 32.80824] },
+  "Music City Steel": { address: "1500 Elm Hill Pike, Nashville, TN 37210", point: [-86.71971, 36.14405] },
+  "Motor City Fabrication": { address: "9600 Dearborn St, Detroit, MI 48209", point: [-83.13266, 42.29344] },
+  "Pacific Furnishings": { address: "1800 E 15th St, Los Angeles, CA 90021", point: [-118.23926, 34.02348] },
+  "Valley Home Center": { address: "5300 W Lower Buckeye Rd, Phoenix, AZ 85043", point: [-112.17461, 33.42242] },
+  "Sonoran Dairy": { address: "2400 S 43rd Ave, Phoenix, AZ 85043", point: [-112.15195, 33.4265] },
+  "Mile High Foods": { address: "1600 Champa St, Denver, CO 80202", point: [-104.99384, 39.74653] },
+  "Rocky Mountain Lumber": { address: "5400 Washington St, Denver, CO 80216", point: [-104.97817, 39.7957] },
+  "Heartland Builders": { address: "2100 Manchester Trafficway, Kansas City, MO 64126", point: [-94.4927, 39.08453] },
+  "Prairie Pet Co.": { address: "3100 Guinotte Ave, Kansas City, MO 64120", point: [-94.54228, 39.12036] },
+  "Midwest Pet Supply": { address: "3900 S Ashland Ave, Chicago, IL 60609", point: [-87.66554, 41.82309] },
+  "Ohio Auto Supply": { address: "3600 Lockbourne Rd, Columbus, OH 43207", point: [-82.96805, 39.88791] },
+  "Southern Assembly": { address: "3500 Southside Industrial Pkwy SE, Atlanta, GA 30354", point: [-84.37138, 33.65928] },
+  "Carolina Mills": { address: "4900 N Graham St, Charlotte, NC 28269", point: [-80.80548, 35.28086] },
+  "Delta Apparel": { address: "3000 Directors Row, Memphis, TN 38131", point: [-89.99327, 35.0653] },
+  "Great Lakes Machining": { address: "6500 E McNichols Rd, Detroit, MI 48212", point: [-83.03551, 42.41918] },
+  "Crossroads Manufacturing": { address: "2900 N Shadeland Ave, Indianapolis, IN 46219", point: [-86.04574, 39.80672] },
+  "Border Gateway Logistics": { address: "10500 Mines Rd, Laredo, TX 78045", point: [-99.51264, 27.5929] },
+  "Gateway Arch Distribution": { address: "6700 Hall St, St. Louis, MO 63147", point: [-90.21898, 38.69955] },
+  "Coastal Empire Transload": { address: "100 Crossroads Pkwy, Savannah, GA 31407", point: [-81.21436, 32.1564] },
+  "Piedmont Retail DC": { address: "7200 Statesville Rd, Charlotte, NC 28269", point: [-80.84167, 35.31976] },
+  "Platte Valley Meats": { address: "5000 S 33rd St, Omaha, NE 68107", point: [-95.96317, 41.20845] },
+  "North Star Grocers": { address: "3000 Broadway St NE, Minneapolis, MN 55413", point: [-93.22164, 44.99869] },
+  "Derby City Supply": { address: "4300 Produce Rd, Louisville, KY 40218", point: [-85.67945, 38.18611] },
+  "Cumberland Assembly": { address: "1100 Antioch Pike, Nashville, TN 37211", point: [-86.70674, 36.09719] },
+  "Red Dirt Chemicals": { address: "1700 SE 25th St, Oklahoma City, OK 73129", point: [-97.4813, 35.43905] },
+  "Ship Channel Refining": { address: "1300 Federal Rd, Houston, TX 77015", point: [-95.21337, 29.76719] },
+  "Wasatch Timber": { address: "4900 W 2100 S, Salt Lake City, UT 84120", point: [-112.00693, 40.72617] },
 };
 
 // [origin, destination, pickup in N days, equipment, lb, USD per mile, commodity, shipper, receiver, hazmat, booked]
@@ -74,15 +92,17 @@ const POUND_KG = 0.45359237;
 
 function buildLoads(board: string, rows: Row[]): ExternalLoad[] {
   return rows.map(([from, to, inDays, equipment, pounds, ratePerMile, commodity, shipper, receiver, hazmat, booked], i) => {
+    const origin = { city: from, ...SITES[shipper] };
+    const destination = { city: to, ...SITES[receiver] };
     // Road distance is roughly 1.25x the straight line.
-    const distanceM = distanceMeters(CITIES[from], CITIES[to]) * 1.25;
+    const distanceM = distanceMeters(origin.point, destination.point) * 1.25;
     const distanceKm = Math.round(distanceM / 1000);
     return {
       id: `${board}-${String(i + 1).padStart(4, "0")}`,
       board,
       region: "US",
-      origin: { city: from, point: CITIES[from] },
-      destination: { city: to, point: CITIES[to] },
+      origin,
+      destination,
       pickupDate: isoDay(inDays),
       // About 500 miles of driving a day.
       deliveryDate: isoDay(inDays + Math.max(1, Math.ceil(distanceM / MILE_M / 500))),

@@ -1,7 +1,7 @@
 import { PartialType } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
-import { RESOURCE_STATUSES, ResourceStatus } from "../common/assignable";
+import { OptionalRef, RESOURCE_STATUSES, ResourceStatus } from "../common/assignable";
 
 export class CreateDriverDto {
   @IsString()
@@ -21,9 +21,9 @@ export class CreateDriverDto {
   @IsString()
   phoneNumber?: string;
 
-  @IsOptional()
-  @IsString()
-  truckNumber?: string;
+  /** The truck this driver is seated in; "" or null takes them out of their truck. */
+  @OptionalRef()
+  truckId?: string | null;
 
   @IsOptional()
   @IsString()

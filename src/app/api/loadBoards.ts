@@ -6,8 +6,8 @@ export interface BoardLoad {
   id: string;
   board: string;
   region: "EU" | "US";
-  origin: { city: string; point: LngLat };
-  destination: { city: string; point: LngLat };
+  origin: { city: string; address: string; point: LngLat };
+  destination: { city: string; address: string; point: LngLat };
   pickupDate: string;
   deliveryDate: string;
   equipment: string;

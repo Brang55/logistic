@@ -134,6 +134,20 @@ export class TripsService {
   }
 
   /**
+   * Where trucks that have other unfinished loads will be free to start this one: the delivery
+   * point of their last other load. Trucks without other loads start from where they are now,
+   * which the dispatcher screen already has from the live feed.
+   */
+  async busyTruckOrigins(cargoId: string) {
+    const trips = await this.activeTrips();
+    return trips.flatMap((trip) => {
+      const others = [trip.cargo, ...trip.queue].filter((load) => load.id !== cargoId);
+      const last = others[others.length - 1];
+      return last ? [{ truckId: trip.truck.id, point: lngLat(last.deliveryPoint!), afterCargoId: last.id }] : [];
+    });
+  }
+
+  /**
    * Unassigned loads ranked by drive time to their pickup, starting where the truck will
    * be free: after its current loads, or from where it is now when it has none.
    */

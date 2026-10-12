@@ -4,7 +4,7 @@ import { AuthUser } from "../auth/auth-user";
 import { Database } from "../db/client";
 import { DB } from "../db/db.module";
 import { cargos, chatMessages, drivers, roadReports, trucks } from "../db/schema";
-import { DriversService } from "../drivers/drivers.service";
+import { DriversService, DriverView } from "../drivers/drivers.service";
 import { LiveGateway } from "../live/live.gateway";
 import { PositionsService } from "../positions/positions.service";
 import { LngLat } from "../routing/routing.types";
@@ -12,8 +12,6 @@ import { TrafficService } from "../trips/traffic.service";
 import { TripsService } from "../trips/trips.service";
 import { ChatMessageDto, RoadReportDto } from "./community.dto";
 import { REPORT_TYPES, ReportType } from "./report-types";
-
-type Driver = typeof drivers.$inferSelect;
 
 // The same driver tapping the same report again nearby within this window updates it instead.
 const DUPLICATE_RADIUS_M = 300;
@@ -42,7 +40,8 @@ const senderColumns = {
   firstName: drivers.firstName,
   lastName: drivers.lastName,
   phoneNumber: drivers.phoneNumber,
-  truckNumber: drivers.truckNumber,
+  // The truck the sender is seated in.
+  truckNumber: trucks.truckNumber,
 };
 
 const reportView = (row: {
@@ -142,14 +141,10 @@ export class CommunityService {
     return reportView(row);
   }
 
-  /** The truck the driver is on (their current load's, else the one on their profile) and its position. */
-  private async truckOf(driver: Driver): Promise<{ truckId: string; point: LngLat } | undefined> {
+  /** The truck the driver is on (their current load's, else the one they are seated in) and its position. */
+  private async truckOf(driver: DriverView): Promise<{ truckId: string; point: LngLat } | undefined> {
     const [trip] = await this.trips.activeTrips({ driverId: driver.id });
-    const truckId =
-      trip?.truck.id ??
-      (driver.truckNumber
-        ? (await this.db.query.trucks.findFirst({ where: eq(trucks.truckNumber, driver.truckNumber) }))?.id
-        : undefined);
+    const truckId = trip?.truck.id ?? driver.truckId;
     if (!truckId) return undefined;
     const position = trip?.position ?? (await this.positions.latestFor(truckId));
     return position && { truckId, point: position.point };
@@ -196,11 +191,12 @@ export class CommunityService {
         firstName: drivers.firstName,
         lastName: drivers.lastName,
         phoneNumber: drivers.phoneNumber,
-        truckNumber: drivers.truckNumber,
+        truckNumber: trucks.truckNumber,
         status: drivers.status,
         userId: drivers.userId,
       })
       .from(drivers)
+      .leftJoin(trucks, eq(trucks.driverId, drivers.id))
       .orderBy(asc(drivers.firstName), asc(drivers.lastName));
     return rows.map(({ userId, ...driver }) => ({ ...driver, usesApp: userId !== null }));
   }
@@ -216,6 +212,7 @@ export class CommunityService {
       })
       .from(chatMessages)
       .innerJoin(drivers, eq(drivers.id, chatMessages.driverId))
+      .leftJoin(trucks, eq(trucks.driverId, drivers.id))
       .where(before ? lt(chatMessages.createdAt, before) : undefined)
       .orderBy(desc(chatMessages.createdAt))
       .limit(MESSAGE_PAGE);
@@ -248,7 +245,7 @@ function messageView(row: {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  truckNumber: string;
+  truckNumber: string | null;
 }) {
   return {
     id: row.id,

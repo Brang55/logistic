@@ -15,10 +15,14 @@ export interface Truck {
   weightT?: number | null;
   axles?: number | null;
   odometerKm?: number | null;
+  /** The driver seated in this truck; set from the driver's profile. */
+  driverId?: string | null;
+  /** The trailer hooked up now; loads given to this truck start with it. */
+  trailerId?: string | null;
 }
 
-/** What the API accepts when adding or editing a truck; it manages the status itself. */
-export type TruckInput = Partial<Omit<Truck, "id" | "status">>;
+/** What the API accepts when adding or editing a truck; it manages the status and seated driver itself. */
+export type TruckInput = Partial<Omit<Truck, "id" | "status" | "driverId">>;
 
 export const trucksApi = api.injectEndpoints({
   endpoints: (builder) => ({

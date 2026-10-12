@@ -14,23 +14,28 @@ const restrictionsIn = (error: unknown) => {
 };
 
 /**
- * Assigns driver, truck and trailer to a load. When the truck's route has restrictions the
- * dispatcher gets a dialog listing them and has to choose "Assign anyway".
- * Render `dialog` somewhere in the calling component.
+ * Assigns a truck (which brings its driver), and optionally a relief driver and a trailer, to a
+ * load. When the truck's route has restrictions the dispatcher gets a dialog listing them and has
+ * to choose "Assign anyway". Render `dialog` somewhere in the calling component, and show `error`
+ * when the API refuses the assignment for another reason (e.g. a truck without a driver).
  */
 export const useAssignWithRestrictions = () => {
   const [assignCargo, { isLoading }] = useAssignCargoMutation();
   const [pending, setPending] = useState<{ request: AssignRequest; violations: string[]; error?: string }>();
+  const [error, setError] = useState<string>();
 
   /** `knownViolations`, when the route is already on screen, opens the dialog without a round-trip. */
   const assign = async (request: AssignRequest, knownViolations: string[] = []) => {
+    setError(undefined);
     if (knownViolations.length) {
       setPending({ request, violations: knownViolations });
       return;
     }
     const result = await assignCargo(request);
-    const violations = "error" in result ? restrictionsIn(result.error) : undefined;
+    if (!("error" in result)) return;
+    const violations = restrictionsIn(result.error);
     if (violations) setPending({ request, violations });
+    else setError(errorMessage(result.error, "Could not save the assignment."));
   };
 
   const acceptAndAssign = async () => {
@@ -69,5 +74,5 @@ export const useAssignWithRestrictions = () => {
     />
   );
 
-  return { assign, dialog, isLoading };
+  return { assign, dialog, error, isLoading };
 };

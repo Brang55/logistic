@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { parseEWKB } from "drizzle-orm/pg-core/columns/postgis_extension/utils";
 import {
+  type AnyPgColumn,
   bigserial,
   check,
   customType,
@@ -81,6 +82,10 @@ export const trucks = pgTable("trucks", {
   odometerKm: integer("odometer_km"),
   // The vehicle's id in the telematics provider (Samsara, Geotab, ...); falls back to truck number.
   telematicsId: text("telematics_id").unique(),
+  // The driver seated in this truck: assigning the truck to a load brings this driver.
+  driverId: uuid("driver_id").unique().references((): AnyPgColumn => drivers.id, { onDelete: "set null" }),
+  // The trailer hooked up now; loads given to this truck start with it.
+  trailerId: uuid("trailer_id").unique().references((): AnyPgColumn => trailers.id, { onDelete: "set null" }),
   ...timestamps,
 }, (table) => [statusCheck("trucks_status_check", table.status, RESOURCE_STATUSES)]);
 
@@ -117,7 +122,6 @@ export const drivers = pgTable("drivers", {
   lastName: text("last_name").notNull(),
   phoneNumber: text("phone_number").notNull().default(""),
   truckDriverEmail: text("truck_driver_email").notNull().unique(),
-  truckNumber: text("truck_number").notNull().default(""),
   content: text("content").notNull().default(""),
   status: resourceStatus(),
   ...timestamps,

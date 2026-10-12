@@ -19,7 +19,7 @@ describe("driver community (e2e)", () => {
     truck = await newTruck(t, { truckNumber: "COMM-1" });
     await moveTruck(t, "COMM-1", [30, 10]).expect(202);
     // Rita has no load; her report is placed at the truck on her profile.
-    rita = await newRoadDriver("Rita", "rita@test.local", { truckNumber: "COMM-1" });
+    rita = await newRoadDriver("Rita", "rita@test.local", { truckId: truck.id });
     otto = await newRoadDriver("Otto", "otto@test.local");
   });
   afterAll(() => t.close());

@@ -52,7 +52,7 @@ export class FleetTools {
         name: "find_trucks",
         kind: "read",
         roles: [...STAFF],
-        description: "Search trucks with their status, size and current load.",
+        description: "Search trucks with their driver, hooked trailer, status, size and current load. Assigning a truck brings its driver.",
         input_schema: searchSchema("truck number, model, plate or VIN"),
         run: async (input) => {
           const [fleet, cargos] = await Promise.all([this.directory.load(), this.cargos.findAll()]);
@@ -69,6 +69,8 @@ export class FleetTools {
               model: orNull(t.truckModel),
               status: t.status,
               plate: t.plate,
+              driver: fleet.driver(t.driverId),
+              trailer: fleet.trailer(t.trailerId),
               heightFt: t.heightM == null ? null : feet(t.heightM),
               weightLb: t.weightT == null ? null : pounds(t.weightT * 1000),
               currentLoad: loadOf(t.id),
@@ -81,7 +83,7 @@ export class FleetTools {
         kind: "read",
         roles: [...STAFF],
         description: "Search drivers with their status, phone and current load.",
-        input_schema: searchSchema("first or last name, email, phone or usual truck number"),
+        input_schema: searchSchema("first or last name, email, phone or the number of the truck they drive"),
         run: async (input) => {
           const [fleet, cargos] = await Promise.all([this.directory.load(), this.cargos.findAll()]);
           const loadOf = currentLoads(cargos);
@@ -99,7 +101,7 @@ export class FleetTools {
               status: d.status,
               phone: orNull(d.phoneNumber),
               email: d.truckDriverEmail,
-              usualTruck: orNull(d.truckNumber),
+              truck: d.truckNumber,
               usesDriverApp: !!d.userId,
               currentLoad: loadOf(d.id),
             })),
