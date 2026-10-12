@@ -1,6 +1,6 @@
 import "dotenv/config";
 import * as argon2 from "argon2";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull } from "drizzle-orm";
 import { createDb, Database } from "./client";
 import { ensureOwner } from "./create-admin";
 import { CHECKLISTS } from "../vehicles/checklists";
@@ -342,10 +342,19 @@ export async function seed(db: Database) {
     .onConflictDoNothing();
   await seatDemoCrews(db);
 
-  // Driver-app login for one demo driver, linked every run so a demo reset keeps it working.
-  await db.insert(users).values({ email: DEMO_DRIVER_EMAIL, passwordHash, role: "driver" }).onConflictDoNothing();
-  const driverUser = await db.query.users.findFirst({ where: eq(users.email, DEMO_DRIVER_EMAIL) });
-  await db.update(drivers).set({ userId: driverUser!.id }).where(eq(drivers.truckDriverEmail, DEMO_DRIVER_EMAIL));
+  // Driver-app login for every demo driver, linked every run so a demo reset keeps them working.
+  // Their password is reset to the demo password too, so testers can always sign in as any driver.
+  const driverEmails = demoDrivers.map((driver) => driver.truckDriverEmail);
+  await db
+    .insert(users)
+    .values(driverEmails.map((email) => ({ email, passwordHash, role: "driver" as const })))
+    .onConflictDoNothing();
+  const isDemoDriver = and(inArray(users.email, driverEmails), eq(users.role, "driver"));
+  await db.update(users).set({ passwordHash }).where(isDemoDriver);
+  const driverUsers = await db.select().from(users).where(isDemoDriver);
+  for (const user of driverUsers) {
+    await db.update(drivers).set({ userId: user.id }).where(eq(drivers.truckDriverEmail, user.email));
+  }
 
   // Only manual cargo counts: load-board imports may already exist on a fresh install.
   const existingCargo = await db.$count(cargos, eq(cargos.source, "manual"));
@@ -406,7 +415,7 @@ export async function seed(db: Database) {
   }
 
   console.log(
-    `Seeded demo data. Log in as admin@demo.logistic, dispatcher@demo.logistic or (driver app) ${DEMO_DRIVER_EMAIL} / ${DEMO_PASSWORD}`,
+    `Seeded demo data. Log in as admin@demo.logistic, dispatcher@demo.logistic or (driver app) any demo driver, e.g. ${DEMO_DRIVER_EMAIL}, with password ${DEMO_PASSWORD}`,
   );
 }
 
