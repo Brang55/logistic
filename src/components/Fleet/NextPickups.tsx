@@ -28,7 +28,8 @@ const NextPickups = ({ truckId, driverId }: { truckId: string; driverId?: string
             {data.origin.after === "current-loads"
               ? `After its current loads (free around ${new Date(data.origin.availableAt).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}).`
               : "From where the truck is now."}{" "}
-            Drive times use live traffic for cars; check the truck route before assigning.
+            Drive times use live traffic and, where the routing provider allows, this truck's size and weight; check
+            the truck route before assigning.
           </p>
           {data.candidates.length === 0 && <p className={styles.muted}>No unassigned loads within {formatMiles(data.maxDistanceKm)}.</p>}
           <ul>
