@@ -150,6 +150,16 @@ describe("TomTomRoutingService", () => {
     expect(mapboxTimes).not.toHaveBeenCalled();
   });
 
+  it("leaves the axle count out of the matrix, which TomTom rejects as an extraneous key", async () => {
+    post.mockResolvedValue({ data: [] });
+    await service.travelTimes([0, 0], [[1, 1]], { weightT: 36, axles: 5 });
+
+    // The body as it goes over the wire, where undefined keys are dropped.
+    const options = JSON.parse(JSON.stringify(post.mock.calls[0][1].options));
+    expect(options).not.toHaveProperty("vehicleNumberOfAxles");
+    expect(options).toMatchObject({ vehicleWeight: 36000, vehicleAxleWeight: 7200 });
+  });
+
   it("falls back to Mapbox car times when TomTom refuses the matrix", async () => {
     post.mockRejectedValue(new TomTomApiError(429, undefined, "Over quota"));
     await expect(service.travelTimes([0, 0], [[1, 1]])).resolves.toEqual([{ durationS: 1, distanceM: 2 }]);
