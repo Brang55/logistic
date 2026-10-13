@@ -31,6 +31,8 @@
   .tripLayout {
     display: flex;
     flex-direction: column;
+    /* The wide layout's `start` would shrink every block to its content, and the map to 0 px. */
+    align-items: stretch;
     gap: 16px;
   }
 
