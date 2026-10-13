@@ -40,9 +40,12 @@
 
 	handle {
 		root * /srv
-		# Single-page app: unknown paths serve index.html; built assets are cached long-term.
+		# Single-page app: unknown paths serve index.html. Built assets have hashed names, so they are cached
+		# long-term; everything else (index.html above all) is revalidated, so a reload after a deploy gets it.
 		@assets path /assets/*
 		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@pages not path /assets/*
+		header @pages Cache-Control no-cache
 		try_files {path} /index.html
 		file_server
 	}
