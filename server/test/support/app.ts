@@ -18,6 +18,8 @@ import { geocoder, router } from "./fakes";
 
 export const WEBHOOK_SECRET = "test-webhook-secret";
 export const PASSWORD = "password123";
+export const GATE_PASSWORD = "test-gate-password";
+export const GATE_TOKEN = "test-gate-token";
 
 export type TestApp = Awaited<ReturnType<typeof createTestApp>>;
 
@@ -39,6 +41,8 @@ export async function createTestApp({ loginRateLimit = 1000, assistantModel }: {
     // Voice commands use the keyword parser in tests.
     ANTHROPIC_API_KEY: "",
     TELEMATICS_WEBHOOK_SECRET: WEBHOOK_SECRET,
+    SITE_GATE_PASSWORD: GATE_PASSWORD,
+    SITE_GATE_TOKEN: GATE_TOKEN,
   });
   await truncateAll();
 

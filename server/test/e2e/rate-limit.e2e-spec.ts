@@ -11,4 +11,10 @@ describe("rate limiting (e2e)", () => {
     for (let i = 0; i < 3; i++) await attempt().expect(401);
     await attempt().expect(429);
   });
+
+  it("blocks repeated wrong site passwords from one client", async () => {
+    const attempt = () => t.api().post("/api/gate").send({ password: "wrong" });
+    for (let i = 0; i < 3; i++) await attempt().expect(401);
+    await attempt().expect(429);
+  });
 });
