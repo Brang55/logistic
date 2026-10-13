@@ -98,7 +98,10 @@ export const truckOptions = (vehicle: VehicleDimensions = {}) => {
   };
 };
 
-const asParams = (options: Record<string, number | undefined>) =>
+// Matrix v2 rejects vehicleNumberOfAxles ("Extraneous key"); the per-axle weight still goes through.
+const matrixTruckOptions = (vehicle?: VehicleDimensions) => ({ ...truckOptions(vehicle), vehicleNumberOfAxles: undefined });
+
+const asParams =(options: Record<string, number | undefined>) =>
   Object.fromEntries(Object.entries(options).map(([key, value]) => [key, value === undefined ? undefined : String(value)]));
 
 @Injectable()
@@ -162,7 +165,7 @@ export class TomTomRoutingService extends RoutingService {
       const response = await this.tomtom.post<{ data: MatrixCell[] }>("/routing/matrix/2", {
         origins: [point(origin)],
         destinations: destinations.map(point),
-        options: { departAt: "now", traffic: "live", travelMode: "truck", vehicleCommercial: true, ...truckOptions(vehicle) },
+        options: { departAt: "now", traffic: "live", travelMode: "truck", vehicleCommercial: true, ...matrixTruckOptions(vehicle) },
       });
       cells = response.data ?? [];
     } catch (err) {
