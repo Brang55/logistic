@@ -23,6 +23,7 @@ import {
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
+import type { AuthUser } from "../../app/api/auth";
 import { useAuth } from "../../hooks/useAuth";
 import LogoutButton from "../Account/LogoutButton/LogoutButton";
 import { AssistantLauncher } from "../Assistant/Assistant";
@@ -84,8 +85,7 @@ const DRIVER_SECTIONS: { title: string; items: NavItem[] }[] = [
 
 const ROLE_LABELS: Record<string, string> = { admin: "Administrator", dispatcher: "Dispatcher", driver: "Driver" };
 
-const Navigation = () => {
-  const { user } = useAuth();
+const NavMenu = ({ user }: { user: AuthUser }) => {
   // Mobile only: the menu collapses behind the top-bar toggle.
   const [open, setOpen] = useState(false);
 
@@ -100,9 +100,6 @@ const Navigation = () => {
       document.documentElement.style.overflow = "";
     };
   }, [open]);
-
-  // The login page is full screen.
-  if (!user) return null;
 
   const sections = user.role === "driver" ? DRIVER_SECTIONS : STAFF_SECTIONS;
   const initials = user.email.slice(0, 2).toUpperCase();
@@ -169,6 +166,13 @@ const Navigation = () => {
       </div>
     </nav>
   );
+};
+
+// The login page is full screen.
+const Navigation = () => {
+  const { user } = useAuth();
+  // A fresh menu for every login, so it never starts open (e.g. after logging out from the open phone menu).
+  return user ? <NavMenu key={user.id} user={user} /> : null;
 };
 
 export default Navigation;
