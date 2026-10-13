@@ -8,6 +8,7 @@ import { CommunityModule } from "./community/community.module";
 import { PgErrorFilter } from "./common/pg-error.filter";
 import { DbModule } from "./db/db.module";
 import { DriversModule } from "./drivers/drivers.module";
+import { GateModule } from "./gate/gate.module";
 import { HealthController } from "./health.controller";
 import { LoadBoardsModule } from "./loadboards/loadboards.module";
 import { MapboxModule } from "./mapbox/mapbox.module";
@@ -26,6 +27,7 @@ import { TrucksModule } from "./trucks/trucks.module";
     MapboxModule,
     TomTomModule,
     AuthModule,
+    GateModule,
     TrucksModule,
     TrailersModule,
     DriversModule,

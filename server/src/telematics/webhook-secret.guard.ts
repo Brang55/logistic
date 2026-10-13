@@ -1,8 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { createHash, timingSafeEqual } from "crypto";
-
-const digest = (value: string) => createHash("sha256").update(value).digest();
+import { secretsEqual } from "../common/secrets";
 
 /**
  * Shared-secret check for telematics webhooks (header "x-telematics-secret").
@@ -15,8 +13,7 @@ export class WebhookSecretGuard implements CanActivate {
   canActivate(context: ExecutionContext) {
     const secret = this.config.get<string>("TELEMATICS_WEBHOOK_SECRET");
     const given = context.switchToHttp().getRequest().headers["x-telematics-secret"];
-    // Hashing first makes the comparison constant-time regardless of length.
-    if (!secret || typeof given !== "string" || !timingSafeEqual(digest(secret), digest(given))) {
+    if (!secret || typeof given !== "string" || !secretsEqual(secret, given)) {
       throw new UnauthorizedException("Invalid telematics secret");
     }
     return true;

@@ -1,8 +1,8 @@
 # Deploying to a server
 
 The production stack is four containers (`docker-compose.prod.yml`): PostGIS, Redis, the NestJS API and
-Caddy, which serves the web app, proxies `/api` and the live socket, and gets HTTPS certificates
-automatically.
+Caddy, which serves the web app, proxies `/api` and the live socket, gets HTTPS certificates
+automatically, and asks for a site password before any of it.
 
 ## 1. Server
 
@@ -24,6 +24,8 @@ Fill in `.env.production`:
 | Variable | Value |
 | --- | --- |
 | `SITE_ADDRESS`, `PUBLIC_URL` | `app.example.com`, `https://app.example.com` |
+| `SITE_GATE_PASSWORD` | the site password visitors enter before the app loads |
+| `SITE_GATE_TOKEN` | `openssl rand -hex 32` (the cookie value that unlocks the site) |
 | `POSTGRES_PASSWORD` | `openssl rand -hex 24` |
 | `JWT_ACCESS_SECRET` | `openssl rand -hex 32` |
 | `VITE_MAPBOX_ACCESS_TOKEN` | public `pk.` token, URL-restricted to your domain in the Mapbox console |
@@ -60,6 +62,9 @@ docker compose --env-file .env.production -f docker-compose.prod.yml restart api
   the server (e.g. to object storage).
 - **Restore**: `docker compose ... exec -T db pg_restore -U logistic -d logistic --clean < backups/<file>.dump`;
   document scans: `docker compose ... exec -T api tar -xz -C /app < backups/uploads-<date>.tgz`
+- **Site password**: every page shows a password screen until the visitor enters `SITE_GATE_PASSWORD`; the
+  unlock lasts 30 days per browser. To revoke access, change both `SITE_GATE_PASSWORD` and `SITE_GATE_TOKEN`
+  and run the update command. Only `/api/telematics/webhook` and `/api/gate` work without it.
 - **Telematics webhook**: `https://app.example.com/api/telematics/webhook` with header
   `x-telematics-secret` (format in the README).
 

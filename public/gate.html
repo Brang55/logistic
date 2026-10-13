@@ -1,0 +1,211 @@
+<!doctype html>
+<!--
+  Site password gate. Caddy serves this page instead of the app until POST /api/gate sets the site_gate cookie
+  (see the Caddyfile). It is self-contained on purpose: no app bundle and no external requests load before the
+  password is right. Colours copy the :root tokens in src/assets/css/styles.css and the Login screen's look.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>Logistic</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #0f172a;
+        -webkit-font-smoothing: antialiased;
+        background:
+          radial-gradient(circle at 20% 15%, rgba(99, 102, 241, 0.35), transparent 45%),
+          radial-gradient(circle at 85% 90%, rgba(14, 165, 233, 0.18), transparent 40%),
+          #0f172a;
+      }
+
+      form {
+        width: 100%;
+        max-width: 400px;
+        padding: 36px 32px 32px;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 24px;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        color: #fff;
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        border-radius: 10px;
+      }
+
+      .brand-mark svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .subtitle {
+        margin: 4px 0 24px;
+        font-size: 14px;
+        color: #64748b;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        /* 16px keeps iOS Safari from zooming in on focus. */
+        font: inherit;
+        font-size: 16px;
+        color: #0f172a;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+
+      input:focus {
+        border-color: #4f46e5;
+        outline: none;
+        box-shadow: 0 0 0 3px #eef2ff;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 24px;
+        padding: 11px 20px;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        background: #4f46e5;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.15s;
+      }
+
+      button:hover {
+        background: #4338ca;
+      }
+
+      button:disabled {
+        background: #c7d2fe;
+        cursor: default;
+      }
+
+      .error {
+        margin-top: 16px;
+        padding: 10px 12px;
+        font-size: 13px;
+        color: #dc2626;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+      }
+
+      .error[hidden] {
+        display: none;
+      }
+
+      @media (max-width: 480px) {
+        form {
+          padding: 28px 20px 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <form id="gate" novalidate>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 576 512">
+            <path
+              d="M290.8 48.6l78.4 29.7L288 109.5 206.8 78.3l78.4-29.7c1.8-.7 3.8-.7 5.7 0zM136 92.5V204.7c-1.3 .4-2.6 .8-3.9 1.3l-96 36.4C14.4 250.6 0 271.5 0 294.7V413.9c0 22.2 13.1 42.3 33.5 51.3l96 42.2c14.4 6.3 30.7 6.3 45.1 0L288 457.5l113.5 49.9c14.4 6.3 30.7 6.3 45.1 0l96-42.2c20.3-8.9 33.5-29.1 33.5-51.3V294.7c0-23.3-14.4-44.1-36.1-52.4l-96-36.4c-1.3-.5-2.6-.9-3.9-1.3V92.5c0-23.3-14.4-44.1-36.1-52.4l-96-36.4c-12.8-4.8-26.9-4.8-39.7 0l-96 36.4C150.4 48.4 136 69.3 136 92.5zM392 210.6l-82.4 31.2V152.6L392 121v89.6zM154.8 250.9l78.4 29.7L152 311.7 70.8 280.6l78.4-29.7c1.8-.7 3.8-.7 5.7 0zm18.8 204.4V354.8L256 323.2v95.9l-82.4 36.2zM421.2 250.9c1.8-.7 3.8-.7 5.7 0l78.4 29.7L424 311.7l-81.2-31.1 78.4-29.7zM523.2 421.2l-77.6 34.1V354.8L528 323.2v90.7c0 3.2-1.9 6-4.8 7.3z"
+            />
+          </svg>
+        </span>
+        <span>Logistic</span>
+      </div>
+      <h1>Private demo</h1>
+      <p class="subtitle">Enter the access password to continue</p>
+      <label for="password">Access password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" autofocus required />
+      <button type="submit">Continue</button>
+      <div class="error" id="error" role="alert" hidden></div>
+    </form>
+    <script>
+      const form = document.getElementById("gate");
+      const input = document.getElementById("password");
+      const button = form.querySelector("button");
+      const error = document.getElementById("error");
+
+      const showError = (message) => {
+        error.textContent = message;
+        error.hidden = false;
+        button.disabled = false;
+        button.textContent = "Continue";
+        input.select();
+      };
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!input.value) return showError("Enter the access password.");
+        button.disabled = true;
+        button.textContent = "Checking…";
+        error.hidden = true;
+        try {
+          const res = await fetch("/api/gate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: input.value }),
+          });
+          // Reloading keeps the address the visitor opened, e.g. a driver's trip link.
+          if (res.ok) return location.reload();
+          if (res.status === 401) return showError("Wrong password. Please try again.");
+          if (res.status === 429) return showError("Too many attempts. Wait a minute and try again.");
+          showError("Could not check the password. Please try again.");
+        } catch {
+          showError("Could not reach the server. Check your connection and try again.");
+        }
+      });
+    </script>
+  </body>
+</html>
