@@ -12,6 +12,27 @@
 		-Server
 	}
 
+	# Site password gate: without the cookie set by POST /api/gate (see docs/DEPLOY.md), pages get
+	# gate.html and the API gets 403. The telematics provider posts its webhook without the cookie.
+	# Fails closed if SITE_GATE_TOKEN is ever empty. Must stay above the other handle blocks.
+	@locked {
+		not path /api/gate /api/telematics/webhook /favicon.png
+		not expression `{http.request.cookie.site_gate} == "{$SITE_GATE_TOKEN}" && "{$SITE_GATE_TOKEN}" != ""`
+	}
+	handle @locked {
+		@lockedApi path /api/* /socket.io/*
+		handle @lockedApi {
+			respond "Site password required" 403
+		}
+		handle {
+			root * /srv
+			header Cache-Control no-store
+			header X-Robots-Tag noindex
+			rewrite * /gate.html
+			file_server
+		}
+	}
+
 	@api path /api/* /socket.io/*
 	handle @api {
 		reverse_proxy api:3000
