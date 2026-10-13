@@ -225,11 +225,11 @@
     right: 0;
     left: 0;
     display: none;
-    max-height: calc(100vh - var(--topbar-height));
-    max-height: calc(100dvh - var(--topbar-height));
+    /* Always the full screen below the top bar, so it looks the same for every role and the user row sits at the bottom. */
+    height: calc(100vh - var(--topbar-height));
+    height: calc(100dvh - var(--topbar-height));
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
     background: var(--color-sidebar);
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     box-shadow: var(--shadow-lg);
   }
 
