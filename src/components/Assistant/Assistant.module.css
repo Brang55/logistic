@@ -22,6 +22,10 @@
     box-shadow 0.15s;
 }
 
+.fab[hidden] {
+  display: none;
+}
+
 .fab:hover {
   transform: translateY(-2px);
   box-shadow:

@@ -244,7 +244,8 @@ const AssistantPanel = ({ open, chat, onMinimize }: { open: boolean; chat: Chat;
  * stays; while minimized the button shows when the assistant is thinking, has news, or has
  * changes waiting to be confirmed.
  */
-export const AssistantLauncher = () => {
+// `hidden` hides only the round button (the chat is kept), e.g. while the phone menu is open.
+export const AssistantLauncher = ({ hidden = false }: { hidden?: boolean }) => {
   const [open, setOpen] = useState(false);
   const minimize = useCallback(() => setOpen(false), []);
 
@@ -292,6 +293,7 @@ export const AssistantLauncher = () => {
       <AssistantPanel open={open} chat={chat} onMinimize={minimize} />
       <button
         data-assistant-launcher
+        hidden={hidden}
         className={cx(styles.fab, open && styles.fabOpen, chat.sending && !open && styles.fabBusy)}
         onClick={() => setOpen((value) => !value)}
         aria-label={label}

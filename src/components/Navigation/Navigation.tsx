@@ -152,8 +152,9 @@ const Navigation = () => {
           </div>
         ))}
 
-        {/* Floats in the bottom-right corner of every staff page. */}
-        {user.role !== "driver" && <AssistantLauncher />}
+        {/* Floats in the bottom-right corner of every staff page. Hidden while the phone menu is open,
+            where it would cover the Log out button. */}
+        {user.role !== "driver" && <AssistantLauncher hidden={open} />}
 
         <div className={styles.user}>
           <span className={styles.avatar}>{initials}</span>
