@@ -68,6 +68,22 @@ docker compose --env-file .env.production -f docker-compose.prod.yml restart api
 - **Telematics webhook**: `https://app.example.com/api/telematics/webhook` with header
   `x-telematics-secret` (format in the README).
 
+## Sharing the server with other sites
+
+Only one program can own ports 80/443. When another proxy on the server holds them (a shared Caddy that
+routes each domain and handles HTTPS), run this stack behind it with plain HTTP on a local port. Add to
+`.env.production`:
+
+```sh
+SITE_ADDRESS=:80
+HTTP_PORT=127.0.0.1:8081
+HTTPS_PORT=127.0.0.1:8443
+```
+
+and point the shared proxy at it, e.g. `logistic.example.com { reverse_proxy 127.0.0.1:8081 }`. This Caddy
+trusts the forwarded headers of proxies on private addresses, so the API still sees each visitor's IP (login
+rate limits) and HTTPS (Secure gate cookie). Changing `.env.production` also recreates the `api` container.
+
 ## Notes
 
 - Voice input in the browser needs HTTPS, which Caddy provides once DNS points at the server.

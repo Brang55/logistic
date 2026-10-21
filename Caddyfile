@@ -1,4 +1,13 @@
 # SITE_ADDRESS: your domain (e.g. app.example.com) for automatic HTTPS, or ":80" for plain HTTP.
+{
+	servers {
+		# Behind a shared edge proxy (docs/DEPLOY.md), its X-Forwarded-For/-Proto are kept, so the API sees
+		# the visitor's IP (rate limits) and HTTPS (Secure gate cookie). Direct visitors have public IPs and
+		# are never trusted.
+		trusted_proxies static private_ranges
+	}
+}
+
 {$SITE_ADDRESS::80} {
 	encode zstd gzip
 
@@ -35,7 +44,10 @@
 
 	@api path /api/* /socket.io/*
 	handle @api {
-		reverse_proxy api:3000
+		reverse_proxy api:3000 {
+			# Only the visitor's IP: the API trusts one proxy hop, and Caddy would otherwise append the edge's.
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 
 	handle {
